@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fully-observed/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/fully-observed"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fully-observed/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Fully-observed student training. No hidden neurons, no EM. Global scaling factor perturbation recovered via gradient optimisation."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "fully-observed"
+entity = ""
+tags = ["fully-observed"]
+notes = "Fully-observed training: gradient optimisation to recover perturbed scaling factors"

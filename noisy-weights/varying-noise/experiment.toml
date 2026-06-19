@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/varying-noise/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/noisy-weights/test-sgd/"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/varying-noise/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Training with varying noise levels (0.05 to 0.50) to test robustness. Cell-type-specific weight perturbations."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "noisy-weights-varying"
+entity = ""
+tags = ["noisy-weights", "varying-noise", "grid-search"]
+notes = "Grid search over noise levels from 5% to 50%"

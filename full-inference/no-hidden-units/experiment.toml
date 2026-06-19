@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/full-inference/no-hidden/baseline"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Full-inference, fully-observed student. Learns the feedforward weight matrix (low-rank) and recurrent scaling factors. Perturbations applied to the student: noisy recurrent weights and a fraction of structurally masked units."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "full-inference-no-hidden"
+name = "baseline"
+entity = ""
+tags = ["full-inference", "no-hidden"]
+notes = "Fully-observed student. Learning the feedforward weight matrix and recurrent scaling factors, with noisy recurrent weights and structurally masked units."

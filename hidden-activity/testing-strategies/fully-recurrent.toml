@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/scripts/train_fully_recurrent.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/testing-strategies/fully-recurrent"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/testing-strategies/parameters_fully_recurrent.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Fully-recurrent training: surrogate gradient backprop through full recurrent network. Visible-only loss."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-activity"
+name = "fully-recurrent"
+entity = ""
+tags = ["hidden-activity", "testing-strategies", "fully-recurrent", "visible-loss"]
+notes = "Fully-recurrent training with surrogate gradient backprop, visible-only loss"

@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-units/stability-check"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/stability-check/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Stability check with no perturbation, fixed hidden_unit_fraction=0.1, multiple seeds."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-units-stability"
+entity = ""
+tags = ["hidden-units", "stability", "multiple-seeds"]
+notes = "Testing stability with no perturbation and 10% hidden neurons across different seeds"

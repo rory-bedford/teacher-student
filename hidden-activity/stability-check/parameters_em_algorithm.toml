@@ -1,0 +1,114 @@
+# Parameters for EM training - STABILITY CHECK
+# Scaling factors start at target (no perturbation)
+
+# ========================
+# SIMULATION CONFIGURATION
+# ========================
+
+[simulation]
+seed = 44
+chunk_size = 250
+hidden_cell_fraction = 0.5
+
+# ==============
+# EM PARAMETERS
+# ==============
+
+[em]
+total_iterations = 5
+epochs_per_update = 1
+
+# ======================
+# TRAINING CONFIGURATION
+# ======================
+
+[training]
+chunks_per_update = 8
+log_interval = 4
+checkpoint_interval = 40
+plot_size = 40
+mixed_precision = true
+weight_perturbation_variance = 0.0    # NO PERTURBATION - stability check
+optimisable = "scaling_factors"
+burn_in_chunks = 20
+
+# ===============
+# HYPERPARAMETERS
+# ===============
+
+[hyperparameters]
+beta1 = 0.95
+beta2 = 0.999
+grad_norm_clip = 10.0
+surrgrad_scale = 5.0
+learning_rate = 1e-3
+van_rossum_tau_rise = 10.0
+van_rossum_tau_decay = 100.0
+loss_weight.van_rossum = 1.0
+
+# ==========================
+# FEEDFORWARD LAYER SYNAPSES
+# ==========================
+
+[feedforward.cell_types]
+names = ["mitral"]
+
+[feedforward.synapses.mitral]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+# =======================================
+# RECURRENT LAYER PHYSIOLOGY AND SYNAPSES
+# =======================================
+
+[recurrent.cell_types]
+names = ["excitatory", "inhibitory"]
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0
+theta = -38.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 1.35
+tau_ref = 8.0
+
+[recurrent.synapses.excitatory]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0
+theta = -45.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 0.9
+tau_ref = 8.0
+
+[recurrent.synapses.inhibitory]
+names = ["GABA_A"]
+tau_rise = [0.5]
+tau_decay = [6.0]
+E_syn = [-70.0]
+g_bar = [8.0]
+g_clip = [80.0]
+
+# ========================
+# SCALING FACTORS
+# ========================
+
+[scaling_factors]
+recurrent = [
+    [1.0, 1.0],
+    [1.0, 1.0],
+]
+feedforward = [
+    [1.0, 1.0],
+]

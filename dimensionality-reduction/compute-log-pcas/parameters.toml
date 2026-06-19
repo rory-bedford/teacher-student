@@ -1,0 +1,13 @@
+# Parameters for compute-log-pcas
+# Gaussian-smooth feedforward spike trains, log-transform, then fit PCA.
+
+[pca]
+# Standard deviation of the Gaussian smoothing kernel (milliseconds).
+gaussian_sigma_ms = 500.0
+
+# Number of principal components to retain.
+n_components = 1500
+
+# Small constant added before taking the log to avoid log(0).
+# Units: spk/timestep (same as smoothed rates).
+log_epsilon = 0.1

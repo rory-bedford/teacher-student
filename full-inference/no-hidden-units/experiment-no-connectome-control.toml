@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/full-inference/no-hidden/no-connectome-control"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units/parameters-no-connectome-control.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Full-inference, fully-observed student (no-connectome control). Teacher's recurrent connectome is replaced with a fully-connected, per-cell-type-pair uniform matrix. Phase 2 learns the recurrent weights directly (no scaling factors) alongside the low-rank feedforward weights."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "full-inference-no-hidden"
+name = "no-connectome-control"
+entity = ""
+tags = ["full-inference", "no-hidden", "control", "no-connectome"]
+notes = "No-connectome control: teacher recurrent matrix replaced with fully-connected uniform; phase 2 learns recurrent weights directly. Tests how much specific wiring contributes vs per-pair statistics."

@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/varying-noise/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/noisy-weights/stability-check"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/stability-check/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Stability check: weight noise=0.3, no SF perturbation, multiple seeds. Tests whether weight noise alone causes instability."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "noisy-weights-stability"
+entity = ""
+tags = ["noisy-weights", "stability", "multiple-seeds"]
+notes = "Testing stability with no weight noise across different seeds"

@@ -1,0 +1,114 @@
+# Parameters for use with our teacher-student training regime
+# Adapted from Meissner-Bernard et al. (2025)
+
+# ========================
+# SIMULATION CONFIGURATION
+# ========================
+
+[simulation]
+seed = 43                              # Random seed for reproducibility
+dt = 1.0                               # ms - Time resolution of the simulation
+duration = 15000.0                     # ms - Total duration of the simulation
+chunk_size = 2500                      # Number of timesteps per chunk
+batch_size = 1                         # Number of batches
+plot_size = 4                          # Number of chunks to save for plotting
+
+# ==========================
+# FEEDFORWARD LAYER TOPOLOGY
+# ==========================
+
+[feedforward.cell_types]
+names = [ "mitral",]                   # Cell type names
+proportion = [ 1,]                     # Relative proportions of each cell type
+
+[feedforward.topology]
+num_neurons = 1500                     # Total number of input neurons
+conn_inputs = [ [ 0.05, 0.05,],]       # Connection probabilities to connectome layers
+
+[feedforward.weights]
+w_mu = [ [ 0.02, 0.01,],]              # Mean for input synapse strengths
+w_sigma = [ [ 0.05, 0.05,],]           # Std dev for input synapse strengths
+
+# ==========================
+# FEEDFORWARD LAYER ACTIVITY
+# ==========================
+
+[odours]
+tau = 700000.0                         # ms - OU process time constant for mean reversion
+temperature = 0.2                      # Softmax temperature for pattern mixing
+sigma = 5.0                            # Noise amplitude for OU process
+
+[odours.mitral]
+baseline_rate = 6.0                    # Hz - Baseline firing rate of mitral cells (Poisson process)
+baseline_variance = 1.5                # Vary mean of each odourant so it's not perfectly whitened
+modulation_rate = 9.0                  # Hz - Amount cells get modulated from baseline (positive direction)
+modulation_fraction = 0.1              # Proportion of cells that get modulated
+
+# ==========================
+# FEEDFORWARD LAYER SYNAPSES
+# ==========================
+
+[feedforward.synapses.mitral]
+names = [ "AMPA", "NMDA",]
+tau_rise = [ 0.1, 10.0,]               # ms - Synaptic rise time constants
+tau_decay = [ 5.0, 70.0,]              # ms - Synaptic decay time constants
+E_syn = [ 0.0, 0.0,]                   # mV - Synaptic reversal potentials
+g_bar = [ 6.0, 0.1,]                   # nS - Conductance waveform scaling factors
+g_clip = [ 40.0, 4.0,]                 # nS - Maximum summed conductance (saturation)
+
+# ========================
+# RECURRENT LAYER TOPOLOGY
+# ========================
+
+[recurrent.cell_types]
+names = [ "excitatory", "inhibitory",] # Cell type names
+proportion = [ 0.8, 0.2,]              # Relative proportions of each cell type
+
+[recurrent.topology]
+num_neurons = 5000                     # Total number of neurons in the network
+num_assemblies = 20                    # Number of assemblies in the network
+
+conn_within = [ [ 0.3, 0.3,], [ 0.4, 0.3,],] # Connection probabilities within assemblies
+
+conn_between = [ [ 0.05, 0.05,], [ 0.05, 0.05,],] # Connection probabilities between assemblies
+
+[recurrent.weights]
+w_mu = [ [ 0.02, 0.02,], [ 0.08, 0.08,],] # Mean synapse strengths
+w_sigma = [ [ 0.05, 0.05,], [ 0.05, 0.05,],] # Standard-deviation synapse strengths
+
+# =======================================
+# RECURRENT LAYER PHYSIOLOGY AND SYNAPSES
+# =======================================
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0                         # ms - Membrane time constant
+theta = -38.0                          # mV - Spike threshold voltage
+U_reset = -60.0                        # mV - Reset potential after spike
+E_L = -60.0                            # mV - Leak reversal potential
+g_L = 1.35                             # nS - Leak conductance
+tau_ref = 8.0                          # ms - Refractory period
+
+[recurrent.synapses.excitatory]
+names = [ "AMPA", "NMDA",]
+tau_rise = [ 0.1, 10.0,]               # ms - Synaptic rise time constants
+tau_decay = [ 5.0, 60.0,]              # ms - Synaptic decay time constants
+E_syn = [ 0.0, 0.0,]                   # mV - Synaptic reversal potentials
+g_bar = [ 4.0, 0.5,]                   # nS - Conductance waveform scaling factors
+g_clip = [ 40.0, 4.0,]                 # nS - Maximum summed conductance (saturation)
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0                         # ms - Membrane time constant
+theta = -45.0                          # mV - Spike threshold voltage
+U_reset = -60.0                        # mV - Reset voltage after spike
+E_L = -60.0                            # mV - Leak reversal potential
+g_L = 0.9                              # nS - Leak conductance
+tau_ref = 8.0                          # ms - Refractory period
+
+[recurrent.synapses.inhibitory]
+names = [ "GABA_A",]
+tau_rise = [ 0.5,]                     # ms - Synaptic rise time constants
+tau_decay = [ 6.0,]                    # ms - Synaptic decay time constants
+E_syn = [ -70.0,]                      # mV - Synaptic reversal potentials
+g_bar = [ 8.0,]                        # nS - Conductance waveform scaling factors
+g_clip = [ 80.0,]                      # nS - Maximum summed conductance (saturation)
+

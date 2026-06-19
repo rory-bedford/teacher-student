@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/scripts/train_em_algorithm.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/testing-strategies/em-algorithm"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/testing-strategies/parameters_em_algorithm.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "EM algorithm: clamped E-step with visible-only loss. Perturbed scaling factors."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-activity"
+name = "em-algorithm"
+entity = ""
+tags = ["hidden-activity", "testing-strategies", "em-algorithm", "visible-loss"]
+notes = "EM algorithm with clamped E-step and visible-only loss"

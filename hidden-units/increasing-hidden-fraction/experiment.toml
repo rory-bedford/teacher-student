@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-units/increasing-hidden-fraction"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/increasing-hidden-fraction/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Varying hidden unit fraction from 0.1 to 0.9 to test robustness to missing connectivity."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-units"
+entity = ""
+tags = ["hidden-units", "varying-fraction", "grid-search"]
+notes = "Grid search over hidden unit fractions from 10% to 90%"

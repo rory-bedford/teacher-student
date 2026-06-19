@@ -1,0 +1,137 @@
+# Parameters for full-inference/no-hidden-CONTROL training.
+#
+# Identical to parameters-no-hidden.toml, but the recurrent connectome is
+# shuffled within each cell-type-pair block (E-E, E-I, I-E, I-I permuted
+# independently). Per-pair distribution and sparsity are preserved; only
+# the specific wiring is destroyed. Used as a control to quantify how much
+# of the inference result depends on the teacher's actual connectivity vs
+# per-pair statistics alone.
+
+# ===========================
+# STUDENT MISMATCH CHALLENGES
+# ===========================
+
+[student_mismatch]
+input_type = "exact_spikes"     # "exact_spikes" | "constant" | "latents"
+firing_rate_hz = 6.0            # Poisson rate (only for input_type="constant")
+noise_frac = 0.3                # multiplicative log-normal weight noise (0 = off)
+missing_unit_fraction = 0.1     # fraction of neurons structurally removed (0 = off)
+shuffle_connectome = true       # per-cell-type-pair shuffle of the recurrent matrix
+
+# ========================
+# SIMULATION CONFIGURATION
+# ========================
+
+[simulation]
+seed = 44
+chunk_size = 200
+
+# ======================
+# TRAINING CONFIGURATION
+# ======================
+# Chunk-denominated knobs below are scaled by 250/200 = 1.25x relative
+# to the learn-ff-connectivity defaults so that a chunk's worth of real
+# time is preserved.
+
+[training]
+chunks_per_update = 10
+log_interval = 5
+checkpoint_interval = 50
+plot_size = 50
+mixed_precision = true
+weight_perturbation_variance = 0.5
+burn_in_chunks = 25
+#recurrent_smoothing_tau = 100.0
+
+# ===============
+# HYPERPARAMETERS
+# ===============
+
+[hyperparameters]
+beta1 = 0.95
+beta2 = 0.999
+van_rossum_tau_rise = 10.0
+van_rossum_tau_decay = 100.0
+loss_weight.van_rossum = 1.0
+ff_rank = 10
+
+# =====================================
+# Low-Rank FF Weights + Scaling
+# =====================================
+
+[gradient]
+epochs = 250
+surrgrad_scale = 16.0
+lr_weights = 1e-3
+lr_scaling = 1e-2
+lr_min_weights = 5e-4
+lr_min_scaling = 1e-3
+grad_clip_weights = 100.0
+grad_clip_scaling = 10.0
+
+# ==========================
+# FEEDFORWARD LAYER SYNAPSES
+# ==========================
+
+[feedforward.cell_types]
+names = ["mitral"]
+
+[feedforward.synapses.mitral]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+# =======================================
+# RECURRENT LAYER PHYSIOLOGY AND SYNAPSES
+# =======================================
+
+[recurrent.cell_types]
+names = ["excitatory", "inhibitory"]
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0
+theta = -38.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 1.35
+tau_ref = 8.0
+
+[recurrent.synapses.excitatory]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0
+theta = -45.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 0.9
+tau_ref = 8.0
+
+[recurrent.synapses.inhibitory]
+names = ["GABA_A"]
+tau_rise = [0.5]
+tau_decay = [6.0]
+E_syn = [-70.0]
+g_bar = [8.0]
+g_clip = [80.0]
+
+# ========================
+# SCALING FACTORS
+# ========================
+
+[scaling_factors]
+recurrent = [
+    [1.0, 1.0],
+    [1.0, 1.0],
+]
+feedforward = [
+    [1.0, 1.0],
+]

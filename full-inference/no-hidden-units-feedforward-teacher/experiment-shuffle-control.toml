@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/full-inference/no-hidden-feedforward-teacher/shuffle-connections-control"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/no-hidden-units-feedforward-teacher/parameters-shuffle-control.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Full-inference, fully-observed student (shuffle control). Same as the baseline but with the recurrent connectome shuffled within each cell-type-pair block, preserving per-pair distribution and sparsity but destroying the specific wiring."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity-feedforward/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity-feedforward/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "full-inference-no-hidden"
+name = "shuffle-connections-control"
+entity = ""
+tags = ["full-inference", "no-hidden", "control", "shuffled-connectome", "feedforward-teacher"]
+notes = "Shuffle control: recurrent connectome shuffled within each cell-type-pair block. Tests how much inference relies on the true wiring vs per-pair statistics alone."

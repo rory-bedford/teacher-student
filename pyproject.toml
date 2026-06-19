@@ -1,0 +1,28 @@
+# teacher-student — synthetic teacher-student experiments on conductance-based
+# spiking networks. A *project* repo that consumes the connectome-snns library
+# (network simulators, snn_runners, dataloaders, analysis, visualization) as an
+# editable path dependency; pin it to a git rev for archival reproducibility.
+#
+# No [build-system] -> uv treats this as a virtual project (deps installed, the
+# repo itself is not built/installed).
+[project]
+name = "teacher-student"
+version = "0.1.0"
+description = "Synthetic teacher-student experiments on conductance-based spiking networks."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["connectome-snns"]
+
+# Almost everything here trains spiking networks and needs torch. Sync with the
+# extra matching the machine (mirrors connectome-snns's own cpu / cu129 split):
+#   uv sync --extra cu129     # GPU
+#   uv sync --extra cpu       # CPU
+[project.optional-dependencies]
+cpu = ["connectome-snns[cpu]"]
+cu129 = ["connectome-snns[cu129]"]
+
+[tool.uv.sources]
+connectome-snns = { path = "../connectome-snns", editable = true }
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu129" }]]

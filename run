@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# Run a RoLi experiment via the connectome-snns reproducibility framework
+# (installed as a dependency, not vendored). Thin wrapper over the library's
+# run_experiment / run_grid_search entry points.
+#
+# Usage:
+#   ./run v0_linear_calcium/baseline/experiment.toml            # single run
+#   ./run --resume runs/v0_baseline/<dir> <config.toml>         # resume
+#   ./run --grid v0_linear_calcium/baseline/experiment.toml     # grid search
+#   ./run --no-commit <config.toml>                             # skip git check
+#
+# Grid search: if one path follows --grid it's the config (the grid script is
+# auto-detected from the experiment dir's run_grid_search.py); if two, the first
+# is the grid script and the second the config.
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+NO_COMMIT=""
+GRID=""
+RESUME_DIR=""
+POSITIONAL_ARGS=()
+EXPECT_RESUME_DIR=false
+
+for arg in "$@"; do
+    if $EXPECT_RESUME_DIR; then
+        RESUME_DIR="$arg"
+        EXPECT_RESUME_DIR=false
+        continue
+    fi
+    case $arg in
+        --no-commit) NO_COMMIT="--no-commit" ;;
+        --grid) GRID="1" ;;
+        --resume) EXPECT_RESUME_DIR=true ;;
+        *) POSITIONAL_ARGS+=("$arg") ;;
+    esac
+done
+
+if [ -n "$GRID" ]; then
+    if [ ${#POSITIONAL_ARGS[@]} -eq 1 ]; then
+        CONFIG_FILE="${POSITIONAL_ARGS[0]}"
+        EXPERIMENT_DIR="$(dirname "$CONFIG_FILE")"
+        if [ -f "$EXPERIMENT_DIR/run_grid_search.py" ]; then
+            GRID_SCRIPT="$EXPERIMENT_DIR/run_grid_search.py"
+        else
+            echo "ERROR: no run_grid_search.py in $EXPERIMENT_DIR (and none vendored here)"
+            exit 1
+        fi
+    else
+        GRID_SCRIPT="${POSITIONAL_ARGS[0]}"
+        CONFIG_FILE="${POSITIONAL_ARGS[1]}"
+    fi
+    uv run python "$GRID_SCRIPT" "$CONFIG_FILE"
+else
+    if [ ${#POSITIONAL_ARGS[@]} -eq 0 ]; then
+        echo "ERROR: experiment config file required"
+        echo "Usage: ./run path/to/experiment.toml"
+        exit 1
+    fi
+    CONFIG_FILE="${POSITIONAL_ARGS[0]}"
+    CMD=(uv run python -m run_experiment "$CONFIG_FILE")
+    if [ -n "$RESUME_DIR" ]; then CMD+=(--resume "$RESUME_DIR"); fi
+    if [ -n "$NO_COMMIT" ]; then CMD+=(--no-commit); fi
+    "${CMD[@]}"
+fi

@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/scripts/train_visible_driven.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/stability-check/visible-driven"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/stability-check/parameters_visible_driven.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Stability check: visible-driven training. No weight perturbation, scaling factors start at target."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-activity"
+name = "stability-visible-driven"
+entity = ""
+tags = ["hidden-activity", "stability-check", "visible-driven", "visible-loss"]
+notes = "Stability check with visible-driven training, visible-only loss"

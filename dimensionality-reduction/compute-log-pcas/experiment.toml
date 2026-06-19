@@ -1,0 +1,18 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/dimensionality-reduction/compute-log-pcas/compute_log_pcas.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/dimensionality-reduction/compute-log-pcas"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/dimensionality-reduction/compute-log-pcas/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Gaussian-smooth feedforward inputs, log-transform, then fit PCA across all batches/timesteps."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = false

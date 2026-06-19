@@ -1,0 +1,23 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/increasing-hidden-fraction/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/increasing-hidden-fraction"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/increasing-hidden-fraction/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Training student: clamped phase with visible-only loss. Perturbed scaling factors."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-activity"
+name = ""
+entity = ""
+tags = ["hidden-activity", "training-student", "clamped-e-step", "visible-loss"]
+notes = "Training student with clamped E-step and visible-only loss"

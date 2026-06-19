@@ -1,0 +1,109 @@
+# Parameters for visible-driven training
+# Layer 1: hidden recurrent, Layer 2: visible feedforward
+
+# ========================
+# SIMULATION CONFIGURATION
+# ========================
+
+[simulation]
+seed = 44
+chunk_size = 160
+hidden_cell_fraction = 0.5
+
+# ======================
+# TRAINING CONFIGURATION
+# ======================
+
+[training]
+total_epochs = 50
+chunks_per_update = 6
+log_interval = 6
+checkpoint_interval = 48
+plot_size = 60
+mixed_precision = true
+weight_perturbation_variance = 0.5
+burn_in_chunks = 31
+
+# ===============
+# HYPERPARAMETERS
+# ===============
+
+[hyperparameters]
+beta1 = 0.95
+beta2 = 0.999
+grad_norm_clip = 5.0
+grad_norm_clip_ff = 3.5
+eps = 1e-4
+surrgrad_scale = 5.0
+learning_rate = 8e-3
+lr_min = 5e-4
+van_rossum_tau_rise = 10.0
+van_rossum_tau_decay = 100.0
+loss_weight.van_rossum = 1.0
+
+# ==========================
+# FEEDFORWARD LAYER SYNAPSES
+# ==========================
+
+[feedforward.cell_types]
+names = ["mitral"]
+
+[feedforward.synapses.mitral]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+# =======================================
+# RECURRENT LAYER PHYSIOLOGY AND SYNAPSES
+# =======================================
+
+[recurrent.cell_types]
+names = ["excitatory", "inhibitory"]
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0
+theta = -38.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 1.35
+tau_ref = 8.0
+
+[recurrent.synapses.excitatory]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.4]
+g_clip = [40.0, 4.0]
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0
+theta = -45.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 0.9
+tau_ref = 8.0
+
+[recurrent.synapses.inhibitory]
+names = ["GABA_A"]
+tau_rise = [0.5]
+tau_decay = [6.0]
+E_syn = [-70.0]
+g_bar = [8.0]
+g_clip = [80.0]
+
+# ========================
+# SCALING FACTORS
+# ========================
+
+[scaling_factors]
+recurrent = [
+    [1.0, 1.0],
+    [1.0, 1.0],
+]
+feedforward = [
+    [1.0, 1.0],
+]

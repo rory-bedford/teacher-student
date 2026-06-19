@@ -1,0 +1,19 @@
+# Parameters for compute-nmfs
+# Poisson NMF (beta=1) directly on raw spike trains — no pre-smoothing needed.
+
+[nmf]
+# Number of NMF components (rank of the factorisation).
+rank = 100
+
+# Beta-divergence loss: 2=Euclidean, 1=KL/Poisson, 0=Itakura-Saito.
+# beta=1 is the principled noise model for spike count data.
+beta = 1
+
+# Maximum number of multiplicative update iterations.
+max_iter = 500
+
+# Convergence tolerance on the loss.
+tol = 1.0e-4
+
+# Random seed for reproducible initialisation.
+random_state = 0

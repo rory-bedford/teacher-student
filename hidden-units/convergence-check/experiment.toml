@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-units/convergence-check"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-units/convergence-check/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Convergence check with perturbation, fixed hidden_unit_fraction=0.1, multiple seeds."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "hidden-units-convergence"
+entity = ""
+tags = ["hidden-units", "convergence", "multiple-seeds"]
+notes = "Testing convergence from different random initializations with 10% hidden neurons"

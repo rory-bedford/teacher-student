@@ -1,0 +1,22 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/inference/inference.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/noisy-weights/inference"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/noisy-weights/inference/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Inference with scaling factors at target values (baseline performance). Cell-type-specific weight perturbations."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "noisy-weights-inference"
+entity = ""
+tags = ["noisy-weights", "inference", "correct-student"]
+notes = "Baseline performance with scaling factors at target (no learning)"

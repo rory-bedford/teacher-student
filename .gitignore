@@ -1,0 +1,11 @@
+# Outputs live in the dp-simulations tree (read-only provenance), surfaced here
+# via the `runs` symlink — never version-controlled.
+/runs
+
+# Python / uv / Jupyter cruft
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.ipynb_checkpoints/
+wandb/
