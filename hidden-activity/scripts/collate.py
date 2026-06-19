@@ -2,7 +2,7 @@
 
 import torch
 
-from dataloaders.supervised import SpikeData
+from connectome_snns.dataloaders.supervised import SpikeData
 
 
 class VisibleTargetCollate:

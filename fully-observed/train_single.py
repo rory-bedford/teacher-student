@@ -14,28 +14,28 @@ from torch.utils.data import DataLoader
 from torch.amp import GradScaler
 from tqdm import tqdm
 
-from dataloaders.supervised import (
+from connectome_snns.dataloaders.supervised import (
     ExactFFDataset,
     CyclicSampler,
     single_neuron_collate_fn,
 )
-from network_simulators.feedforward_conductance_based.simulator import (
+from connectome_snns.network_simulators.feedforward_conductance_based.simulator import (
     FeedforwardConductanceLIFNetwork,
 )
-from network_simulators.projections import ScalingFactorProjection
-from training_utils.losses import VanRossumLoss
-from training_utils import load_checkpoint
-from configs import (
+from connectome_snns.network_simulators.projections import ScalingFactorProjection
+from connectome_snns.training_utils.losses import VanRossumLoss
+from connectome_snns.training_utils import load_checkpoint
+from connectome_snns.configs import (
     DATALOADER_KWARGS,
     StudentSimulationConfig,
     StudentTrainingConfig,
     StudentHyperparameters,
 )
-from configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
-from snn_runners import SNNTrainer
+from connectome_snns.configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
+from connectome_snns.snn_runners import SNNTrainer
 import toml
 import wandb
-from visualization.neuronal_dynamics import plot_spike_trains
+from connectome_snns.visualization.neuronal_dynamics import plot_spike_trains
 
 
 def main(

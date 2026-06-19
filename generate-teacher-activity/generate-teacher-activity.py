@@ -11,21 +11,21 @@ import torch
 import toml
 import zarr
 import matplotlib.pyplot as plt
-from synthetic_connectome import topology_generators, weight_assigners, cell_types
-from dataloaders.unsupervised import (
+from connectome_snns.synthetic_connectome import topology_generators, weight_assigners, cell_types
+from connectome_snns.dataloaders.unsupervised import (
     InhomogeneousPoissonSpikeDataLoader,
 )
-from dataloaders.rate_processes import OrnsteinUhlenbeckRateProcess
-from dataloaders.odourants import (
+from connectome_snns.dataloaders.rate_processes import OrnsteinUhlenbeckRateProcess
+from connectome_snns.dataloaders.odourants import (
     generate_odour_firing_rates,
 )
-from network_simulators.conductance_based.simulator import ConductanceLIFNetwork
-from network_simulators.projections import make_frozen_projections
-from snn_runners import SNNInference
-from configs import SimulationConfig
-from configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
-from configs.odours import OdourInputConfig
-from visualization.dashboards import (
+from connectome_snns.network_simulators.conductance_based.simulator import ConductanceLIFNetwork
+from connectome_snns.network_simulators.projections import make_frozen_projections
+from connectome_snns.snn_runners import SNNInference
+from connectome_snns.configs import SimulationConfig
+from connectome_snns.configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
+from connectome_snns.configs.odours import OdourInputConfig
+from connectome_snns.visualization.dashboards import (
     create_connectivity_dashboard,
     create_activity_dashboard,
     create_assembly_activity_dashboard,

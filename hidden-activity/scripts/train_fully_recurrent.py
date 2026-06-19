@@ -26,24 +26,24 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent))  # scripts/
 sys.path.insert(0, str(Path(__file__).parent.parent))  # hidden-activity/
 
-from configs import (
+from connectome_snns.configs import (
     DATALOADER_KWARGS,
     StudentHyperparameters,
     StudentSimulationConfig,
 )
-from configs.conductance_based import FeedforwardLayerConfig, RecurrentLayerConfig
+from connectome_snns.configs.conductance_based import FeedforwardLayerConfig, RecurrentLayerConfig
 from collate import VisibleTargetCollate
-from dataloaders.supervised import CyclicSampler, ExactFFDataset
-from network_simulators.conductance_based.simulator import (
+from connectome_snns.dataloaders.supervised import CyclicSampler, ExactFFDataset
+from connectome_snns.network_simulators.conductance_based.simulator import (
     ConductanceLIFNetwork,
 )
-from network_simulators.projections import (
+from connectome_snns.network_simulators.projections import (
     make_scaling_factor_projections,
 )
-from snn_runners import SNNTrainer, EvolutionarySearch
-from training_utils import AsyncLogger
-from training_utils.losses import VanRossumLoss
-from visualization import plot_spike_trains
+from connectome_snns.snn_runners import SNNTrainer, EvolutionarySearch
+from connectome_snns.training_utils import AsyncLogger
+from connectome_snns.training_utils.losses import VanRossumLoss
+from connectome_snns.visualization import plot_spike_trains
 
 
 class VisibleOnlyLoss:

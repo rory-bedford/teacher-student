@@ -61,7 +61,7 @@ else
         exit 1
     fi
     CONFIG_FILE="${POSITIONAL_ARGS[0]}"
-    CMD=(uv run python -m run_experiment "$CONFIG_FILE")
+    CMD=(uv run python -m connectome_snns.run_experiment "$CONFIG_FILE")
     if [ -n "$RESUME_DIR" ]; then CMD+=(--resume "$RESUME_DIR"); fi
     if [ -n "$NO_COMMIT" ]; then CMD+=(--no-commit); fi
     "${CMD[@]}"

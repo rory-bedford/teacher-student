@@ -11,29 +11,29 @@ Same hidden-unit masking logic as train.py.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from dataloaders.supervised import (
+from connectome_snns.dataloaders.supervised import (
     ExactFFDataset,
     CyclicSampler,
     SpikeData,
 )
-from network_simulators.feedforward_conductance_based.simulator import (
+from connectome_snns.network_simulators.feedforward_conductance_based.simulator import (
     FeedforwardConductanceLIFNetwork,
 )
-from network_simulators.projections import FrozenProjection
+from connectome_snns.network_simulators.projections import FrozenProjection
 import torch
 import functools
 from torch.utils.data import DataLoader
-from training_utils.losses import VanRossumLoss
-from configs import (
+from connectome_snns.training_utils.losses import VanRossumLoss
+from connectome_snns.configs import (
     DATALOADER_KWARGS,
     StudentSimulationConfig,
     StudentTrainingConfig,
     StudentHyperparameters,
 )
-from configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
+from connectome_snns.configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
 import toml
 from tqdm import tqdm
-from visualization.neuronal_dynamics import plot_spike_trains
+from connectome_snns.visualization.neuronal_dynamics import plot_spike_trains
 
 
 def mask_hidden_units(

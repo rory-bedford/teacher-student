@@ -27,18 +27,18 @@ import json
 
 import numpy as np
 from pathlib import Path
-from dataloaders.supervised import (
+from connectome_snns.dataloaders.supervised import (
     ExactFFDataset,
     CyclicSampler,
     SpikeData,
 )
-from network_simulators.feedforward_conductance_based.simulator import (
+from connectome_snns.network_simulators.feedforward_conductance_based.simulator import (
     FeedforwardConductanceLIFNetwork,
 )
-from network_simulators.conductance_based.simulator import (
+from connectome_snns.network_simulators.conductance_based.simulator import (
     ConductanceLIFNetwork,
 )
-from network_simulators.projections import (
+from connectome_snns.network_simulators.projections import (
     FrozenProjection,
     make_frozen_projections,
     make_frozen_chunked_ff_projections,
@@ -48,21 +48,21 @@ import torch
 from torch.utils.data import DataLoader
 from torch.amp import GradScaler
 from tqdm import tqdm
-from training_utils.losses import VanRossumLoss
-from training_utils import AsyncLogger, load_checkpoint
-from configs import (
+from connectome_snns.training_utils.losses import VanRossumLoss
+from connectome_snns.training_utils import AsyncLogger, load_checkpoint
+from connectome_snns.configs import (
     StudentSimulationConfig,
     EMTrainingConfig,
     StudentHyperparameters,
 )
-from configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
-from snn_runners import SNNTrainer, EvolutionarySearch
-from snn_runners.inference_runner import SNNInference
+from connectome_snns.configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
+from connectome_snns.snn_runners import SNNTrainer, EvolutionarySearch
+from connectome_snns.snn_runners.inference_runner import SNNInference
 import toml
 import wandb
 import zarr
 import shutil
-from visualization import plot_spike_trains
+from connectome_snns.visualization import plot_spike_trains
 
 
 def _rebake_frozen_projections(

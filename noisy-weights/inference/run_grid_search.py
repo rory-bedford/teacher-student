@@ -13,7 +13,7 @@ from copy import deepcopy
 import numpy as np
 
 
-from utils.experiment_runners import run_custom_search
+from connectome_snns.utils.experiment_runners import run_custom_search
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 
