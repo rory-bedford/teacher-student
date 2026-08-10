@@ -19,6 +19,7 @@ Training scripts live in `scripts/` and are shared across sub-experiments. Each 
 | `stability-check/` | Scaling factors start at the correct values (no perturbation) — tests whether training stays stable at the optimum |
 | `increasing-hidden-fraction/` | Grid search over hidden fraction (0.1–0.9) with clamped E-step |
 | `convergence-check/` | Same setup as testing-strategies but with multiple random seeds — tests convergence reliability |
+| `bias-check/` | Inference only: is the loss at the correct scaling factors higher than at the minimum training found? Pilot for a full scaling-factor sweep |
 
 ## Parameters
 
@@ -34,6 +35,9 @@ Training scripts live in `scripts/` and are shared across sub-experiments. Each 
 
 # Run the hidden-fraction grid search
 ./run --grid experiments/teacher-student/hidden-activity/increasing-hidden-fraction/experiment.toml
+
+# Bias check (inference only, reads the increasing-hidden-fraction runs)
+./run hidden-activity/bias-check/experiment.toml
 ```
 
 ## Analysis

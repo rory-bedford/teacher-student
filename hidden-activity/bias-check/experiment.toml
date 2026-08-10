@@ -1,0 +1,28 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/bias-check/compute_inference_losses.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/bias-check"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/hidden-activity/bias-check/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Inference-only loss for learnt vs correct scaling factors, per hidden cell fraction."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/hidden-activity/increasing-hidden-fraction"
+strategy = "symlink"
+name = "training_runs"
+
+[wandb]
+enabled = false
+project = "hidden-activity"
+name = ""
+entity = ""
+tags = ["hidden-activity", "bias-check", "inference"]
+notes = "Inference-only comparison of learnt-minimum vs correct scaling factors"
