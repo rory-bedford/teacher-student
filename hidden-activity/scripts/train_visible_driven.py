@@ -37,10 +37,15 @@ from connectome_snns.configs import (
     StudentHyperparameters,
     StudentSimulationConfig,
 )
-from connectome_snns.configs.conductance_based import FeedforwardLayerConfig, RecurrentLayerConfig
+from connectome_snns.configs.conductance_based import (
+    FeedforwardLayerConfig,
+    RecurrentLayerConfig,
+)
 from collate import VisibleDrivenCollate
 from connectome_snns.dataloaders.supervised import CyclicSampler, ExactFFDataset
-from connectome_snns.network_simulators.conductance_based.simulator import ConductanceLIFNetwork
+from connectome_snns.network_simulators.conductance_based.simulator import (
+    ConductanceLIFNetwork,
+)
 from connectome_snns.network_simulators.feedforward_conductance_based.simulator import (
     FeedforwardConductanceLIFNetwork,
 )
@@ -406,13 +411,15 @@ def main(input_dir, output_dir, params_file, wandb_config=None, resume_from=None
             )
 
     # Share the FF scaling factor parameters across layers: layer 2 reuses
-    # the same ScalingFactorProjection objects as layer 1 ff_projections for
-    # matching (src_name, tgt_name) pairs. Because Projections own their
-    # nn.Parameter, sharing the Python object shares the param automatically.
+    # layer 1's ``log_sf`` nn.Parameter for matching (src_name, tgt_name) pairs.
+    # Only the parameter is tied, not the Projection object — the two layers
+    # hold different connectome blocks for the same pair (layer 1 targets the
+    # hidden neurons, layer 2 the visible ones), so sharing the object would
+    # give layer 2 layer 1's weights and mismatched per-cell-type shapes.
     if share_ff_scaling:
         for key, proj in layer1_ff_projections.items():
             if key in layer2_projections:
-                layer2_projections[key] = proj
+                layer2_projections[key].log_sf = proj.log_sf
 
     # ==============================================
     # Build Two-Layer Model

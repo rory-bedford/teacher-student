@@ -13,12 +13,17 @@ full-inference/
 │   ├── experiment.toml
 │   ├── parameters.toml
 │   └── analysis.ipynb
-└── no-hidden-units/   # fully-observed student (learn-ff-connectivity pipeline)
-    ├── train.py
-    ├── experiment.toml         # main run
+├── no-hidden-units/   # fully-observed student (learn-ff-connectivity pipeline)
+│   ├── train.py
+│   ├── experiment.toml         # main run
+│   ├── parameters.toml
+│   ├── experiment-control.toml # shuffled-connectome control
+│   ├── parameters-control.toml
+│   └── analysis.ipynb
+└── bias-check/        # inference only: is the learnt scaling-factor shrinkage
+    ├── compute_inference_losses.py   #  where the loss actually wants to be?
+    ├── experiment.toml
     ├── parameters.toml
-    ├── experiment-control.toml # shuffled-connectome control
-    ├── parameters-control.toml
     └── analysis.ipynb
 ```
 
@@ -110,3 +115,24 @@ on full connectivity.
 
 See each sub-experiment's `analysis.ipynb`. Both notebooks read their
 sibling `experiment.toml` via `load_experiment_config("experiment.toml")`.
+
+## bias-check/
+
+Diagnostic, no training. Learnt scaling factors come out systematically below
+their targets. This runs a completed reference run forward at its learnt scaling
+factors and again with only the recurrent scaling factors replaced by their
+targets, holding the learnt low-rank feedforward block fixed in both.
+
+If `correct` gives the lower loss the shrinkage is a training bias; if `learnt`
+does, the objective's minimum genuinely sits below the targets — which is the
+expected outcome whenever `noise_frac` or `missing_unit_fraction` are non-zero,
+since no scaling factor can undo those.
+
+Weights are read from the reference run's own `initial_state/`, `final_state/`
+and `targets/` snapshots rather than re-derived from the teacher. That matters:
+input symlinks resolve by path, so regenerating `teacher-activity` silently
+changes what a historical run appears to have trained on.
+
+```bash
+./run full-inference/bias-check/experiment.toml
+```

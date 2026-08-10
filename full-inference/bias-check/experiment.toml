@@ -1,0 +1,41 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/bias-check/compute_inference_losses.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/full-inference/bias-check/no-hidden-baseline"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/full-inference/bias-check/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+description = "Inference-only loss at the learnt vs the correct recurrent scaling factors, for full-inference/no-hidden."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+# Reference run whose learnt scaling factors are evaluated. Its own
+# initial_state/final_state snapshots supply the weights, so the teacher
+# connectome is not re-derived here. Either a single run directory or a directory
+# of runs — the script accepts both, so swap `path` for whichever you want:
+#
+#   .../full-inference/no-hidden/baseline      noise 0.2 + 10% missing units;
+#                                              targets are NOT the true model, so
+#                                              a gap measures how far mismatch
+#                                              moves the optimum
+#   .../full-inference/no-hidden/no-mismatch   scaling-factor perturbation only;
+#                                              targets ARE the true model, so any
+#                                              shrinkage is a training bias
+#   .../full-inference/no-hidden/noise-sweep   the whole grid at once (a directory
+#                                              of runs), shrinkage vs noise level
+#
+# Remember to change `output_dir` above too, or the framework will prompt to
+# overwrite the previous bias-check results.
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/full-inference/no-hidden/baseline"
+strategy = "symlink"
+name = "training_runs"
+
+[wandb]
+enabled = false
+project = "full-inference"
+name = ""
+entity = ""
+tags = ["full-inference", "bias-check", "inference"]
+notes = "Inference-only comparison of learnt vs correct recurrent scaling factors"
