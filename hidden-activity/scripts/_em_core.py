@@ -468,7 +468,7 @@ def run_estep_free(
     temp_output_spikes = temp_zarr_root["output_spikes"]
 
     final_zarr_root = zarr.open_group(output_path, mode="w")
-    hidden_spikes_only = final_zarr_root.create_dataset(
+    hidden_spikes_only = final_zarr_root.create_array(
         "output_spikes",
         shape=(batch_size, temp_output_spikes.shape[1], n_hidden),
         dtype=temp_output_spikes.dtype,

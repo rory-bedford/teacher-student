@@ -292,12 +292,8 @@ def main(input_dir, output_dir, params_file):
     # Must be done AFTER inference_runner.run() since SNNInference opens zarr
     # with mode="w", which would overwrite anything saved beforehand.
     root = zarr.open_group(zarr_path, mode="a")
-    root.create_dataset(
-        "odourant_patterns",
-        shape=input_firing_rates_odour.shape,
-        dtype=input_firing_rates_odour.dtype,
-        data=input_firing_rates_odour,
-    )
+    # zarr>=3.2: create_array rejects `data` alongside `shape`/`dtype`.
+    root.create_array("odourant_patterns", data=input_firing_rates_odour)
     print("✓ Saved odourant patterns to zarr")
     print(f"  - odourant_patterns: {input_firing_rates_odour.shape}")
 
