@@ -203,6 +203,9 @@ def evaluate_scaling_factors(
             cell_type_names=[cp["name"] for cp in recurrent_cell_params],
             ff_cell_type_names=[cp["name"] for cp in feedforward_cell_params],
             scaling_factors=sf.astype(np.float32),
+            # Recurrent inputs are the full population (visible teacher +
+            # inferred hidden); only the outputs are visible-only.
+            rec_source_cell_type_indices=cell_type_indices,
         ),
         cell_type_indices=cell_type_indices[visible_indices],
         cell_type_indices_FF=concatenated_cell_type_indices,

@@ -1185,6 +1185,9 @@ def run_em_training(
             cell_type_names=rec_output_cell_type_names,
             ff_cell_type_names=ff_input_cell_type_names,
             init_sf=1.0,
+            # Recurrent inputs are always the full population; for
+            # loss_type="visible" the outputs are a visible-only subset.
+            rec_source_cell_type_indices=cell_type_indices,
         )
         with torch.no_grad():
             for (src_name, tgt_name), proj in projs.items():
@@ -1470,6 +1473,8 @@ def run_em_training(
             cell_type_names=rec_output_cell_type_names,
             ff_cell_type_names=ff_input_cell_type_names,
             scaling_factors=concatenated_scaling_factors.astype(np.float32),
+            # Recurrent inputs are the full population; outputs are visible-only.
+            rec_source_cell_type_indices=cell_type_indices,
         )
         cma_mstep_model = FeedforwardConductanceLIFNetwork(
             dt=dt,
