@@ -1,72 +1,93 @@
 # Project Instructions — teacher-student
 
-Synthetic teacher-student experiments on conductance-based spiking networks. This
-is a **project repo that depends on the `connectome-snns` library** (editable path
-dependency at `../connectome-snns`) for network simulators, snn_runners,
-dataloaders, analysis, and visualization. It is not a library itself.
+Synthetic teacher-student experiments on conductance-based spiking networks, organised
+as the figures of the Bernstein talk. This is a **project repo that depends on the
+`connectome-snns` library** (editable path dependency at `../connectome-snns`) for
+network simulators, snn_runners, dataloaders, analysis, and visualization. It is not a
+library itself.
 
 ## Python Environment
 
-Always use `uv run python`, never bare `python`/`python3`. Experiments import from
-the library with flat names (`from network_simulators...`, `from snn_runners...`,
-`from utils.reproducibility import ...`, `from visualization import ...`). Torch is
-needed for nearly everything — sync with `--extra cu129` (GPU) or `--extra cpu`.
+Always use `uv run python`, never bare `python`/`python3`. Import the library by its
+namespace (`from connectome_snns.network_simulators...`,
+`from connectome_snns.utils.reproducibility import ...`). Torch is needed for nearly
+everything — sync with `--extra cu129` (GPU) or `--extra cpu`. `ruff` is not in the
+environment; use `uvx ruff`.
 
 ## Repository Structure
 
 ```
-generate-teacher-activity/   # makes the teacher network + spike data (inputs)
-fully-observed/  noisy-weights/  hidden-activity/  hidden-units/
-inferring-inputs/  full-inference/  dimensionality-reduction/
-runs                         # symlink -> dp-simulations (results; read-only)
-run                          # wrapper over the connectome-snns run framework
+METHODS.md  PRIORITY.md  TODO.md   # shared methods, run priority, deferred work — read first
+generate-teacher-activity/         # makes the teacher network + spike data (the inputs)
+common/                            # student, training, evaluation, plotting shared by all figures
+fig01-full-reconstruction/  fig02-controls/  fig03-observed-fraction/
+fig04-reconstruction-errors/  fig05-weight-noise/  fig06-learnt-feedforward/
+archive/                           # previous experiments and figures — reference only
+run                                # wrapper over the connectome-snns run framework
 ```
 
-Sub-areas nest further (e.g. `noisy-weights/convergence-check/`). Each leaf has
-`experiment.toml`, `parameters.toml`, a script (`train.py` / `compute_*.py`),
-`analysis.ipynb`, and often `run_grid_search.py`.
+Each figure folder has `README.md`, `experiment.toml`, `parameters.toml`, `train.py`
+(a thin wrapper around `common.training`), `run_grid_search.py`, `analysis.py` and
+`figures.py`. What a figure trains is set entirely by `parameters.toml` — the
+`[student]` table selects the manipulation (see `common/structure.py`).
 
-## Running Experiments
+`archive/` is not runnable as-is: its configs contain absolute paths to where the
+scripts used to live and point at the old `dp-simulations/` tree.
+
+## Data
+
+**All data lives in `../bernstein`** (`/tachyon/groups/scratch/gzenke/bedfrory/bernstein`),
+never in this repo and with no symlink to it. The teacher is `bernstein/teacher-activity/`
+(its config is `generate-teacher-activity/experiment.toml`); each figure writes to
+`bernstein/<figure-folder>/<run>/`. The old results in `dp-simulations/` belong to the
+archive. W&B project: `bernstein`, one group per figure.
+
+## Workflow for a figure
 
 ```bash
-./run noisy-weights/convergence-check/experiment.toml          # single run
-./run --grid noisy-weights/convergence-check/experiment.toml   # grid search
-./run --resume runs/<dir> <config.toml>                        # resume
-./run --no-commit <config.toml>                                # skip git check (dev)
+./run --grid fig01-full-reconstruction/experiment.toml     # train (commit first)
+uv run python fig01-full-reconstruction/analysis.py         # held-out evaluation -> CSVs
+uv run python fig01-full-reconstruction/figures.py          # CSVs -> figNN.svg
 ```
 
-The framework reads `experiment.toml`, makes a timestamped dir under `output_dir`,
-snapshots params + commit hash, symlinks inputs, and calls the script's
-`main(input_dir, output_dir, params_file, wandb_config=None, resume_from=None)`.
-Scripts never construct their own paths.
+- Grid searches run from a git worktree snapshot, so code must be committed (`.toml` and
+  `run_grid_search.py` changes are allowed dirty).
+- `analysis.py` evaluates every completed run on a held-out teacher trial (cached per
+  run as `evaluation.npz`) and writes only the CSVs the figure needs, next to itself.
+  Figures 2–5 read Figure 1's runs as their baseline condition.
+- `figures.py` reads only the CSVs. No notebooks.
 
 ## What you can and cannot run
 
-**Never run** experiments or anything that writes outputs: `./run`, training
-scripts, grid searches. The reproducibility framework runs these.
+**Exception (granted 2026-09-16):** Claude may launch and babysit `./run` and
+`./run --grid` for the `fig*` folders when the user asks — including pilots — and run
+their `analysis.py` / `figures.py` on finished runs. Report failures rather than editing
+code mid-grid; code changes need the user's agreement. Anything else that writes to
+`../bernstein` (teacher regeneration, deleting or overwriting runs) still needs explicit
+permission.
 
-**OK to run** for verification: small import checks, syntax checks, tiny smoke
-tests.
+**OK to run** for verification: import/syntax checks and tiny smoke tests that write
+to the scratchpad (e.g. training on a few chunks of a sliced teacher).
 
 ## Results are read-only
 
-Outputs live in the `dp-simulations/` tree (surfaced via `runs/`). It holds
-provenance (param snapshot, commit hash, symlinked inputs) and is read-only —
-never edit files under `runs/` / `dp-simulations/`. Patch only with explicit user
-confirmation.
+`../bernstein` (and the archived `dp-simulations/`) hold provenance — param snapshot,
+commit hash, symlinked inputs — and are read-only. Never edit files there; patch only
+with explicit user confirmation.
 
 ## Conventions
 
-- **No analysis in scripts.** Training/compute scripts save raw outputs only;
-  metrics/plots live in `analysis.ipynb`.
-- **Imports at the top** (first notebook cell; module level in scripts);
-  capitalised constants right after.
+- **No analysis in training scripts.** Training saves raw outputs only; metrics live in
+  `analysis.py`, plotting in `figures.py`.
+- **Naming:** observed / unobserved and reconstructed / unreconstructed. Never "hidden",
+  "full inference" or "unreconstructed fraction" in names, titles or labels.
+- **Imports at the top** (module level); capitalised constants right after.
 - **All plotting via `visualization`** (from connectome-snns) — never hardcode
-  colours.
-- **No hardcoded paths in notebooks** — read paths from
+  colours. Fixed per-condition colours (`FULL_CONNECTOME_COLOR`, `OBSERVED_COLOR`, …)
+  live in `connectome_snns.visualization.colors`.
+- **No hardcoded data paths in analysis/figure scripts** — read them from
   `load_experiment_config("experiment.toml")`.
-- After editing `.py`/notebooks: `uv run ruff check --fix <file>` then
-  `uv run ruff format <file>`.
+- After editing `.py`: `uvx ruff check --fix <file>` then `uvx ruff format <file>`.
 - Commits: one-line gitmoji subject, no Co-Authored-By.
 
 ## Editing the library

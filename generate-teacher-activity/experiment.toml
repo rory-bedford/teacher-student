@@ -4,9 +4,9 @@
 # =================
 
 script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/generate-teacher-activity/generate-teacher-activity.py"
-output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/teacher-activity-test"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity"
 parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/generate-teacher-activity/parameters.toml"
-log_file = "/tachyon/groups/scratch/gzenke/bedfrory/dp-simulations/Dp_simulator_log.jsonl"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
 description = "Generating teacher activity with Ornstein-Uhlenbeck modulation of assembly-targeted odourants for training student network"
 
 # ===================

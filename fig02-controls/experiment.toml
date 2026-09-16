@@ -1,0 +1,24 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig02-controls/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig02-controls"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig02-controls/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
+description = "Figure 2: connectivity controls (learnt recurrence, shuffle weights, configuration-model rewire) at the Figure 1 configuration."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "bernstein"
+name = ""
+entity = ""
+group = "fig02-controls"
+tags = ["fig02", "controls", "ff-known", "obs-10", "recur-100", "wn-0"]
+notes = "Connectivity controls at 10% observed."

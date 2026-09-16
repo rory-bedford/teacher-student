@@ -19,7 +19,7 @@ The OU process controls a softmax over assembly-specific odourant patterns, crea
 ## Usage
 
 ```bash
-./run experiments/teacher-student/generate-teacher-activity/experiment.toml
+./run generate-teacher-activity/experiment.toml
 ```
 
 This must be run before any other teacher-student experiment, as they all depend on its output.

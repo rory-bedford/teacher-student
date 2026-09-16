@@ -1,6 +1,5 @@
-# Outputs live in the dp-simulations tree (read-only provenance), surfaced here
-# via the `runs` symlink — never version-controlled.
-/runs
+# Data lives in ../bernstein, never in this repo.
+.ruff_cache/
 
 # Python / uv / Jupyter cruft
 __pycache__/

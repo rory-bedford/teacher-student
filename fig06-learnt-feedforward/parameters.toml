@@ -1,0 +1,107 @@
+# Figure 6 — unreconstructed inputs with learnt weights.
+#
+# A random segment S of the 6500 pooled units (1500 feedforward + 5000 recurrent) is
+# reconstructed: its connectivity is known (perturbed, with 6 trainable scaling factors
+# as in Figures 1-5) and its recurrent units are simulated. Every unit outside S keeps
+# its known activity and is injected through learnt low-rank weights onto all modelled
+# neurons. A fixed 50% recorded pool decides which modelled neurons enter the loss.
+#
+# Training recipe: the archived ff-learnt run (full-inference/hidden-units, surrgrad-10)
+# — optimiser, schedule, epochs, rank, learnt-weight L1 and unobserved-rate penalties.
+
+[simulation]
+seed = 44                              # overridden per run by run_grid_search.py
+chunk_size = 100
+
+[student]
+reconstructed_fraction = 0.5           # overridden per run
+recorded_pool_fraction = 0.5           # fixed recorded pool over the 5000 recurrent neurons
+
+[training]
+total_epochs = 100                     # archived 500; loss is 98% converged by ~90 (see README)
+chunks_per_update = 10
+log_interval = 10
+checkpoint_interval = 100
+plot_size = 100
+burn_in_chunks = 50
+weight_perturbation_variance = 0.5
+# fp32 (the archived run used fp16): see fig01-full-reconstruction/parameters.toml.
+mixed_precision = false
+
+[optimiser]
+surrgrad_scale = 10.0
+low_rank = 1                           # rank of each learnt source-type x target-type block
+lr_weights = 1e-3
+lr_min_weights = 5e-4
+grad_clip_weights = 0.8
+lr_scaling = 1e-3
+lr_min_scaling = 1e-4
+grad_clip_scaling = 0.8
+beta1 = 0.95
+beta2 = 0.999
+eps = 1e-8                             # the archived eps = 1e-4 was never applied
+
+[loss]
+van_rossum_tau_rise = 10.0
+van_rossum_tau_decay = 100.0
+van_rossum = 1.0
+hidden_rate_mean = 0.5                 # unobserved population mean rate vs observed teacher, per type
+hidden_rate_std = 0.5                  # unobserved population rate SD vs observed teacher, per type
+learnt_weight_l1 = 5000.0              # mean(exp(U V)) per learnt block
+
+[evaluation]
+burn_in_ms = 2000.0
+fluctuation_tau_ms = 50.0
+n_floor_permutations = 5
+
+# ==========================================================================
+# PHYSIOLOGY — copied verbatim from the teacher (bernstein/teacher-activity).
+# Do not edit independently: scaling factor 1.0 is only the true model if the
+# student's physiology is the teacher's.
+# ==========================================================================
+
+[feedforward.cell_types]
+names = ["mitral"]
+
+[feedforward.synapses.mitral]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [6.0, 0.1]
+g_clip = [40.0, 4.0]
+
+[recurrent.cell_types]
+names = ["excitatory", "inhibitory"]
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0
+theta = -38.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 1.35
+tau_ref = 8.0
+
+[recurrent.synapses.excitatory]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 60.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.5]
+g_clip = [40.0, 4.0]
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0
+theta = -45.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 0.9
+tau_ref = 8.0
+
+[recurrent.synapses.inhibitory]
+names = ["GABA_A"]
+tau_rise = [0.5]
+tau_decay = [6.0]
+E_syn = [-70.0]
+g_bar = [8.0]
+g_clip = [80.0]

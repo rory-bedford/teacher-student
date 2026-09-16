@@ -1,0 +1,24 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig05-weight-noise/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig05-weight-noise"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig05-weight-noise/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
+description = "Figure 5: weight-noise sweep at 10% observed, full reconstruction."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "bernstein"
+name = ""
+entity = ""
+group = "fig05-weight-noise"
+tags = ["fig05", "weight-noise", "ff-known", "obs-10", "recur-100"]
+notes = "Weight-noise sweep."

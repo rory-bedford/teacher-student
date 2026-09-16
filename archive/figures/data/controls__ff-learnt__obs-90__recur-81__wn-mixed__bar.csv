@@ -1,0 +1,5 @@
+condition,activity_r2,fluctuation_r2
+Full Connectome,0.976784,0.906271
+Learnt-Recurrence,0.907493,0.606506
+Shuffle-Connections,0.904548,0.546387
+Shuffle-Weights,0.378063,-0.25654

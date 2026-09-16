@@ -1,0 +1,24 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig03-observed-fraction/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig03-observed-fraction"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig03-observed-fraction/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
+description = "Figure 3: full reconstruction, observed fraction swept from 50% to 0.5%."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "bernstein"
+name = ""
+entity = ""
+group = "fig03-observed-fraction"
+tags = ["fig03", "observed-fraction", "ff-known", "recur-100", "wn-0"]
+notes = "Observed-fraction sweep."

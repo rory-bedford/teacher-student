@@ -1,55 +1,42 @@
 # teacher-student
 
-Synthetic teacher-student experiments on conductance-based spiking networks: a
-teacher network generates activity, and a student is trained to recover the
-teacher's perturbed parameters (scaling factors, weights, hidden activity, latent
-inputs) under varying observability. Used to validate the inference machinery
-before applying it to real connectome data.
+Synthetic teacher-student experiments on conductance-based spiking networks, organised as
+the figures of the Bernstein talk. A teacher network generates activity; a student with a
+(partially) reconstructed connectome is trained on part of that activity and asked to
+predict the rest on held-out stimuli.
 
-This repo holds the **experiment code**; it consumes the **connectome-snns**
-library (network simulators, snn_runners, dataloaders, analysis, visualization)
-as an editable dependency. Outputs are **not** stored here — they live in the
-`dp-simulations/` tree and are surfaced via a `runs` symlink for convenience.
+This repo holds the **experiment code**; it consumes the **connectome-snns** library
+(simulators, run framework, dataloaders, analysis, visualization) as an editable dependency.
+Data is **not** stored here — it lives in `../bernstein`.
 
-## Sub-areas
+Read `METHODS.md` first, then `PRIORITY.md`.
 
 | Dir | What it covers |
 |---|---|
-| `generate-teacher-activity/` | Produce the teacher network + spike data (inputs the students consume). |
-| `fully-observed/` | Recover scaling factors with all neurons observed, no hidden units. |
-| `noisy-weights/` | Recover perturbed weights; convergence/stability/shuffle controls. |
-| `hidden-activity/` | Inference with unobserved (hidden) activity. |
-| `hidden-units/` | Inference with hidden units; convergence/stability/inference. |
-| `inferring-inputs/` | Recover latent / feedforward inputs (OU rates, uniform inputs). |
-| `full-inference/` | Joint inference (hidden units + connectivity), with controls. |
-| `dimensionality-reduction/` | PCA / log-PCA / NMF of teacher & student activity. |
+| `generate-teacher-activity/` | The teacher network + spike data → `bernstein/teacher-activity/` |
+| `common/` | Student construction, training, held-out evaluation and plotting shared by all figures |
+| `fig01-full-reconstruction/` | Full reconstruction, 10% observed (the baseline for Figs 2–5) |
+| `fig02-controls/` | Learnt recurrence, shuffled weights, configuration-model rewire |
+| `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 0.5% |
+| `fig04-reconstruction-errors/` | Neuron removal vs synapse dropout |
+| `fig05-weight-noise/` | Weight-noise sweep |
+| `fig06-learnt-feedforward/` | Unreconstructed inputs with learnt weights, reconstructed fraction 100% → 10% |
+| `archive/` | Previous experiments and figures (reference only, not runnable as-is) |
 
 ## Setup
-
-Almost everything trains spiking networks, so torch is required — sync with the
-extra matching the machine:
 
 ```bash
 uv sync --extra cu129   # GPU
 uv sync --extra cpu     # CPU
 ```
 
-`connectome-snns` is an editable path dependency (`../connectome-snns`); pin it to
-a git rev in `pyproject.toml` for archival reproducibility.
-
-## Running
+## Running a figure
 
 ```bash
-./run noisy-weights/convergence-check/experiment.toml          # single run
-./run --grid noisy-weights/convergence-check/experiment.toml   # grid search
+./run --grid fig01-full-reconstruction/experiment.toml   # train (code must be committed)
+uv run python fig01-full-reconstruction/analysis.py       # held-out evaluation -> CSVs
+uv run python fig01-full-reconstruction/figures.py        # CSVs -> fig01.svg
 ```
 
-The library's run framework reads the `experiment.toml`, makes a timestamped dir
-under `output_dir` (in `dp-simulations/`), snapshots params + commit, symlinks
-inputs, and calls the script's `main()`.
-
-## Outputs
-
-Results live in `dp-simulations/` (325 GB of training runs / checkpoints,
-read-only provenance) — browse them via `./runs/`. Each experiment's
-`analysis.ipynb` reads its run via `load_experiment_config("experiment.toml")`.
+Each figure's `README.md` records its configuration, the archived settings it reuses, and
+where it departs from them.

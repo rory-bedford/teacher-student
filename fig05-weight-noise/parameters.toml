@@ -1,0 +1,98 @@
+# Figure 5 — weight-noise sweep with full reconstruction.
+#
+# Identical to fig01-full-reconstruction/parameters.toml except [student].weight_noise,
+# which run_grid_search.py sweeps. Noise is the archived noisy-weights implementation:
+# per (source type, target type) block of [feedforward; recurrent] weights, multiply by
+# exp(noise * N(0,1) - noise^2/2), affinely rescale the non-zero weights back to the
+# block's original mean and SD, then clip at zero (fraction clipped is reported).
+
+[simulation]
+seed = 44                              # overridden per run by run_grid_search.py
+chunk_size = 160
+
+[student]
+observed_fraction = 0.1                # of modelled neurons; drawn at random per seed
+weight_noise = 0.1                     # overridden per run
+
+[training]
+total_epochs = 50
+chunks_per_update = 6
+log_interval = 6
+checkpoint_interval = 48
+plot_size = 48
+burn_in_chunks = 20
+weight_perturbation_variance = 0.5     # log-normal perturbation of the scaling factors
+# fp32: at the correct scaling factors fp32 reproduces the teacher spike for spike
+# (verified here, 0 mismatches over 2 s); fp16 does not (archived scaling-factor-bias).
+mixed_precision = false
+
+[optimiser]
+surrgrad_scale = 5.0
+lr_scaling = 8e-3
+lr_min_scaling = 5e-4
+grad_clip_scaling = 5.0
+beta1 = 0.95
+beta2 = 0.999
+eps = 1e-8                             # the archived eps = 1e-4 was never applied
+
+[loss]
+van_rossum_tau_rise = 10.0
+van_rossum_tau_decay = 100.0
+van_rossum = 1.0
+
+[evaluation]
+burn_in_ms = 2000.0                    # discarded from the held-out trial before scoring
+fluctuation_tau_ms = 50.0              # Gaussian sigma for Fluctuation R²
+n_floor_permutations = 5               # shuffled-identity floor, averaged
+
+# ==========================================================================
+# PHYSIOLOGY — copied verbatim from the teacher (bernstein/teacher-activity).
+# Do not edit independently: scaling factor 1.0 is only the true model if the
+# student's physiology is the teacher's.
+# ==========================================================================
+
+[feedforward.cell_types]
+names = ["mitral"]
+
+[feedforward.synapses.mitral]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 70.0]
+E_syn = [0.0, 0.0]
+g_bar = [6.0, 0.1]
+g_clip = [40.0, 4.0]
+
+[recurrent.cell_types]
+names = ["excitatory", "inhibitory"]
+
+[recurrent.physiology.excitatory]
+tau_mem = 85.0
+theta = -38.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 1.35
+tau_ref = 8.0
+
+[recurrent.synapses.excitatory]
+names = ["AMPA", "NMDA"]
+tau_rise = [0.1, 10.0]
+tau_decay = [5.0, 60.0]
+E_syn = [0.0, 0.0]
+g_bar = [4.0, 0.5]
+g_clip = [40.0, 4.0]
+
+[recurrent.physiology.inhibitory]
+tau_mem = 50.0
+theta = -45.0
+U_reset = -60.0
+E_L = -60.0
+g_L = 0.9
+tau_ref = 8.0
+
+[recurrent.synapses.inhibitory]
+names = ["GABA_A"]
+tau_rise = [0.5]
+tau_decay = [6.0]
+E_syn = [-70.0]
+g_bar = [8.0]
+g_clip = [80.0]
