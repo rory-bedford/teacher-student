@@ -1,14 +1,15 @@
 """Figure 1 smoke test: perturbation evaluation under teacher forcing (SMOKETEST.md).
 
-Runs in stages so the simulations can go to separate GPUs; each stage saves to --out:
+Stages, each a separate job (``slurm/submit_perturbation.sh`` chains them):
 
-    calibrate     teacher: rest-potential shift for ~50% targeted I rate loss; saves the
-                  unperturbed and perturbed teacher spikes and the chosen shift
-    student-off   trained student, unperturbed, spike-flip ensemble
-    perfect-off   perfectly specified student, unperturbed
-    student-on    trained student, perturbed (needs calibrate)
-    perfect-on    perfectly specified student, perturbed (needs calibrate)
-    score         CPU: summary.csv, floor.csv, teacher_perturbation_response.csv, config.yaml
+    cal-point     GPU  teacher at one current (--shift); once per teacher, run in parallel
+    cal-pick      CPU  interpolate the current that halves targeted I rates; once
+    teacher-on    GPU  perturbed teacher: the fixed current on this run's targets
+    student-off   GPU  trained student, unperturbed, spike-flip ensemble
+    perfect-off   GPU  perfectly specified student, unperturbed
+    student-on    GPU  trained student, perturbed (needs teacher-on)
+    perfect-on    GPU  perfectly specified student, perturbed (needs teacher-on)
+    score         CPU  summary.csv, floor.csv, teacher_perturbation_response.csv, config.yaml
 
     uv run python fig01-full-reconstruction/perturbation_smoketest.py <stage> --run <run dir> --out <dir>
 
@@ -25,6 +26,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import toml
 import torch
 import yaml
 from connectome_snns.analysis import r_squared
@@ -41,21 +43,29 @@ from common.evaluation import (
 )
 from common.model import neuron_sets
 from common.perturbation import (
-    calibrate_shift,
+    calibrated_shift,
+    calibration_dir,
+    calibration_point,
     choose_targets,
     delta_scores,
+    held_out_teacher,
+    pick_current,
+    rate_reduction,
     simulate_teacher,
 )
 from common.structure import load_structure
 
 STAGES = (
-    "calibrate",
+    "cal-point",
+    "cal-pick",
+    "teacher-on",
     "student-off",
     "perfect-off",
     "student-on",
     "perfect-on",
     "score",
 )
+SIMULATED = ("student-off", "perfect-off", "student-on", "perfect-on")
 CELL_TYPES = {0: "E", 1: "I"}
 N_FLOOR_PERMUTATIONS = 5
 STARTED = time.time()
@@ -85,29 +95,33 @@ def load_spikes(path):
     return spikes, extra
 
 
-def simulate(stage, run_dir, out_dir, device):
+def simulate(stage, run_dir, out_dir, device, shift=None):
     structure = load_structure(run_dir)
     sets = neuron_sets(structure)
     params = run_parameters(run_dir)
-    if stage == "calibrate":
-        dt = params["simulation"].get("dt", 1.0)
-        burn_in = int(params["evaluation"]["burn_in_ms"] / dt)
+    burn_in_ms = params["evaluation"]["burn_in_ms"]
+    if stage == "cal-point":
+        reduction = calibration_point(run_dir, device, shift, burn_in_ms)
+        log(f"shift {shift:+.1f} mV -> targeted rate -{100 * reduction:.0f}%")
+        return
+    if stage == "teacher-on":
+        shift_mv = calibrated_shift(run_dir)
         targets = choose_targets(structure, sets["unobserved"])
-        teacher_off = simulate_teacher(run_dir, device)
-        log(f"{targets.size} targeted unobserved I cells; calibrating")
-        shift_mv, reduction, teacher_on, tried = calibrate_shift(
-            run_dir, device, targets, teacher_off, burn_in
+        teacher_off, dt = held_out_teacher(run_dir, device)
+        teacher_on = simulate_teacher(run_dir, device, targets, shift_mv)
+        reduction = rate_reduction(
+            teacher_off, teacher_on, targets, int(burn_in_ms / dt)
         )
-        log(f"chosen shift {shift_mv:+.2f} mV -> targeted rate -{100 * reduction:.0f}%")
-        save_spikes(out_dir / "teacher_off.npz", teacher_off)
+        log(
+            f"{targets.size} targets, shift {shift_mv:+.2f} mV -> "
+            f"targeted rate -{100 * reduction:.0f}%"
+        )
         save_spikes(
             out_dir / "teacher_on.npz",
             teacher_on,
             targets=targets,
             shift_mv=shift_mv,
             reduction=reduction,
-            tried_shifts=np.array(list(tried)),
-            tried_reductions=np.array(list(tried.values())),
         )
         return
 
@@ -136,9 +150,9 @@ def score(run_dir, out_dir):
     evaluation_cfg = params["evaluation"]
     tau_ms = evaluation_cfg["fluctuation_tau_ms"]
 
-    teacher_off, _ = load_spikes(out_dir / "teacher_off.npz")
+    teacher_off, _ = held_out_teacher(run_dir)
     teacher_on, extra = load_spikes(out_dir / "teacher_on.npz")
-    loaded = {stage: load_spikes(out_dir / f"{stage}.npz") for stage in STAGES[1:5]}
+    loaded = {stage: load_spikes(out_dir / f"{stage}.npz") for stage in SIMULATED}
     dt = float(loaded["student-off"][1]["dt"])
     runs = {stage: spikes for stage, (spikes, _) in loaded.items()}
     n_steps = runs["student-off"].shape[1]
@@ -283,10 +297,7 @@ def score(run_dir, out_dir):
             "rest_potential_shift_mv": shift_mv,
             "equivalent_current_pa": float(leak * shift_mv),
             "targeted_teacher_rate_reduction": float(extra["reduction"]),
-            "calibration_tried": {
-                float(s): float(r)
-                for s, r in zip(extra["tried_shifts"], extra["tried_reductions"])
-            },
+            "calibration": toml.load(calibration_dir(run_dir) / "current.toml"),
             "mitral_input": "frozen: the held-out trial's own spikes, identical for all runs",
             "teacher_forcing": "teacher's perturbed observed activity",
         },
@@ -306,6 +317,7 @@ if __name__ == "__main__":
     parser.add_argument("stage", choices=STAGES)
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--shift", type=float, help="cal-point: rest shift in mV")
     parser.add_argument(
         "--device", default="cuda" if torch.cuda.is_available() else "cpu"
     )
@@ -313,5 +325,7 @@ if __name__ == "__main__":
     args.out.mkdir(parents=True, exist_ok=True)
     if args.stage == "score":
         score(args.run, args.out)
+    elif args.stage == "cal-pick":
+        log(f"calibrated shift {pick_current(args.run):+.2f} mV")
     else:
-        simulate(args.stage, args.run, args.out, args.device)
+        simulate(args.stage, args.run, args.out, args.device, args.shift)

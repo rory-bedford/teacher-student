@@ -9,8 +9,10 @@ would provide, and must produce the targeted cells' response and its propagation
 
 The current is implemented as a shift of the targeted cells' leak reversal potential:
 in these LIF neurons the leak term is g_L (v - E_L), so lowering E_L by d mV is exactly a
-constant current of g_L * d. Its size is calibrated once, in the teacher, so the targeted
-cells lose about half their firing rate.
+constant current of g_L * d. Its size is calibrated once, in the teacher (targets: 25% of
+all its I cells), so targeted cells lose about half their rate: ``calibration_point`` at a
+few currents in parallel, then ``pick_current`` interpolates. Every run then applies that
+fixed current to its own targets (25% of its unobserved I cells).
 
 Scores are on the *change* caused by the intervention (perturbed - unperturbed), so
 baseline activity does not dominate: Fluctuation R² on the smoothed-trace difference and
@@ -18,6 +20,8 @@ Activity R² on the per-neuron rate difference. The student side uses the evalua
 spike-flip ensemble (``common.evaluation.N_PERTURBATIONS`` draws, traces averaged before
 differencing); the teacher side is its single deterministic pair of trajectories.
 """
+
+from pathlib import Path
 
 import numpy as np
 import toml
@@ -39,9 +43,11 @@ from common.evaluation import held_out_trial, smooth
 TARGET_FRACTION = 0.25
 TARGET_SEED = 0
 TARGET_RATE_REDUCTION = 0.5
-#: Rest-potential shifts (mV) tried when calibrating, coarse to fine.
-CALIBRATION_SHIFTS_MV = (-4.0, -8.0, -12.0, -16.0, -24.0)
-CALIBRATION_REFINE_STEPS = 3
+#: Rest-potential shifts (mV) simulated in parallel to calibrate the current.
+CALIBRATION_SHIFTS_MV = (-40.0, -80.0, -120.0, -160.0)
+# (Targeted I cells are conductance-driven: -8 mV removed only 4% of their rate, -40 mV
+# 24%, -120 mV 56%. As a current, -100 mV is about -90 pA.)
+CALIBRATION_DIR_NAME = "_evaluation/perturbation-calibration"
 
 
 def teacher_model(teacher_dir, device):
@@ -82,7 +88,7 @@ def simulate_teacher(run_dir, device, target_ids=None, shift_mv=0.0):
     """Teacher spikes (time, neurons) on the held-out trial's frozen mitral input."""
     inputs = zarr.open_group(str(held_out_trial(run_dir, device)), mode="r")
     mitral = np.asarray(inputs["input_spikes"][0])
-    model, chunk_size = teacher_model(_resolve_teacher_dir(run_dir), device)
+    model, chunk_size = teacher_model(_resolve_teacher_dir(Path(run_dir)), device)
     if target_ids is not None and shift_mv != 0.0:
         model.E_L[torch.as_tensor(target_ids, device=device)] += shift_mv
     chunks = []
@@ -93,48 +99,93 @@ def simulate_teacher(run_dir, device, target_ids=None, shift_mv=0.0):
     return np.concatenate(chunks, axis=0)
 
 
-def choose_targets(structure, unobserved_ids):
-    """A random ``TARGET_FRACTION`` of the unobserved inhibitory cells (teacher ids)."""
-    inhibitory = unobserved_ids[structure["cell_type_indices"][unobserved_ids] == 1]
+def choose_targets(structure, candidate_ids):
+    """A random ``TARGET_FRACTION`` of the inhibitory cells among ``candidate_ids``."""
+    inhibitory = candidate_ids[structure["cell_type_indices"][candidate_ids] == 1]
     rng = np.random.default_rng(TARGET_SEED)
-    n = int(round(TARGET_FRACTION * inhibitory.size))
+    n = round(TARGET_FRACTION * inhibitory.size)
     return np.sort(rng.choice(inhibitory, size=n, replace=False))
 
 
-def calibrate_shift(run_dir, device, target_ids, baseline, burn_in):
-    """Rest-potential shift (mV) giving ~``TARGET_RATE_REDUCTION`` of targeted rates.
+def calibration_dir(run_dir):
+    """Where the teacher-level current calibration lives (shared by every run)."""
+    return _resolve_teacher_dir(Path(run_dir)).parent / CALIBRATION_DIR_NAME
 
-    Returns (shift_mv, reduction, perturbed teacher spikes, tried {shift: reduction}).
+
+def held_out_teacher(run_dir, device="cpu"):
+    """The unperturbed held-out teacher spikes (time, neurons), as stored."""
+    inputs = zarr.open_group(str(held_out_trial(run_dir, device)), mode="r")
+    return np.asarray(inputs["output_spikes"][0]).astype(bool), float(
+        inputs.attrs["dt"]
+    )
+
+
+def rate_reduction(teacher_off, teacher_on, target_ids, burn_in):
+    """Fractional loss of the targeted cells' mean rate after the burn-in."""
+    base = teacher_off[burn_in:, target_ids].mean()
+    return float(1.0 - teacher_on[burn_in:, target_ids].mean() / base)
+
+
+def calibration_point(run_dir, device, shift_mv, burn_in_ms):
+    """Teacher at one current, targets = 25% of all its I cells; saves the reduction.
+
+    The current is a property of the teacher, calibrated on a teacher-level target set
+    and then applied unchanged to each run's own targets.
     """
-    base_rate = baseline[burn_in:, target_ids].mean()
+    structure = {
+        "cell_type_indices": np.load(
+            _resolve_teacher_dir(Path(run_dir)) / "results" / "network_structure.npz"
+        )["cell_type_indices"]
+    }
+    all_ids = np.arange(structure["cell_type_indices"].size)
+    targets = choose_targets(structure, all_ids)
+    teacher_off, dt = held_out_teacher(run_dir, device)
+    teacher_on = simulate_teacher(run_dir, device, targets, shift_mv)
+    reduction = rate_reduction(teacher_off, teacher_on, targets, int(burn_in_ms / dt))
+    out = calibration_dir(run_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"shift{shift_mv:+.1f}mV.toml").write_text(
+        toml.dumps(
+            {
+                "shift_mv": shift_mv,
+                "rate_reduction": reduction,
+                "n_targets": int(targets.size),
+            }
+        )
+    )
+    return reduction
 
-    def reduction(shift):
-        spikes = simulate_teacher(run_dir, device, target_ids, shift)
-        return 1.0 - spikes[burn_in:, target_ids].mean() / base_rate, spikes
 
-    tried, runs = {}, {}
-    for shift in CALIBRATION_SHIFTS_MV:
-        tried[shift], runs[shift] = reduction(shift)
-        print(f"  shift {shift:+.1f} mV -> targeted rate -{100 * tried[shift]:.0f}%")
-        if tried[shift] >= TARGET_RATE_REDUCTION:
-            break
-    shifts = sorted(tried, reverse=True)  # least to most negative
-    above = [s for s in shifts if tried[s] >= TARGET_RATE_REDUCTION]
-    below = [s for s in shifts if tried[s] < TARGET_RATE_REDUCTION]
-    if above and below:
-        low, high = below[-1], above[0]  # bracket: weaker, stronger
-        for _ in range(CALIBRATION_REFINE_STEPS):
-            middle = 0.5 * (low + high)
-            tried[middle], runs[middle] = reduction(middle)
-            print(
-                f"  shift {middle:+.2f} mV -> targeted rate -{100 * tried[middle]:.0f}%"
-            )
-            if tried[middle] >= TARGET_RATE_REDUCTION:
-                high = middle
-            else:
-                low = middle
-    best = min(tried, key=lambda s: abs(tried[s] - TARGET_RATE_REDUCTION))
-    return best, tried[best], runs[best], tried
+def pick_current(run_dir):
+    """Interpolate the calibration points to ``TARGET_RATE_REDUCTION``; saves current.toml."""
+    out = calibration_dir(run_dir)
+    points = sorted(
+        (toml.load(f) for f in out.glob("shift*mV.toml")), key=lambda p: -p["shift_mv"]
+    )
+    shifts = np.array([p["shift_mv"] for p in points])  # weakest first
+    reductions = np.array([p["rate_reduction"] for p in points])
+    if not (reductions.min() <= TARGET_RATE_REDUCTION <= reductions.max()):
+        raise SystemExit(
+            f"calibration does not bracket {TARGET_RATE_REDUCTION:.0%}: "
+            + ", ".join(f"{s:+g} mV -> {r:.0%}" for s, r in zip(shifts, reductions))
+        )
+    order = np.argsort(reductions)
+    shift = float(np.interp(TARGET_RATE_REDUCTION, reductions[order], shifts[order]))
+    (out / "current.toml").write_text(
+        toml.dumps(
+            {
+                "shift_mv": shift,
+                "target_rate_reduction": TARGET_RATE_REDUCTION,
+                "calibration_shifts_mv": shifts.tolist(),
+                "calibration_rate_reductions": reductions.tolist(),
+            }
+        )
+    )
+    return shift
+
+
+def calibrated_shift(run_dir):
+    return float(toml.load(calibration_dir(run_dir) / "current.toml")["shift_mv"])
 
 
 def delta_scores(teacher_off, teacher_on, student_off, student_on, ids, dt, tau_ms):
