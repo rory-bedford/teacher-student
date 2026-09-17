@@ -18,7 +18,9 @@ set -euo pipefail
 cd /tachyon/groups/scratch/gzenke/bedfrory/teacher-student
 hostname
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
-uv run python - <<'PY'
+# Call the venv's Python directly: never `uv run` on a node, which rebuilds .venv when it
+# cannot see the interpreter (it deleted the shared .venv once).
+.venv/bin/python - <<'PY'
 import torch
 
 print("torch", torch.__version__, "built for CUDA", torch.version.cuda)

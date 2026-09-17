@@ -27,6 +27,7 @@ line=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$ARRAY_DIR/tasks.txt")
 config=$(cut -f1 <<<"$line")
 description=$(cut -f2 <<<"$line")
 
+# Never `uv run` on a node: it rebuilds the shared .venv when it cannot see the interpreter.
 PYTHON="$REPO/.venv/bin/python"
 CODE=$(cat "$ARRAY_DIR/code.txt")
 
