@@ -4,7 +4,8 @@ Run after training (Figure 1's runs supply the 10% point):
     uv run python fig03-observed-fraction/analysis.py
 
 Writes, next to this script:
-    fig03_summary.csv          obs_fraction, n_observed, seed, group, metric, value, floor_value, ceiling_value
+    fig03_summary.csv          obs_fraction, n_observed, seed, group, metric, value, floor_value, ceiling_value,
+                        noise_ceiling_value
     fig03_rates.csv            obs_fraction, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
     fig03_dimensionality.csv   participation_ratio, n_pcs_90pct_var, smoothing_sigma_ms, window_s, n_neurons
 """

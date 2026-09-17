@@ -84,11 +84,11 @@ def rate_scatter(ax, rates, title, max_rate=None):
     ax.set_aspect("equal")
     ax.set_xlabel("Teacher rate (Hz)")
     ax.set_ylabel("Student rate (Hz)")
-    ax.set_title(title)
+    ax.set_title(title, fontsize=6)
 
 
 def r2_title(label, summary, group, seed=None):
-    """``label`` with Fluctuation/Activity R², floor and ceiling (one seed, or the mean)."""
+    """``label`` with Fluctuation/Activity R², floor, ceiling and noise ceiling."""
     rows = summary[summary["group"] == group]
     if seed is not None:
         rows = rows[rows["seed"] == seed]
@@ -96,8 +96,8 @@ def r2_title(label, summary, group, seed=None):
     for metric, short in (("fluctuation_r2", "Flu"), ("activity_r2", "Act")):
         m = rows[rows["metric"] == metric]
         lines.append(
-            f"{short} R² {m['value'].mean():.3f}  "
-            f"[floor {m['floor_value'].mean():.2f}, ceiling {m['ceiling_value'].mean():.2f}]"
+            f"{short} R² {m['value'].mean():.2f} [floor {m['floor_value'].mean():.2f}, "
+            f"ceil {m['ceiling_value'].mean():.2f}, noise {m['noise_ceiling_value'].mean():.2f}]"
         )
     return "\n".join(lines)
 
@@ -149,6 +149,20 @@ def ceiling_line(ax, summary, x_column, metric, group, color, label=None):
         linestyle=":",
         color=color,
         linewidth=1.0,
+        label=label,
+    )
+
+
+def noise_ceiling_line(ax, summary, x_column, metric, group, color, label=None):
+    """Dash-dot Poisson noise ceiling (teacher vs its own input redraws), mean over seeds."""
+    rows = summary[(summary["metric"] == metric) & (summary["group"] == group)]
+    stats = rows.groupby(x_column)["noise_ceiling_value"].mean().reset_index()
+    ax.plot(
+        stats[x_column],
+        stats["noise_ceiling_value"],
+        linestyle="-.",
+        color=color,
+        linewidth=0.8,
         label=label,
     )
 

@@ -108,6 +108,13 @@ def main(data_dir, out_path):
             linewidth=0.8,
             label="ceiling",
         )
+        ax.axvline(
+            rows["noise_ceiling_value"].mean(),
+            color="k",
+            linestyle="-.",
+            linewidth=0.8,
+            label="noise ceiling",
+        )
         ax.set_xlabel("Per-neuron Fluctuation R²")
         ax.set_ylabel("Neurons")
         ax.set_title(GROUP_LABELS[group])

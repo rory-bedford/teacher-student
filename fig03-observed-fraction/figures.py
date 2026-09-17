@@ -26,6 +26,7 @@ from common.plotting import (
     GROUP_LABELS,
     ceiling_line,
     floor_line,
+    noise_ceiling_line,
     panel_label,
     r2_title,
     rate_scatter,
@@ -80,6 +81,9 @@ def main(data_dir, out_path, scatter_fractions):
         ceiling_line(
             ax, summary, "obs_fraction", "fluctuation_r2", group, GROUP_COLORS[group]
         )
+        noise_ceiling_line(
+            ax, summary, "obs_fraction", "fluctuation_r2", group, GROUP_COLORS[group]
+        )
     floor_line(ax, summary, "obs_fraction", "fluctuation_r2", "unobserved")
     pr_fraction = dimensionality["participation_ratio"] / N_NEURONS
     ax.axvline(pr_fraction, color=FLOOR_COLOR, linewidth=0.8)
@@ -101,7 +105,8 @@ def main(data_dir, out_path, scatter_fractions):
     )
     top.set_xlabel("Observed neurons")
     ax.set_title(
-        "··· ceiling (perfectly specified student)   -- shuffled-identity floor",
+        "··· ceiling (perfectly specified student)   -·- noise ceiling (Poisson redraws)"
+        "   -- shuffled-identity floor",
         fontsize=6.5,
     )
     panel_label(ax, "a")

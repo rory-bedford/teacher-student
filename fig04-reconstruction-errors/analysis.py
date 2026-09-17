@@ -9,7 +9,8 @@ connectivity and the removal mask alone; the feedforward input, which is always
 reconstructed, is not in the denominator.
 
 Writes, next to this script:
-    fig04_summary.csv      error_model, level, mean_kappa_lost, seed, group, metric, value, floor_value, ceiling_value
+    fig04_summary.csv      error_model, level, mean_kappa_lost, seed, group, metric, value, floor_value, ceiling_value,
+                        noise_ceiling_value
     fig04_per_neuron.csv   error_model, level, seed, neuron_id, cell_type, observed, kappa_lost,
                            fluctuation_r2, teacher_rate_hz, student_rate_hz
 """

@@ -106,6 +106,14 @@ def grouped_bars(ax, summary, metric):
                 linestyles=":",
                 linewidth=0.8,
             )
+            ax.hlines(
+                sub["noise_ceiling_value"].mean(),
+                x - width / 2,
+                x + width / 2,
+                colors="k",
+                linestyles="-.",
+                linewidth=0.8,
+            )
     ax.set_xticks(range(len(variants)))
     ax.set_xticklabels([VARIANT_LABELS[v] for v in variants])
     ax.axhline(0, color="k", linewidth=0.5)
@@ -181,7 +189,7 @@ def main(data_dir, out_path):
     grouped_bars(ax, summary, "fluctuation_r2")
     ax.set_title(
         "Fluctuation R², held-out stimuli (light: observed, dark: unobserved;"
-        " -- floor, ··· ceiling)",
+        " -- floor, ··· ceiling, -·- noise ceiling)",
         fontsize=7,
     )
     panel_label(ax, "a")

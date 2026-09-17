@@ -12,6 +12,10 @@ Metrics, per group:
                      mapping within the group, averaged over permutations
     ceiling          the same metric for a perfectly specified student: teacher weights,
                      correct scaling factors, and the same teacher-forced sources
+    noise ceiling    the same metric for the perfectly specified student with the same
+                     teacher forcing but the mitral spikes redrawn from the held-out
+                     trial's rates (new Poisson input noise), mean over redraws; see
+                     ``common/noise_ceiling.py``
 
 Why a ceiling. The teacher network is chaotic. A perfectly specified student
 reproduces it spike for spike for several seconds (verified), but float32 rounding
@@ -40,12 +44,16 @@ from common.model import (
     count_free_parameters,
     neuron_sets,
 )
+from common.noise_ceiling import mitral_redraws
 from common.structure import load_structure, load_teacher
 from common.training import FINAL_STATE
 
 EVALUATION_FILE = "evaluation.npz"
 #: Bump when the cached contents change; older caches are recomputed.
 EVALUATION_VERSION = 2
+#: Version of the noise ceiling; caches with another version get it recomputed (the
+#: student scores are kept).
+NOISE_CEILING_VERSION = 2
 GROUPS = ("observed", "unobserved")
 METRICS = ("activity_r2", "fluctuation_r2")
 #: Seconds of post-burn-in spikes kept for rasters.
@@ -149,12 +157,15 @@ def perfect_structure(structure, teacher):
     }
 
 
-def run_student(run_dir, device, perfect=False):
+def run_student(run_dir, device, perfect=False, mitral_spikes=None):
     """Teacher-forced student spikes on the held-out trial.
 
     Args:
         perfect: Run the perfectly specified student (see :func:`perfect_structure`)
             instead of the trained one; groups keep the trained run's neuron ids.
+        mitral_spikes: Optional (trials, time, n_mitral) bool array. Each trial replaces
+            the held-out trial's mitral input (teacher forcing is unchanged); the trials
+            run as one batch and student spikes get a leading trials axis.
 
     Returns:
         dict with teacher and student spikes (time x neurons) for each group, the
@@ -176,10 +187,12 @@ def run_student(run_dir, device, perfect=False):
         chunk_size=params["simulation"]["chunk_size"],
         device=device,
     )
+    n_trials = 1 if mitral_spikes is None else mitral_spikes.shape[0]
+    n_ff = model_structure["ff_cell_type_indices"].size
     model, parameters = build_student(
         model_structure,
         params,
-        batch_size=dataset.batch_size,
+        batch_size=n_trials,
         dt=dataset.dt,
         surrgrad_scale=params["optimiser"]["surrgrad_scale"],
         low_rank=params["optimiser"].get("low_rank", 1),
@@ -197,20 +210,31 @@ def run_student(run_dir, device, perfect=False):
     )
     observed_chunks, unobserved_chunks = [], []
     batches = iter(dataloader)
+    chunk_size = dataset.chunk_size
     with torch.inference_mode():
-        for _ in range(dataset.num_chunks):
-            batch = collate(next(batches))
-            out = model(batch.input_spikes.to(device))
-            observed_chunks.append(out["spikes"][0].bool().cpu().numpy())
-            unobserved_chunks.append(out["hidden_spikes"][0].bool().cpu().numpy())
+        for chunk in range(dataset.num_chunks):
+            inputs = collate(next(batches)).input_spikes.to(device)
+            if mitral_spikes is not None:
+                start = chunk * chunk_size
+                inputs = inputs.expand(n_trials, -1, -1).clone()
+                inputs[:, :, :n_ff] = torch.from_numpy(
+                    mitral_spikes[:, start : start + chunk_size]
+                ).to(device=device, dtype=inputs.dtype)
+            out = model(inputs)
+            observed_chunks.append(out["spikes"].bool().cpu().numpy())
+            unobserved_chunks.append(out["hidden_spikes"].bool().cpu().numpy())
 
     n_steps = dataset.num_chunks * dataset.chunk_size
     teacher = np.array(dataset.target_spike_data[0, :n_steps, :]).astype(bool)
 
     # Student spikes by teacher id, then select the trained run's groups.
-    student_all = np.zeros_like(teacher)
-    student_all[:, model_sets["observed"]] = np.concatenate(observed_chunks, axis=0)
-    student_all[:, model_sets["unobserved"]] = np.concatenate(unobserved_chunks, axis=0)
+    student_all = np.zeros((n_trials, *teacher.shape), dtype=bool)
+    student_all[:, :, model_sets["observed"]] = np.concatenate(observed_chunks, axis=1)
+    student_all[:, :, model_sets["unobserved"]] = np.concatenate(
+        unobserved_chunks, axis=1
+    )
+    if mitral_spikes is None:
+        student_all = student_all[0]
     return {
         "dt": dataset.dt,
         "n_free_params": count_free_parameters(parameters),
@@ -222,10 +246,37 @@ def run_student(run_dir, device, perfect=False):
             "unobserved": teacher[:, sets["unobserved"]],
         },
         "student": {
-            "observed": student_all[:, sets["observed"]],
-            "unobserved": student_all[:, sets["unobserved"]],
+            "observed": student_all[..., sets["observed"]],
+            "unobserved": student_all[..., sets["unobserved"]],
         },
     }
+
+
+def add_noise_ceilings(run_dir, out, device):
+    """Add ``<group>_<metric>_noise_ceiling`` to ``out`` in place (see module docstring)."""
+    evaluation_cfg = run_parameters(run_dir)["evaluation"]
+    redraws = mitral_redraws(held_out_trial(run_dir, device))
+    result = run_student(run_dir, device, perfect=True, mitral_spikes=redraws)
+    burn_in = int(evaluation_cfg["burn_in_ms"] / result["dt"])
+    for group in GROUPS:
+        scores = {metric: [] for metric in METRICS}
+        if result["sets"][group].size > 0:
+            teacher = result["teacher"][group][burn_in:]
+            for trial in result["student"][group]:
+                values = group_metrics(
+                    teacher,
+                    trial[burn_in:],
+                    result["dt"],
+                    evaluation_cfg["fluctuation_tau_ms"],
+                    0,
+                    None,
+                )["values"]
+                for metric in METRICS:
+                    scores[metric].append(values[metric])
+        for metric in METRICS:
+            value = float(np.mean(scores[metric])) if scores[metric] else np.nan
+            out[f"{group}_{metric}_noise_ceiling"] = np.array(value)
+    out["noise_ceiling_version"] = np.array(NOISE_CEILING_VERSION)
 
 
 def evaluate_run(run_dir, device="cuda", force=False):
@@ -236,6 +287,9 @@ def evaluate_run(run_dir, device="cuda", force=False):
         with np.load(cache, allow_pickle=False) as data:
             cached = {key: data[key] for key in data.files}
         if int(cached.get("version", 0)) == EVALUATION_VERSION:
+            if int(cached.get("noise_ceiling_version", 0)) != NOISE_CEILING_VERSION:
+                add_noise_ceilings(run_dir, cached, device)
+                np.savez_compressed(cache, **cached)
             return cached
         print(f"  outdated {EVALUATION_FILE} in {run_dir}; re-evaluating")
 
@@ -287,6 +341,7 @@ def evaluate_run(run_dir, device="cuda", force=False):
         out[f"{group}_per_neuron_fluctuation_r2"] = scores["per_neuron_fluctuation_r2"]
         out[f"{group}_teacher_raster"] = np.packbits(teacher[:raster_steps], axis=0)
         out[f"{group}_student_raster"] = np.packbits(student[:raster_steps], axis=0)
+    add_noise_ceilings(run_dir, out, device)
     out["raster_steps"] = np.array(raster_steps)
     out["burn_in_ms"] = np.array(evaluation_cfg["burn_in_ms"])
 
@@ -337,6 +392,9 @@ def summary_rows(evaluation, **labels):
                     "value": float(evaluation[f"{group}_{metric}"]),
                     "floor_value": float(evaluation[f"{group}_{metric}_floor"]),
                     "ceiling_value": float(evaluation[f"{group}_{metric}_ceiling"]),
+                    "noise_ceiling_value": float(
+                        evaluation[f"{group}_{metric}_noise_ceiling"]
+                    ),
                 }
             )
     return rows
