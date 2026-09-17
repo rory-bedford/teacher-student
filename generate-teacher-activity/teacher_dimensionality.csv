@@ -1,0 +1,2 @@
+participation_ratio,n_pcs_50pct_var,n_pcs_80pct_var,n_pcs_90pct_var,n_pcs_95pct_var,smoothing_sigma_ms,burn_in_ms,n_trials,seconds_per_trial,n_neurons
+41.38071640357561,19,104,236,432,50.0,2000.0,50,13.0,5000
