@@ -39,6 +39,10 @@ TIME_LIMITS = {
 }
 
 
+#: Cluster GPUs one figure's array may hold at once (the user's cap is 8 in total).
+MAX_CONCURRENT = 8
+
+
 def clean_commit():
     status = subprocess.run(
         ["git", "status", "--porcelain", "--untracked-files=no"],
@@ -107,7 +111,7 @@ def prepare(figure, commit, stamp, dry_run=False):
 
     print(f"\n{figure}: {len(tasks)} runs -> {array_dir}")
     print(
-        f"  sbatch --array=0-{len(tasks) - 1} --time={TIME_LIMITS[figure]} "
+        f"  sbatch --array=0-{len(tasks) - 1}%{MAX_CONCURRENT} --time={TIME_LIMITS[figure]} "
         f"--job-name={figure.split('-')[0]} --output={array_dir}/logs/%a.log "
         f"{REPO}/slurm/run_array.sbatch {array_dir}"
     )

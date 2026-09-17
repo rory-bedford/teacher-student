@@ -5,13 +5,17 @@
 #   sbatch --array=0-N --time=HH:MM:SS --output=<array dir>/logs/%a.log \
 #          slurm/run_array.sbatch <array dir>
 #
-# TODO before first use: set the partition, account and GPU request for this cluster.
 # Each run needs one GPU with >= 12 GB (measured peak 9.3 GB), ~32 GB RAM, 4 CPUs.
-#SBATCH --partition=CHANGE_ME
-#SBATCH --account=CHANGE_ME
-#SBATCH --gres=gpu:1
+# GPU type: a100 by default; override on the command line with --gres=gpu:a40:1 or
+# --gres=gpu:v100:1. Keep the array throttle (%8) in the sbatch line.
+#SBATCH --account=iris00000
+#SBATCH --partition=main
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
+#SBATCH --gres=gpu:a100:1
 
 set -euo pipefail
 
