@@ -10,7 +10,9 @@ check it runs the code the configs were generated from.
     uv run python slurm/prepare_array.py fig03-observed-fraction fig04-reconstruction-errors
 
 prints the ``sbatch`` command for each figure. Nothing is submitted. Add ``--dry-run`` to
-list the runs without writing anything.
+list the runs without writing anything. ``--split a10080g:2,a40:2`` deals the runs out
+over one array per GPU type (``--gres=gpu:<type>:1``), each throttled to that many GPUs;
+the throttles may add up to at most ``MAX_CONCURRENT``.
 """
 
 import importlib.util
@@ -62,7 +64,7 @@ def clean_commit():
     ).stdout.strip()
 
 
-def prepare(figure, commit, stamp, dry_run=False):
+def prepare(figure, commit, stamp, dry_run=False, split=None):
     folder = REPO / figure
     experiment_path = folder / "experiment.toml"
     experiment = toml.load(experiment_path)
@@ -105,28 +107,68 @@ def prepare(figure, commit, stamp, dry_run=False):
             toml.dump(run_experiment, f)
         tasks.append(f"{experiment_file}\t{description}")
 
-    (array_dir / "tasks.txt").write_text("\n".join(tasks) + "\n")
     (array_dir / "commit.txt").write_text(commit + "\n")
-    (array_dir / "logs").mkdir(exist_ok=True)
+    job = figure.split("-")[0]
+    if not split:
+        (array_dir / "tasks.txt").write_text("\n".join(tasks) + "\n")
+        (array_dir / "logs").mkdir(exist_ok=True)
+        print(f"\n{figure}: {len(tasks)} runs -> {array_dir}")
+        print(sbatch_line(array_dir, len(tasks), MAX_CONCURRENT, figure, job))
+        return
 
+    # One array per GPU type, dealing runs out in turn so each gets a mix of the grid.
     print(f"\n{figure}: {len(tasks)} runs -> {array_dir}")
-    print(
-        f"  sbatch --array=0-{len(tasks) - 1}%{MAX_CONCURRENT} --time={TIME_LIMITS[figure]} "
-        f"--job-name={figure.split('-')[0]} --output={array_dir}/logs/%a.log "
+    for part, (gres, throttle) in enumerate(split):
+        part_tasks = tasks[part :: len(split)]
+        part_dir = array_dir / gres
+        (part_dir / "logs").mkdir(parents=True, exist_ok=True)
+        (part_dir / "tasks.txt").write_text("\n".join(part_tasks) + "\n")
+        (part_dir / "commit.txt").write_text(commit + "\n")
+        print(
+            sbatch_line(
+                part_dir,
+                len(part_tasks),
+                throttle,
+                figure,
+                f"{job}-{gres}",
+                f"--gres=gpu:{gres}:1 ",
+            )
+        )
+
+
+def sbatch_line(array_dir, n_tasks, throttle, figure, job, gres=""):
+    return (
+        f"  sbatch --array=0-{n_tasks - 1}%{throttle} --time={TIME_LIMITS[figure]} "
+        f"{gres}--job-name={job} --output={array_dir}/logs/%a.log "
         f"{REPO}/slurm/run_array.sbatch {array_dir}"
     )
 
 
+def parse_split(argv):
+    """``--split a10080g:2,a40:2`` -> [("a10080g", 2), ("a40", 2)]."""
+    if "--split" not in argv:
+        return None
+    parts = argv[argv.index("--split") + 1].split(",")
+    split = [(gres, int(throttle)) for gres, throttle in (p.split(":") for p in parts)]
+    if sum(throttle for _, throttle in split) > MAX_CONCURRENT:
+        raise SystemExit(f"--split throttles add up to more than {MAX_CONCURRENT} GPUs")
+    return split
+
+
 def main():
-    dry_run = "--dry-run" in sys.argv
-    figures = [a for a in sys.argv[1:] if a != "--dry-run"]
+    argv = sys.argv[1:]
+    dry_run = "--dry-run" in argv
+    split = parse_split(argv)
+    if split:
+        del argv[argv.index("--split") : argv.index("--split") + 2]
+    figures = [a for a in argv if a != "--dry-run"]
     if not figures:
         raise SystemExit(__doc__)
     commit = "dry-run" if dry_run else clean_commit()
     stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
     print(f"Commit {commit[:8]}")
     for figure in figures:
-        prepare(figure, commit, stamp, dry_run)
+        prepare(figure, commit, stamp, dry_run, split)
 
 
 if __name__ == "__main__":
