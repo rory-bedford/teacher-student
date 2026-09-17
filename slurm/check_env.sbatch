@@ -4,7 +4,7 @@
 #
 #   sbatch --output=check_env_%j.log slurm/check_env.sbatch
 #   (add --gres=gpu:a40:1 or --gres=gpu:v100:1 to check the other GPU types)
-#SBATCH --account=iris00000
+#SBATCH --account=connectome
 #SBATCH --partition=main
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

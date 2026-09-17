@@ -8,7 +8,7 @@
 # Each run needs one GPU with >= 12 GB (measured peak 9.3 GB), ~32 GB RAM, 4 CPUs.
 # GPU type: a100 by default; override on the command line with --gres=gpu:a40:1 or
 # --gres=gpu:v100:1. Keep the array throttle (%8) in the sbatch line.
-#SBATCH --account=iris00000
+#SBATCH --account=connectome
 #SBATCH --partition=main
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
