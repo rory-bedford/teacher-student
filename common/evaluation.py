@@ -156,7 +156,9 @@ def perfect_structure(structure, teacher):
     }
 
 
-def run_student(run_dir, device, perfect=False, flip_ids=None):
+def run_student(
+    run_dir, device, perfect=False, flip_ids=None, teacher_spikes=None, rest_shift=None
+):
     """Teacher-forced student spikes on the held-out trial, one batch of trials.
 
     Args:
@@ -164,6 +166,11 @@ def run_student(run_dir, device, perfect=False, flip_ids=None):
             instead of the trained one; groups keep the trained run's neuron ids.
         flip_ids: Optional teacher ids, one per trial, of an unobserved neuron made to
             spike at t = 0 in that trial.
+        teacher_spikes: Optional (time, neurons) bool teacher activity replacing the
+            held-out trial's for teacher forcing and scoring (e.g. a perturbed teacher);
+            the mitral input is unchanged.
+        rest_shift: Optional ``(teacher ids, delta mV)``: shift those unobserved neurons'
+            leak reversal potential, i.e. inject a constant current g_L * delta.
 
     Returns:
         dict with teacher spikes (time x neurons) and student spikes
@@ -208,6 +215,11 @@ def run_student(run_dir, device, perfect=False, flip_ids=None):
         rows = torch.arange(n_trials, device=layer1.v.device)
         columns = torch.as_tensor(positions, device=layer1.v.device)
         layer1.v[rows, columns] = layer1.theta[columns] + 1.0
+    if rest_shift is not None:
+        ids, delta_mv = rest_shift
+        positions = np.searchsorted(model_sets["unobserved"], ids)
+        assert np.array_equal(model_sets["unobserved"][positions], ids)
+        model.layer1.E_L[torch.as_tensor(positions, device=device)] += delta_mv
 
     collate = StudentCollate(model_sets["observed"], model_sets["unreconstructed"])
     dataloader = DataLoader(
@@ -215,16 +227,32 @@ def run_student(run_dir, device, perfect=False, flip_ids=None):
     )
     observed_chunks, unobserved_chunks = [], []
     batches = iter(dataloader)
+    chunk_size = dataset.chunk_size
     with torch.inference_mode():
-        for _ in range(dataset.num_chunks):
-            inputs = collate(next(batches)).input_spikes.to(device)
+        for chunk in range(dataset.num_chunks):
+            batch = next(batches)
+            if teacher_spikes is not None:
+                start = chunk * chunk_size
+                forced = torch.from_numpy(
+                    teacher_spikes[None, start : start + chunk_size]
+                )
+                batch = batch._replace(
+                    target_spikes=forced.to(
+                        device=batch.target_spikes.device,
+                        dtype=batch.target_spikes.dtype,
+                    )
+                )
+            inputs = collate(batch).input_spikes.to(device)
             inputs = inputs.expand(n_trials, -1, -1).contiguous()
             out = model(inputs)
             observed_chunks.append(out["spikes"].bool().cpu().numpy())
             unobserved_chunks.append(out["hidden_spikes"].bool().cpu().numpy())
 
     n_steps = dataset.num_chunks * dataset.chunk_size
-    teacher = np.array(dataset.target_spike_data[0, :n_steps, :]).astype(bool)
+    if teacher_spikes is None:
+        teacher = np.array(dataset.target_spike_data[0, :n_steps, :]).astype(bool)
+    else:
+        teacher = teacher_spikes[:n_steps].astype(bool)
 
     # Student spikes by teacher id, then select the trained run's groups.
     student_all = np.zeros((n_trials, *teacher.shape), dtype=bool)
@@ -246,6 +274,8 @@ def run_student(run_dir, device, perfect=False, flip_ids=None):
             "observed": student_all[..., sets["observed"]],
             "unobserved": student_all[..., sets["unobserved"]],
         },
+        "teacher_all": teacher,
+        "student_all": student_all,
     }
 
 
