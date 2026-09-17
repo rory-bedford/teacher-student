@@ -35,9 +35,10 @@ grad_clip_scaling = 5.0
 beta1 = 0.95
 beta2 = 0.999
 eps = 1e-8                             # the archived eps = 1e-4 was never applied
-# Learnt recurrence only: full-rank log weights, initialised fully connected at each
-# block's mean non-zero weight (archived no-connectome control).
-lr_weights = 1e-3
+# Learnt recurrence only: full-rank log weights, fully connected, initialised at each
+# block's mean weight including zeros (density-matched). lr raised from the archived
+# 1e-3: weights move ~lr per update in log space, and 50 epochs give ~600 updates.
+lr_weights = 5e-3
 lr_min_weights = 5e-4
 grad_clip_weights = 100.0
 

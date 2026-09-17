@@ -302,12 +302,15 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
     def learnt_recurrence_block(a, b, source_ids, target_ids):
         key = f"{combined_names[a]}__{rec_names[b]}"
         if key not in parameters.log_weights:
-            # Archived no-connectome init: fully connected at the mean non-zero weight.
+            # Density-matched init: fully connected at the block's mean weight
+            # *including* absent synapses, so each neuron starts with the teacher's
+            # total recurrent drive per block. (The archived no-connectome control used
+            # the mean non-zero weight, ~16x too much drive at this connection density;
+            # it could not recover within 50 epochs.)
             src = modelled[ct[modelled] == a - n_ff_types]
             tgt = modelled[ct[modelled] == b]
             block = structure["rec_weights"][np.ix_(src, tgt)]
-            nonzero = block[block != 0]
-            mean = float(nonzero.mean()) if nonzero.size else 1e-8
+            mean = max(float(block.mean()), 1e-8)
             init = np.log(mean * perturbation[a, b])
             parameters.log_weights[key] = nn.Parameter(
                 torch.full((src.size, tgt.size), init, dtype=torch.float32)
