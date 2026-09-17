@@ -56,7 +56,7 @@ def main(data_dir, out_path, scatter_fractions):
     for group in ("observed", "heldout"):
         rows = flu[flu["group"] == group]
         stats = rows.groupby("reconstructed_fraction")[
-            ["value", "floor_value", "ceiling_value", "noise_ceiling_value"]
+            ["value", "floor_value", "ceiling_value"]
         ].mean()
         spread = rows.groupby("reconstructed_fraction")["value"].std().fillna(0.0)
         ax.scatter(
@@ -79,13 +79,6 @@ def main(data_dir, out_path, scatter_fractions):
         )
         ax.plot(
             stats.index, stats["ceiling_value"], ":", color=COLORS[group], linewidth=1.0
-        )
-        ax.plot(
-            stats.index,
-            stats["noise_ceiling_value"],
-            "-.",
-            color=COLORS[group],
-            linewidth=0.8,
         )
         if group == "heldout":
             ax.plot(
@@ -182,7 +175,7 @@ def main(data_dir, out_path, scatter_fractions):
 
     fig.suptitle(
         "Unreconstructed inputs break prediction of unobserved neurons\n"
-        f"(fixed 50% recorded pool; held-out stimuli; mean ± SD over {n_seeds} seeds; ··· ceiling, -·- noise ceiling)"
+        f"(fixed 50% recorded pool; held-out stimuli; mean ± SD over {n_seeds} seeds; ··· ceiling)"
     )
     fig.savefig(out_path)
     print(f"Saved {out_path}")

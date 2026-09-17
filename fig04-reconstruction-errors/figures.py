@@ -50,13 +50,7 @@ def main(data_dir, out_path):
     for model, color in MODEL_COLORS.items():
         sub = rows[rows["error_model"] == model]
         stats = sub.groupby("level")[
-            [
-                "mean_kappa_lost",
-                "value",
-                "floor_value",
-                "ceiling_value",
-                "noise_ceiling_value",
-            ]
+            ["mean_kappa_lost", "value", "floor_value", "ceiling_value"]
         ].mean()
         spread = sub.groupby("level")["value"].std().fillna(0.0)
         ax.scatter(
@@ -86,13 +80,6 @@ def main(data_dir, out_path):
         )
         ax.plot(
             stats["mean_kappa_lost"],
-            stats["noise_ceiling_value"],
-            "-.",
-            color=color,
-            linewidth=0.8,
-        )
-        ax.plot(
-            stats["mean_kappa_lost"],
             stats["floor_value"],
             "--",
             color=FLOOR_COLOR,
@@ -101,7 +88,7 @@ def main(data_dir, out_path):
     ax.set_xlabel("Mean input volume lost (κ)")
     ax.set_ylabel("Fluctuation R² (unobserved)")
     ax.legend(frameon=False)
-    ax.set_title("··· ceiling   -·- noise ceiling   -- floor", fontsize=6.5)
+    ax.set_title("··· ceiling   -- floor", fontsize=6.5)
     panel_label(ax, "a")
 
     # (b) per-neuron Fluctuation R² against per-neuron kappa, both models pooled.
