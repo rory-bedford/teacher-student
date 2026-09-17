@@ -55,8 +55,9 @@ TIME_LIMITS = {
     "fig06-learnt-feedforward": "10:00:00",
 }
 
-#: Cluster GPUs one submission may hold at once (the user's cap is 8 in total).
-MAX_CONCURRENT = 8
+#: Most cluster GPUs one submission may hold at once. No hard cluster limit, only fair use;
+#: the user OKed up to ~16 while the cluster is quiet (2026-09-17).
+MAX_CONCURRENT = 16
 
 
 def clean_commit():
