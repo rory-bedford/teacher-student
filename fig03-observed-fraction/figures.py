@@ -34,6 +34,10 @@ from common.plotting import (
 )
 
 HERE = Path(__file__).resolve().parent
+#: Teacher participation ratio, pooled over all training trials.
+TEACHER_DIMENSIONALITY = (
+    HERE.parent / "generate-teacher-activity" / "teacher_dimensionality.csv"
+)
 N_NEURONS = 5000
 
 
@@ -55,7 +59,7 @@ def main(data_dir, out_path, scatter_fractions):
     use_talk_style()
     summary = pd.read_csv(data_dir / "fig03_summary.csv")
     rates = pd.read_csv(data_dir / "fig03_rates.csv")
-    dimensionality = pd.read_csv(data_dir / "fig03_dimensionality.csv").iloc[0]
+    dimensionality = pd.read_csv(TEACHER_DIMENSIONALITY).iloc[0]
     n_seeds = summary.groupby("obs_fraction")["seed"].nunique().min()
 
     fig = plt.figure(figsize=(FIGURE_WIDTH, 13 / 2.54), layout="constrained")
@@ -81,7 +85,8 @@ def main(data_dir, out_path, scatter_fractions):
     ax.text(
         pr_fraction,
         0.02,
-        f" participation ratio\n {dimensionality['participation_ratio']:.0f} neurons",
+        f" teacher participation ratio\n {dimensionality['participation_ratio']:.0f} neurons"
+        " (training trials)",
         transform=ax.get_xaxis_transform(),
         fontsize=6,
         color="#555555",

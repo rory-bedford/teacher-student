@@ -97,12 +97,16 @@ Identical to Figure 1 (student, recipe, evaluation — see its README) except
 
 ### Dimensionality (panel c, open question 1)
 
-Not computed anywhere in the archive. `analysis.py` computes it from the teacher's held-out
-trial (the same trial every run is scored on): all 5000 neurons, first 2 s discarded, the
-remaining 12.9 s smoothed with the same 50 ms Gaussian as Fluctuation R², then the
-participation ratio (Σλ)²/Σλ² of the neuron × neuron covariance and the number of PCs for 90%
-variance. Written to `fig03_dimensionality.csv` with the smoothing width and window. Panel (a)
-marks the participation ratio on the observed-neuron axis rather than a separate panel (c).
+Computed once for the teacher by `generate-teacher-activity/dimensionality.py` (not by this
+figure's analysis): all 5000 neurons, all 50 training trials with the first 2 s of each
+discarded, smoothed with the same 50 ms Gaussian as Fluctuation R², then the participation
+ratio (Σλ)²/Σλ² of the pooled neuron × neuron covariance: **41.4** (90% of variance in 236
+PCs). `figures.py` reads `generate-teacher-activity/teacher_dimensionality.csv` and marks the
+participation ratio on panel (a)'s observed-neuron axis rather than a separate panel (c).
+
+Departure from the spec above (2026-09-17): the spec asks for held-out stimuli; the single
+13 s held-out trial gives 25.9, a noisier, lower estimate from fewer activity patterns, so the
+pooled training-trial value is used.
 
 ### Panels as implemented
 
