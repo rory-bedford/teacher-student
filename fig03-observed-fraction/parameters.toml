@@ -24,9 +24,9 @@ mixed_precision = false
 
 [optimiser]
 surrgrad_scale = 5.0
-lr_scaling = 8e-3
-lr_min_scaling = 5e-4
-grad_clip_scaling = 5.0
+lr_scaling = 4e-3
+lr_min_scaling = 4e-4
+grad_clip_scaling = 2.0
 beta1 = 0.95
 beta2 = 0.999
 eps = 1e-8                             # the archived eps = 1e-4 was never applied
@@ -35,6 +35,8 @@ eps = 1e-8                             # the archived eps = 1e-4 was never appli
 van_rossum_tau_rise = 10.0
 van_rossum_tau_decay = 100.0
 van_rossum = 1.0
+hidden_rate_mean = 0.5                 # unobserved population mean rate vs observed teacher, per type
+hidden_rate_std = 0.5                  # unobserved population rate SD vs observed teacher, per type
 
 [evaluation]
 burn_in_ms = 2000.0                    # discarded from the held-out trial before scoring
