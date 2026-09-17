@@ -13,20 +13,19 @@ Metrics, per group:
     ceiling          the same metric for a perfectly specified student: teacher weights,
                      correct scaling factors, and the same teacher-forced sources
 
-Why a ceiling. The teacher network is chaotic. A perfectly specified student
-reproduces it spike for spike for several seconds (verified), but float32 rounding
-eventually flips a single spike in the simulated population and the trajectories then
-decorrelate completely within ~1 s — on the 13 s held-out window this happened after
-9-10 s. Mean rates and stimulus-locked fluctuations survive, precise timing does not,
-so the ceiling is below 1 and every value should be read against it.
+Why a ceiling. The teacher network is chaotic. A perfectly specified student reproduces
+it spike for spike until a float32 rounding difference flips a single spike in the
+free-running (unobserved) population; precise timing then decorrelates within ~1 s, at
+an arbitrary moment. Mean rates and stimulus-locked fluctuations survive.
 
-Equal starting conditions. Left alone, the perfectly specified student would track the
-teacher exactly until the first float32 rounding flip, whose timing is arbitrary. So
-every simulated model here (trained student and ceiling) starts with one
-extra spike injected at t = 0 into a free-running (unobserved) neuron, which decorrelates
-precise timing within about a second; the burn-in discards that transient. Each value
-is the mean over ``N_PERTURBATIONS`` draws of the flipped neuron, the same draws for
-every model of a run. Floors, rates, per-neuron R² and rasters use the first draw.
+Protocol (equal terms for student and ceiling). Every simulated model is run
+``N_PERTURBATIONS`` times, each with one extra spike injected at t = 0 into a different
+unobserved neuron (the same draws for the trained student and the perfect one, with
+identical teacher forcing). The burn-in discards the transient. Each model's smoothed
+traces are averaged over draws and the average is scored against the teacher (not the
+average of per-draw scores); activity R² uses rates averaged over draws. Floors, rates
+and per-neuron R² use the draw average; rasters show the first draw. Runs with no
+unobserved neurons have nothing free-running and are simulated once.
 
 The result is cached as ``evaluation.npz`` in the run directory.
 """
@@ -53,9 +52,9 @@ from common.training import FINAL_STATE
 
 EVALUATION_FILE = "evaluation.npz"
 #: Bump when the cached contents change; older caches are recomputed.
-EVALUATION_VERSION = 3
+EVALUATION_VERSION = 4
 #: Spike-flip draws per run (see module docstring), and the seed choosing the neurons.
-N_PERTURBATIONS = 5
+N_PERTURBATIONS = 20
 PERTURBATION_SEED = 0
 GROUPS = ("observed", "unobserved")
 METRICS = ("activity_r2", "fluctuation_r2")
@@ -98,13 +97,20 @@ def per_neuron_r2(teacher_smooth, student_smooth):
         return np.where(ss_tot > 0, 1.0 - ss_res / ss_tot, np.nan)
 
 
-def group_metrics(teacher, student, dt, tau_ms, n_permutations, rng):
-    """Activity and fluctuation R² of one group, with shuffled-identity floors."""
+def group_metrics(teacher, trials, dt, tau_ms, n_permutations, rng):
+    """Activity and fluctuation R² of one group, scored on the draw-averaged student.
+
+    Args:
+        teacher: (time, neurons) bool spikes.
+        trials: (draws, time, neurons) bool student spikes.
+    """
     duration_s = teacher.shape[0] * dt / 1000.0
     teacher_rates = teacher.sum(axis=0) / duration_s
-    student_rates = student.sum(axis=0) / duration_s
+    student_rates = trials.sum(axis=(0, 1)) / (trials.shape[0] * duration_s)
     teacher_smooth = smooth(teacher, tau_ms, dt)
-    student_smooth = smooth(student, tau_ms, dt)
+    student_smooth = np.zeros_like(teacher_smooth)
+    for trial in trials:
+        student_smooth += smooth(trial, tau_ms, dt) / trials.shape[0]
 
     values = {
         "activity_r2": r_squared(teacher_rates, student_rates),
@@ -300,49 +306,48 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
     }
     raster_steps = int(out["raster_steps"])
 
-    def mean_values(result, suffix):
-        for group in GROUPS:
-            if sets[group].size == 0:
-                for metric in METRICS:
-                    out[f"{group}_{metric}{suffix}"] = np.array(np.nan)
-                continue
-            teacher = result["teacher"][group][burn_in:]
-            values = [
-                group_metrics(teacher, trial[burn_in:], dt, tau_ms, 0, None)["values"]
-                for trial in result["student"][group]
-            ]
-            for metric in METRICS:
-                out[f"{group}_{metric}{suffix}"] = np.array(
-                    np.mean([v[metric] for v in values])
-                )
-
-    mean_values(result, "")
     for group in GROUPS:
         ids = sets[group]
         out[f"{group}_ids"] = ids
         out[f"{group}_cell_types"] = ct[ids]
         if ids.size == 0:
             for metric in METRICS:
-                out[f"{group}_{metric}_floor"] = np.array(np.nan)
+                for suffix in ("", "_floor"):
+                    out[f"{group}_{metric}{suffix}"] = np.array(np.nan)
             continue
         teacher = result["teacher"][group][burn_in:]
-        first = result["student"][group][0][burn_in:]
+        trials = result["student"][group][:, burn_in:]
         scores = group_metrics(
-            teacher, first, dt, tau_ms, evaluation_cfg["n_floor_permutations"], rng
+            teacher, trials, dt, tau_ms, evaluation_cfg["n_floor_permutations"], rng
         )
         for metric in METRICS:
+            out[f"{group}_{metric}"] = np.array(scores["values"][metric])
             out[f"{group}_{metric}_floor"] = np.array(scores["floors"][metric])
         out[f"{group}_teacher_rates"] = scores["teacher_rates"]
         out[f"{group}_student_rates"] = scores["student_rates"]
         out[f"{group}_per_neuron_fluctuation_r2"] = scores["per_neuron_fluctuation_r2"]
         out[f"{group}_teacher_raster"] = np.packbits(teacher[:raster_steps], axis=0)
-        out[f"{group}_student_raster"] = np.packbits(first[:raster_steps], axis=0)
+        out[f"{group}_student_raster"] = np.packbits(trials[0, :raster_steps], axis=0)
+    del result
     if progress:
         progress("student", out)
 
-    mean_values(
-        run_student(run_dir, device, perfect=True, flip_ids=flip_ids), "_ceiling"
-    )
+    perfect = run_student(run_dir, device, perfect=True, flip_ids=flip_ids)
+    for group in GROUPS:
+        for metric in METRICS:
+            out[f"{group}_{metric}_ceiling"] = np.array(np.nan)
+        if sets[group].size == 0:
+            continue
+        scores = group_metrics(
+            perfect["teacher"][group][burn_in:],
+            perfect["student"][group][:, burn_in:],
+            dt,
+            tau_ms,
+            0,
+            None,
+        )
+        for metric in METRICS:
+            out[f"{group}_{metric}_ceiling"] = np.array(scores["values"][metric])
     if progress:
         progress("ceiling", out)
 

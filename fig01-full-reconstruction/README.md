@@ -135,14 +135,19 @@ epoch → **≈ 3.6 h per run, ≈ 11 GPU-h for the 3 seeds**.
   per-neuron rates. Both per group (observed / unobserved).
 - **Floor:** the same metric with the teacher↔student neuron identities permuted within the
   group, mean of 5 permutations.
+- **Perturbation protocol (2026-09-17):** every simulated model is run 20 times, each with one
+  extra spike injected at t = 0 into a different unobserved neuron (same draws and identical
+  teacher forcing for the trained and the perfect student). Smoothed traces are averaged over
+  the 20 draws and the average is scored (activity R² on draw-averaged rates). Floors and
+  per-neuron R² use the draw average.
 - **Ceiling (added):** the same metric for a *perfectly specified* student — teacher weights,
-  correct scaling factors, identical teacher forcing. **It is not 1.** The teacher network is
-  chaotic: a perfectly specified student matches it spike for spike for seconds, but float32
-  rounding eventually flips one spike in the simulated population, and the trajectories
-  then decorrelate within ~1 s. On a test trial this happened after 9–10 s, giving a ceiling of
-  Fluctuation R² ≈ 0.92–0.95 and Activity R² ≈ 0.998. The METHODS statement that "a perfectly
-  specified student reaches ~0 error" therefore holds only for short windows; every panel
-  shows the ceiling.
+  correct scaling factors, identical teacher forcing and perturbations. **It is not 1.** The
+  teacher network is chaotic: a perfectly specified student matches it spike for spike until
+  float32 rounding flips one spike in the simulated population, at an arbitrary time, and
+  timing then decorrelates within ~1 s. The t = 0 flips replace that arbitrary moment with a
+  controlled one. Test on seed 44 (old recipe, K = 20): ceiling Fluctuation R² 0.92 / 0.94
+  (observed / unobserved), Activity R² 0.998; trained student 0.86 / 0.90 and 0.98. Scoring
+  single draws instead gave noisy ceilings that could fall below the student.
 - **Correction to Status above:** the archived 0.997 / 0.995 were rates computed on *training*
   trial 0 (`compute_per_neuron_rates` reads the training `spike_data.zarr`), not held-out
   stimuli, and came from the EM-clamped model rather than this one. Fig 1 is retrained here.
