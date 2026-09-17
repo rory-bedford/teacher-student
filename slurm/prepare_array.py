@@ -18,7 +18,10 @@ editable install), so library changes do reach queued tasks; the run framework r
 the library commit and dirty flag in each run's metadata.
 
     uv run python slurm/prepare_array.py [--dry-run] [--seeds 44[,45]] \\
-        [--split v100:4[,a40:2]] fig01-full-reconstruction fig02-controls ...
+        [--runs obs-0.02__seed-44,wn-0.3__seed-44] [--split v100:4[,a40:2]] \\
+        fig01-full-reconstruction fig02-controls ...
+
+``--seeds`` and ``--runs`` (run folder names) restrict which grid runs are prepared.
 
 ``--split <gres>:<n>,...`` deals the runs out over one array per GPU type
 (``--gres=gpu:<gres>:1``), each throttled to ``n`` GPUs; the throttles may add up to at
@@ -86,7 +89,7 @@ def snapshot_code(code_dir, commit):
     return code_dir
 
 
-def pending_runs(figure, seeds=None):
+def pending_runs(figure, seeds=None, names=None):
     """(experiment config, grid dir, [(params, run name)]) still to run for a figure."""
     folder = REPO / figure
     experiment_path = folder / "experiment.toml"
@@ -100,6 +103,8 @@ def pending_runs(figure, seeds=None):
     runs = list(generator(toml.load(experiment["parameters_file"])))
     if seeds is not None:
         runs = [r for r in runs if r[0]["simulation"]["seed"] in seeds]
+    if names is not None:
+        runs = [r for r in runs if r[1] in names]
     return experiment, Path(experiment["output_dir"]), runs
 
 
@@ -144,6 +149,8 @@ def main():
     argv = [a for a in argv if a != "--dry-run"]
     seeds = parse_list(argv, "--seeds")
     seeds = None if seeds is None else {int(s) for s in seeds}
+    names = parse_list(argv, "--runs")
+    names = None if names is None else set(names)
     split = parse_list(argv, "--split")
     split = (
         [(gres, int(n)) for gres, n in (p.split(":") for p in split)]
@@ -156,7 +163,7 @@ def main():
     if not figures:
         raise SystemExit(__doc__)
 
-    pending = {figure: pending_runs(figure, seeds) for figure in figures}
+    pending = {figure: pending_runs(figure, seeds, names) for figure in figures}
     for figure, (_, _, runs) in pending.items():
         print(f"{figure}: {len(runs)} runs")
         if dry_run:
