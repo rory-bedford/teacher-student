@@ -38,7 +38,7 @@ from connectome_snns.network_simulators.conductance_based.simulator import (
 )
 from connectome_snns.network_simulators.projections import make_frozen_projections
 
-from common.evaluation import held_out_trial, smooth
+from common.evaluation import held_out_trial
 
 TARGET_FRACTION = 0.25
 TARGET_SEED = 0
@@ -188,30 +188,16 @@ def calibrated_shift(run_dir):
     return float(toml.load(calibration_dir(run_dir) / "current.toml")["shift_mv"])
 
 
-def delta_scores(teacher_off, teacher_on, student_off, student_on, ids, dt, tau_ms):
+def delta_scores(teacher, student, ids):
     """R² of the intervention's effect on neurons ``ids``.
 
-    ``teacher_*``: (time, neurons) bool; ``student_*``: (draws, time, neurons) bool; all
-    already cut to the scoring window.
+    ``teacher`` and ``student`` map "off"/"on" to ``(smoothed, rates)``: draw-averaged
+    smoothed traces (time, neurons) and per-neuron rates, on the scoring window.
     """
-    duration_s = teacher_off.shape[0] * dt / 1000.0
-
-    def mean_smooth(trials):
-        out = np.zeros((trials.shape[1], ids.size), dtype=np.float32)
-        for trial in trials:
-            out += smooth(trial[:, ids], tau_ms, dt) / trials.shape[0]
-        return out
-
-    teacher_delta = smooth(teacher_on[:, ids], tau_ms, dt) - smooth(
-        teacher_off[:, ids], tau_ms, dt
-    )
-    student_delta = mean_smooth(student_on) - mean_smooth(student_off)
-    teacher_rate_delta = (
-        teacher_on[:, ids].sum(axis=0) - teacher_off[:, ids].sum(axis=0)
-    ) / duration_s
-    student_rate_delta = (
-        student_on[:, :, ids].sum(axis=(0, 1)) - student_off[:, :, ids].sum(axis=(0, 1))
-    ) / (student_on.shape[0] * duration_s)
+    teacher_delta = teacher["on"][0][:, ids] - teacher["off"][0][:, ids]
+    student_delta = student["on"][0][:, ids] - student["off"][0][:, ids]
+    teacher_rate_delta = teacher["on"][1][ids] - teacher["off"][1][ids]
+    student_rate_delta = student["on"][1][ids] - student["off"][1][ids]
     return {
         "fluctuation_r2": r_squared(teacher_delta.ravel(), student_delta.ravel()),
         "activity_r2": r_squared(teacher_rate_delta, student_rate_delta),

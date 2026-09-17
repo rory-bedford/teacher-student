@@ -5,7 +5,7 @@
 # If the teacher's current is not calibrated yet (no current.toml), first submits one GPU
 # job per calibration current in parallel and a CPU job that picks the current. Then:
 # teacher-on (GPU, after calibration), student-off and perfect-off (GPU, immediately),
-# student-on and perfect-on (GPU, after teacher-on), score (CPU, after all).
+# student-on and perfect-on (GPU, after teacher-on), score (GPU, after all).
 # Jobs waiting on dependencies hold no GPU. Logs: <out dir>/logs.
 set -euo pipefail
 RUN="$(realpath "$1")"; OUT="$(realpath -m "$2")"; GPU="${3:-v100}"
@@ -45,7 +45,7 @@ student_off=$(submit gpu student-off "")
 perfect_off=$(submit gpu perfect-off "")
 student_on=$(submit gpu student-on "$teacher_on")
 perfect_on=$(submit gpu perfect-on "$teacher_on")
-score=$(submit cpu score "$teacher_on:$student_off:$perfect_off:$student_on:$perfect_on")
+score=$(submit gpu score "$teacher_on:$student_off:$perfect_off:$student_on:$perfect_on")
 echo "teacher-on $teacher_on, student-off $student_off, perfect-off $perfect_off,"
 echo "student-on $student_on, perfect-on $perfect_on, score $score"
 echo "logs: $OUT/logs"

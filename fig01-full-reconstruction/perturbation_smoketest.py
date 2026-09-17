@@ -9,7 +9,8 @@ Stages, each a separate job (``slurm/submit_perturbation.sh`` chains them):
     perfect-off   GPU  perfectly specified student, unperturbed
     student-on    GPU  trained student, perturbed (needs teacher-on)
     perfect-on    GPU  perfectly specified student, perturbed (needs teacher-on)
-    score         CPU  summary.csv, floor.csv, teacher_perturbation_response.csv, config.yaml
+    score         GPU  summary.csv, floor.csv, teacher_perturbation_response.csv, config.yaml
+                       (smooths each simulation once on the GPU; ~1 min)
 
     uv run python fig01-full-reconstruction/perturbation_smoketest.py <stage> --run <run dir> --out <dir>
 
@@ -36,10 +37,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.evaluation import (
     N_PERTURBATIONS,
     PERTURBATION_SEED,
-    group_metrics,
     run_parameters,
     run_student,
-    smooth,
+    smooth_mean,
 )
 from common.model import neuron_sets
 from common.perturbation import (
@@ -142,7 +142,7 @@ def simulate(stage, run_dir, out_dir, device, shift=None):
     log(f"saved {stage}")
 
 
-def score(run_dir, out_dir):
+def score(run_dir, out_dir, device):
     params = run_parameters(run_dir)
     structure = load_structure(run_dir)
     sets = neuron_sets(structure)
@@ -162,18 +162,41 @@ def score(run_dir, out_dir):
     runs = {stage: spikes[:, window] for stage, spikes in runs.items()}
     targets, shift_mv = extra["targets"], float(extra["shift_mv"])
     rows, floor_rows = [], []
-
-    # Section 1: held-out scores, standard protocol, plus a one-off floor.
-    rng = np.random.default_rng(0)
     duration_s = teacher_off.shape[0] * dt / 1000.0
+
+    # Smooth every simulation once (draw average for students), then slice groups.
+    def summarise(trials):
+        trials = trials[None] if trials.ndim == 2 else trials
+        rates = trials.sum(axis=(0, 1)) / (trials.shape[0] * duration_s)
+        return smooth_mean(trials, tau_ms, dt, device), rates
+
+    teacher = {"off": summarise(teacher_off), "on": summarise(teacher_on)}
+    models = {
+        "student": {
+            "off": summarise(runs["student-off"]),
+            "on": summarise(runs["student-on"]),
+        },
+        "ceiling": {
+            "off": summarise(runs["perfect-off"]),
+            "on": summarise(runs["perfect-on"]),
+        },
+    }
+    log("smoothed all simulations")
+
+    # Section 1: held-out scores (standard protocol) and a one-off shuffled floor.
+    rng = np.random.default_rng(0)
+    teacher_smooth, teacher_rates = teacher["off"]
     for group in ("observed", "unobserved"):
         ids = sets[group]
-        student = group_metrics(
-            teacher_off[:, ids], runs["student-off"][:, :, ids], dt, tau_ms
-        )
-        ceiling = group_metrics(
-            teacher_off[:, ids], runs["perfect-off"][:, :, ids], dt, tau_ms
-        )
+        scores = {}
+        for name, model in models.items():
+            model_smooth, model_rates = model["off"]
+            scores[name] = {
+                "fluctuation_r2": r_squared(
+                    teacher_smooth[:, ids].ravel(), model_smooth[:, ids].ravel()
+                ),
+                "activity_r2": r_squared(teacher_rates[ids], model_rates[ids]),
+            }
         for metric in ("fluctuation_r2", "activity_r2"):
             rows.append(
                 {
@@ -181,23 +204,23 @@ def score(run_dir, out_dir):
                     "condition": "heldout",
                     "group": group,
                     "cell_type": "all",
+                    "n_cells": int(ids.size),
                     "metric": metric,
-                    "value": student["values"][metric],
-                    "ceiling_value": ceiling["values"][metric],
+                    "value": scores["student"][metric],
+                    "ceiling_value": scores["ceiling"][metric],
                 }
             )
-        teacher_smooth = smooth(teacher_off[:, ids], tau_ms, dt)
-        student_smooth = np.zeros_like(teacher_smooth)
-        for trial in runs["student-off"]:
-            student_smooth += smooth(trial[:, ids], tau_ms, dt) / N_PERTURBATIONS
+        student_smooth, student_rates = models["student"]["off"]
         floors = {"fluctuation_r2": [], "activity_r2": []}
         for _ in range(N_FLOOR_PERMUTATIONS):
-            order = rng.permutation(ids.size)
+            order = rng.permutation(ids)
             floors["fluctuation_r2"].append(
-                r_squared(teacher_smooth.ravel(), student_smooth[:, order].ravel())
+                r_squared(
+                    teacher_smooth[:, ids].ravel(), student_smooth[:, order].ravel()
+                )
             )
             floors["activity_r2"].append(
-                r_squared(student["teacher_rates"], student["student_rates"][order])
+                r_squared(teacher_rates[ids], student_rates[order])
             )
         for metric, values in floors.items():
             floor_rows.append(
@@ -220,24 +243,8 @@ def score(run_dir, out_dir):
         ("observed", "I"): observed[ct[observed] == 1],
     }
     for (group, cell_type), ids in groups.items():
-        student = delta_scores(
-            teacher_off,
-            teacher_on,
-            runs["student-off"],
-            runs["student-on"],
-            ids,
-            dt,
-            tau_ms,
-        )
-        ceiling = delta_scores(
-            teacher_off,
-            teacher_on,
-            runs["perfect-off"],
-            runs["perfect-on"],
-            ids,
-            dt,
-            tau_ms,
-        )
+        student = delta_scores(teacher, models["student"], ids)
+        ceiling = delta_scores(teacher, models["ceiling"], ids)
         for metric in student:
             rows.append(
                 {
@@ -324,7 +331,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     if args.stage == "score":
-        score(args.run, args.out)
+        score(args.run, args.out, args.device)
     elif args.stage == "cal-pick":
         log(f"calibrated shift {pick_current(args.run):+.2f} mV")
     else:

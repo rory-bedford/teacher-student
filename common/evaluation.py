@@ -87,6 +87,35 @@ def smooth(spikes, tau_ms, dt):
     return gaussian_filter1d(spikes.astype(np.float32), sigma=tau_ms / dt, axis=0)
 
 
+def smooth_mean(trials, tau_ms, dt, device):
+    """Mean over trials of :func:`smooth`, on ``device``; (trials, time, neurons) -> (time, neurons).
+
+    Same kernel and boundary handling as ``scipy.ndimage.gaussian_filter1d`` (truncate 4,
+    mode "reflect", which repeats the edge sample), so results match :func:`smooth` to
+    float32 precision.
+    """
+    sigma = tau_ms / dt
+    radius = int(4.0 * sigma + 0.5)
+    x = torch.arange(-radius, radius + 1, dtype=torch.float64)
+    kernel = torch.exp(-0.5 * (x / sigma) ** 2)
+    kernel = (kernel / kernel.sum()).float().to(device)[None, None, :]
+    total = None
+    for trial in trials:
+        signal = torch.as_tensor(np.ascontiguousarray(trial), device=device).float()
+        signal = signal.T[:, None, :]  # (neurons, 1, time)
+        padded = torch.cat(
+            [
+                signal[..., :radius].flip(-1),
+                signal,
+                signal[..., -radius:].flip(-1),
+            ],
+            dim=-1,
+        )
+        smoothed = torch.nn.functional.conv1d(padded, kernel)[:, 0, :].T
+        total = smoothed if total is None else total + smoothed
+    return (total / len(trials)).cpu().numpy()
+
+
 def per_neuron_r2(teacher_smooth, student_smooth):
     """Fluctuation R² of each neuron separately (NaN where the teacher is silent)."""
     ss_res = ((student_smooth - teacher_smooth) ** 2).sum(axis=0)
