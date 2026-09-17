@@ -29,6 +29,20 @@ description=$(cut -f2 <<<"$line")
 
 # Never `uv run` on a node: it rebuilds the shared .venv when it cannot see the interpreter.
 PYTHON="$REPO/.venv/bin/python"
+
+# W&B: the nodes cannot see the home directory, so ~/.netrc is missing there. Read the
+# key from a copy on /tachyon (create once: install -m 600 ~/.netrc <this path>).
+WANDB_NETRC="/tachyon/groups/scratch/gzenke/bedfrory/.netrc-wandb"
+if [[ ! -r "$WANDB_NETRC" ]]; then
+    echo "No W&B credentials at $WANDB_NETRC; run: install -m 600 ~/.netrc $WANDB_NETRC" >&2
+    exit 1
+fi
+WANDB_API_KEY=$(awk '/api.wandb.ai/{found=1} found && $1=="password"{print $2; exit}' "$WANDB_NETRC")
+export WANDB_API_KEY
+if [[ -z "$WANDB_API_KEY" ]]; then
+    echo "No api.wandb.ai password in $WANDB_NETRC" >&2
+    exit 1
+fi
 CODE=$(cat "$ARRAY_DIR/code.txt")
 
 # Run from the array's code snapshot (a git worktree of the commit the configs were
