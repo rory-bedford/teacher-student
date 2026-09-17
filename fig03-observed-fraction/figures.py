@@ -5,7 +5,7 @@
 
 Panel (b) shows rate scatters at three observed fractions: by default the lowest
 fraction still within 10% of the ceiling (above threshold), the fraction closest to
-halfway between floor and ceiling (near), and the lowest fraction run (below). Pass
+half the ceiling (near), and the lowest fraction run (below). Pass
 --scatter-fractions to choose them by hand once the curve is known.
 """
 
@@ -19,13 +19,13 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from connectome_snns.visualization import FLOOR_COLOR
+
 from common.plotting import (
     FIGURE_WIDTH,
-    FLOOR_COLOR,
     GROUP_COLORS,
     GROUP_LABELS,
     ceiling_line,
-    floor_line,
     panel_label,
     r2_title,
     rate_scatter,
@@ -41,12 +41,8 @@ def default_scatter_fractions(summary):
     rows = summary[
         (summary["group"] == "unobserved") & (summary["metric"] == "fluctuation_r2")
     ]
-    stats = rows.groupby("obs_fraction")[
-        ["value", "floor_value", "ceiling_value"]
-    ].mean()
-    normalised = (stats["value"] - stats["floor_value"]) / (
-        stats["ceiling_value"] - stats["floor_value"]
-    )
+    stats = rows.groupby("obs_fraction")[["value", "ceiling_value"]].mean()
+    normalised = stats["value"] / stats["ceiling_value"]
     fractions = sorted(stats.index)
     comfortable = [f for f in fractions if normalised[f] >= 0.9]
     above = comfortable[0] if comfortable else fractions[-1]
@@ -80,7 +76,6 @@ def main(data_dir, out_path, scatter_fractions):
         ceiling_line(
             ax, summary, "obs_fraction", "fluctuation_r2", group, GROUP_COLORS[group]
         )
-    floor_line(ax, summary, "obs_fraction", "fluctuation_r2", "unobserved")
     pr_fraction = dimensionality["participation_ratio"] / N_NEURONS
     ax.axvline(pr_fraction, color=FLOOR_COLOR, linewidth=0.8)
     ax.text(
@@ -101,7 +96,7 @@ def main(data_dir, out_path, scatter_fractions):
     )
     top.set_xlabel("Observed neurons")
     ax.set_title(
-        "··· ceiling (perfectly specified student)   -- shuffled-identity floor",
+        "··· ceiling (perfectly specified student)",
         fontsize=6.5,
     )
     panel_label(ax, "a")

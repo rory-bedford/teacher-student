@@ -4,7 +4,7 @@ Run after training (Figure 1's runs supply the full-connectome variant):
     uv run python fig02-controls/analysis.py
 
 Writes, next to this script:
-    fig02_summary.csv   variant, n_free_params, seed, group, metric, value, floor_value, ceiling_value
+    fig02_summary.csv   variant, n_free_params, seed, group, metric, value, ceiling_value
     fig02_rates.csv     variant, n_free_params, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
 """
 
@@ -50,7 +50,7 @@ def main(runs_dir, baseline_dir, out_dir):
     rates.to_csv(out_dir / "fig02_rates.csv", index=False)
     print(
         summary.groupby(["variant", "group", "metric"])[
-            ["value", "floor_value", "ceiling_value"]
+            ["value", "ceiling_value"]
         ].mean()
     )
 

@@ -10,7 +10,7 @@ recurrent teacher weights) that comes from inside the reconstructed segment.
 
 Writes, next to this script:
     fig06_summary.csv   reconstructed_fraction, recorded_pool_fraction, kappa, n_free_params, n_in_loss,
-                        seed, group, metric, value, floor_value, ceiling_value
+                        seed, group, metric, value, ceiling_value
     fig06_rates.csv     reconstructed_fraction, recorded_pool_fraction, neuron_id, cell_type, group, seed,
                         teacher_rate_hz, student_rate_hz, fluctuation_r2
     fig06_spikes.csv    reconstructed_fraction, neuron_id, group, seed, source, time_s

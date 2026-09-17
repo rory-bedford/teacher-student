@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 from connectome_snns.visualization import (
     CONFIGURATION_MODEL_COLOR,
-    FLOOR_COLOR,
     FULL_CONNECTOME_COLOR,
     LEARNT_RECURRENCE_COLOR,
     SHUFFLE_WEIGHTS_COLOR,
@@ -89,14 +88,6 @@ def grouped_bars(ax, summary, metric):
                 color="k",
                 zorder=3,
                 linewidths=0,
-            )
-            ax.hlines(
-                sub["floor_value"].mean(),
-                x - width / 2,
-                x + width / 2,
-                colors=FLOOR_COLOR,
-                linestyles="--",
-                linewidth=0.8,
             )
             ax.hlines(
                 sub["ceiling_value"].mean(),
@@ -181,7 +172,7 @@ def main(data_dir, out_path):
     grouped_bars(ax, summary, "fluctuation_r2")
     ax.set_title(
         "Fluctuation R², held-out stimuli (light: observed, dark: unobserved;"
-        " -- floor, ··· ceiling)",
+        " ··· ceiling)",
         fontsize=7,
     )
     panel_label(ax, "a")

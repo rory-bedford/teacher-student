@@ -8,8 +8,6 @@ Metrics, per group:
     fluctuation_r2   spike trains smoothed with a Gaussian (sigma 50 ms), R² over all
                      neurons x time (primary)
     activity_r2      R² of per-neuron firing rates (secondary)
-    floor            the same metric after permuting the teacher<->student neuron
-                     mapping within the group, averaged over permutations
     ceiling          the same metric for a perfectly specified student: teacher weights,
                      correct scaling factors, and the same teacher-forced sources
 
@@ -23,8 +21,8 @@ Protocol (equal terms for student and ceiling). Every simulated model is run
 unobserved neuron (the same draws for the trained student and the perfect one, with
 identical teacher forcing). The burn-in discards the transient. Each model's smoothed
 traces are averaged over draws and the average is scored against the teacher (not the
-average of per-draw scores); activity R² uses rates averaged over draws. Floors, rates
-and per-neuron R² use the draw average; rasters show the first draw. Runs with no
+average of per-draw scores); activity R² uses rates averaged over draws. Rates and
+per-neuron R² use the draw average; rasters show the first draw. Runs with no
 unobserved neurons have nothing free-running and are simulated once.
 
 The result is cached as ``evaluation.npz`` in the run directory.
@@ -97,7 +95,7 @@ def per_neuron_r2(teacher_smooth, student_smooth):
         return np.where(ss_tot > 0, 1.0 - ss_res / ss_tot, np.nan)
 
 
-def group_metrics(teacher, trials, dt, tau_ms, n_permutations, rng):
+def group_metrics(teacher, trials, dt, tau_ms):
     """Activity and fluctuation R² of one group, scored on the draw-averaged student.
 
     Args:
@@ -116,16 +114,8 @@ def group_metrics(teacher, trials, dt, tau_ms, n_permutations, rng):
         "activity_r2": r_squared(teacher_rates, student_rates),
         "fluctuation_r2": r_squared(teacher_smooth.ravel(), student_smooth.ravel()),
     }
-    floors = {"activity_r2": [], "fluctuation_r2": []}
-    for _ in range(n_permutations):
-        order = rng.permutation(teacher.shape[1])
-        floors["activity_r2"].append(r_squared(teacher_rates, student_rates[order]))
-        floors["fluctuation_r2"].append(
-            r_squared(teacher_smooth.ravel(), student_smooth[:, order].ravel())
-        )
     return {
         "values": values,
-        "floors": {k: float(np.mean(v)) if v else np.nan for k, v in floors.items()},
         "teacher_rates": teacher_rates,
         "student_rates": student_rates,
         "per_neuron_fluctuation_r2": per_neuron_r2(teacher_smooth, student_smooth),
@@ -284,7 +274,6 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
         )
     evaluation_cfg = params["evaluation"]
     tau_ms = evaluation_cfg["fluctuation_tau_ms"]
-    rng = np.random.default_rng(0)
 
     result = run_student(run_dir, device, flip_ids=flip_ids)
     dt = result["dt"]
@@ -312,17 +301,13 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
         out[f"{group}_cell_types"] = ct[ids]
         if ids.size == 0:
             for metric in METRICS:
-                for suffix in ("", "_floor"):
-                    out[f"{group}_{metric}{suffix}"] = np.array(np.nan)
+                out[f"{group}_{metric}"] = np.array(np.nan)
             continue
         teacher = result["teacher"][group][burn_in:]
         trials = result["student"][group][:, burn_in:]
-        scores = group_metrics(
-            teacher, trials, dt, tau_ms, evaluation_cfg["n_floor_permutations"], rng
-        )
+        scores = group_metrics(teacher, trials, dt, tau_ms)
         for metric in METRICS:
             out[f"{group}_{metric}"] = np.array(scores["values"][metric])
-            out[f"{group}_{metric}_floor"] = np.array(scores["floors"][metric])
         out[f"{group}_teacher_rates"] = scores["teacher_rates"]
         out[f"{group}_student_rates"] = scores["student_rates"]
         out[f"{group}_per_neuron_fluctuation_r2"] = scores["per_neuron_fluctuation_r2"]
@@ -343,8 +328,6 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
             perfect["student"][group][:, burn_in:],
             dt,
             tau_ms,
-            0,
-            None,
         )
         for metric in METRICS:
             out[f"{group}_{metric}_ceiling"] = np.array(scores["values"][metric])
@@ -396,7 +379,6 @@ def summary_rows(evaluation, **labels):
                     "group": group,
                     "metric": metric,
                     "value": float(evaluation[f"{group}_{metric}"]),
-                    "floor_value": float(evaluation[f"{group}_{metric}_floor"]),
                     "ceiling_value": float(evaluation[f"{group}_{metric}_ceiling"]),
                 }
             )

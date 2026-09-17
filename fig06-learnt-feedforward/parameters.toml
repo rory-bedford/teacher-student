@@ -52,7 +52,6 @@ learnt_weight_l1 = 5000.0              # mean(exp(U V)) per learnt block
 [evaluation]
 burn_in_ms = 2000.0
 fluctuation_tau_ms = 50.0
-n_floor_permutations = 5
 
 # ==========================================================================
 # PHYSIOLOGY — copied verbatim from the teacher (bernstein/teacher-activity).

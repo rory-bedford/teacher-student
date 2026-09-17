@@ -52,7 +52,7 @@ One caveat to be aware of for questions, not to act on: the two groups are not a
 - **Fluctuation R² (primary)**: spike trains smoothed with a **50 ms Gaussian**, then R². A close stand-in for the calcium trace the real pipeline matches against (exponential filter, τ = 100 ms), so it answers "how well would these spike trains agree once seen through calcium". Say this in the talk — it makes the metric a property of the experiment rather than an arbitrary choice.
 - **Activity R² (secondary)**: firing rates.
 - Reported **separately for observed and unobserved** neurons. Unobserved is the discriminative group; every model can fit what it is shown.
-- **Shuffled-identity floor** on every panel: recompute after permuting the teacher↔student neuron mapping. Since a perfectly specified student reaches ~0 error, the floor is the only reference — there is no noise ceiling to speak of.
+- ~~Shuffled-identity floor~~ — **dropped 2026-09-17**: not reported on any figure (overrides the per-figure READMEs). The reference is instead a **ceiling**: a perfectly specified student under the same teacher forcing and spike-flip perturbations (see `fig01-full-reconstruction/README.md`, Evaluation).
 - **≥3 seeds** per condition, with spread shown.
 
 ---

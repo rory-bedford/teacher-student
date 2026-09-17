@@ -4,7 +4,7 @@ Run after training:
     uv run python fig01-full-reconstruction/analysis.py
 
 Writes, next to this script:
-    fig01_summary.csv   seed, group, metric, value, floor_value
+    fig01_summary.csv   seed, group, metric, value, ceiling_value
     fig01_rates.csv     neuron_id, cell_type, observed, seed, teacher/student rate, fluctuation_r2
     fig01_spikes.csv    neuron_id, observed, seed, source, time_s   (raster, first seed)
 """
@@ -56,7 +56,7 @@ def main(runs_dir, out_dir):
     pd.DataFrame(spikes).to_csv(out_dir / "fig01_spikes.csv", index=False)
     print(
         pd.DataFrame(summary)
-        .groupby(["group", "metric"])[["value", "floor_value"]]
+        .groupby(["group", "metric"])[["value", "ceiling_value"]]
         .agg(["mean", "std"])
     )
 

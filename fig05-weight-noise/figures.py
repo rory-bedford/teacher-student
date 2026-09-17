@@ -21,7 +21,6 @@ from common.plotting import (
     GROUP_COLORS,
     GROUP_LABELS,
     ceiling_line,
-    floor_line,
     panel_label,
     seed_errorbar,
     use_talk_style,
@@ -55,12 +54,11 @@ def main(data_dir, fig04_summary, out_path):
         ceiling_line(
             ax, summary, "weight_noise", "fluctuation_r2", group, GROUP_COLORS[group]
         )
-    floor_line(ax, summary, "weight_noise", "fluctuation_r2", "unobserved")
     ax.set_xlabel("Weight noise")
     ax.set_ylabel("Fluctuation R²")
     ax.legend(frameon=False)
     ax.set_title(
-        "··· ceiling   -- floor\nweights clipped at zero: "
+        "··· ceiling\nweights clipped at zero: "
         + ", ".join(f"{100 * v:.1f}% @ {k:g}" for k, v in clipped.items() if k > 0),
         fontsize=6,
     )

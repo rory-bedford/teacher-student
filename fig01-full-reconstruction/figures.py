@@ -16,7 +16,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     EXCITATORY_COLOR,
     FIGURE_WIDTH,
-    FLOOR_COLOR,
     GROUP_LABELS,
     INHIBITORY_COLOR,
     panel_label,
@@ -74,7 +73,7 @@ def main(data_dir, out_path):
             ax.legend(loc="upper left", markerscale=3, frameon=False)
             panel_label(ax, "b")
 
-    # (c) per-neuron fluctuation R², E vs I, with the group floor.
+    # (c) per-neuron fluctuation R², E vs I, with the group ceiling.
     for column, group in enumerate(("observed", "unobserved")):
         ax = fig.add_subplot(grid[2, column])
         subset = rates_seed[rates_seed["observed"] == int(group == "observed")]
@@ -94,13 +93,6 @@ def main(data_dir, out_path):
         rows = summary[
             (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
         ]
-        ax.axvline(
-            rows["floor_value"].mean(),
-            color=FLOOR_COLOR,
-            linestyle="--",
-            linewidth=0.8,
-            label="floor",
-        )
         ax.axvline(
             rows["ceiling_value"].mean(),
             color="k",

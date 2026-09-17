@@ -9,7 +9,6 @@ import numpy as np
 from connectome_snns.visualization import (
     FIGURE_BLUE,
     FIGURE_CORAL,
-    FLOOR_COLOR,
     OBSERVED_COLOR,
     UNOBSERVED_COLOR,
     use_project_style,
@@ -88,7 +87,7 @@ def rate_scatter(ax, rates, title, max_rate=None):
 
 
 def r2_title(label, summary, group, seed=None):
-    """``label`` with Fluctuation/Activity R², floor and ceiling (one seed, or the mean)."""
+    """``label`` with Fluctuation/Activity R² and ceiling (one seed, or the mean)."""
     rows = summary[summary["group"] == group]
     if seed is not None:
         rows = rows[rows["seed"] == seed]
@@ -96,8 +95,7 @@ def r2_title(label, summary, group, seed=None):
     for metric, short in (("fluctuation_r2", "Flu"), ("activity_r2", "Act")):
         m = rows[rows["metric"] == metric]
         lines.append(
-            f"{short} R² {m['value'].mean():.2f} "
-            f"[floor {m['floor_value'].mean():.2f}, ceiling {m['ceiling_value'].mean():.2f}]"
+            f"{short} R² {m['value'].mean():.2f} [ceiling {m['ceiling_value'].mean():.2f}]"
         )
     return "\n".join(lines)
 
@@ -123,20 +121,6 @@ def seed_errorbar(
         label=label,
     )
     return rows
-
-
-def floor_line(ax, summary, x_column, metric, group, color=FLOOR_COLOR, label="Floor"):
-    """Dashed shuffled-identity floor for one group, averaged over seeds at each x."""
-    rows = summary[(summary["metric"] == metric) & (summary["group"] == group)]
-    stats = rows.groupby(x_column)["floor_value"].mean().reset_index()
-    ax.plot(
-        stats[x_column],
-        stats["floor_value"],
-        linestyle="--",
-        color=color,
-        linewidth=0.8,
-        label=label,
-    )
 
 
 def ceiling_line(ax, summary, x_column, metric, group, color, label=None):

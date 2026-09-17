@@ -52,7 +52,6 @@ hidden_rate_std = 0.5                  # unobserved population rate SD vs observ
 [evaluation]
 burn_in_ms = 2000.0                    # discarded from the held-out trial before scoring
 fluctuation_tau_ms = 50.0              # Gaussian sigma for Fluctuation R²
-n_floor_permutations = 5               # shuffled-identity floor, averaged
 
 # ==========================================================================
 # PHYSIOLOGY — copied verbatim from the teacher (bernstein/teacher-activity).

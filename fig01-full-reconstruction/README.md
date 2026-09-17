@@ -133,13 +133,11 @@ epoch → **≈ 3.6 h per run, ≈ 11 GPU-h for the 3 seeds**.
   The first 2 s are discarded; 12.9 s are scored.
 - **Fluctuation R²:** Gaussian σ = 50 ms, R² over neurons × time. **Activity R²:** R² of
   per-neuron rates. Both per group (observed / unobserved).
-- **Floor:** the same metric with the teacher↔student neuron identities permuted within the
-  group, mean of 5 permutations.
 - **Perturbation protocol (2026-09-17):** every simulated model is run 20 times, each with one
   extra spike injected at t = 0 into a different unobserved neuron (same draws and identical
   teacher forcing for the trained and the perfect student). Smoothed traces are averaged over
-  the 20 draws and the average is scored (activity R² on draw-averaged rates). Floors and
-  per-neuron R² use the draw average.
+  the 20 draws and the average is scored (activity R² on draw-averaged rates). Per-neuron R²
+  uses the draw average. No floor is reported (dropped 2026-09-17).
 - **Ceiling (added):** the same metric for a *perfectly specified* student — teacher weights,
   correct scaling factors, identical teacher forcing and perturbations. **It is not 1.** The
   teacher network is chaotic: a perfectly specified student matches it spike for spike until

@@ -11,7 +11,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import FLOOR_COLOR, OBSERVED_COLOR, UNOBSERVED_COLOR
+from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -56,7 +56,7 @@ def main(data_dir, out_path, scatter_fractions):
     for group in ("observed", "heldout"):
         rows = flu[flu["group"] == group]
         stats = rows.groupby("reconstructed_fraction")[
-            ["value", "floor_value", "ceiling_value"]
+            ["value", "ceiling_value"]
         ].mean()
         spread = rows.groupby("reconstructed_fraction")["value"].std().fillna(0.0)
         ax.scatter(
@@ -80,15 +80,6 @@ def main(data_dir, out_path, scatter_fractions):
         ax.plot(
             stats.index, stats["ceiling_value"], ":", color=COLORS[group], linewidth=1.0
         )
-        if group == "heldout":
-            ax.plot(
-                stats.index,
-                stats["floor_value"],
-                "--",
-                color=FLOOR_COLOR,
-                linewidth=0.8,
-                label="Floor",
-            )
     if not fully_observed.empty:
         point = fully_observed[fully_observed["metric"] == "fluctuation_r2"]
         point = point[point["group"] == "observed"]

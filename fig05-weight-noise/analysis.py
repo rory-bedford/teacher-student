@@ -4,7 +4,7 @@ Run after training (Figure 1's runs supply weight noise 0):
     uv run python fig05-weight-noise/analysis.py
 
 Writes, next to this script:
-    fig05_summary.csv   weight_noise, noise_clipped_fraction, seed, group, metric, value, floor_value, ceiling_value
+    fig05_summary.csv   weight_noise, noise_clipped_fraction, seed, group, metric, value, ceiling_value
     fig05_rates.csv     weight_noise, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
 
 noise_clipped_fraction is the fraction of non-zero weights the archived noise pushed
