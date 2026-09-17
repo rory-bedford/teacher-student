@@ -4,8 +4,14 @@ For each figure, runs that figure's own ``custom_config_generator`` (from
 ``run_grid_search.py``), skips runs that already finished, and writes for every
 remaining run a ``parameters.toml`` and ``experiment.toml`` (output_dir =
 ``<grid dir>/<run name>``, exactly as ``./run --grid`` would). The list of experiment
-configs goes to ``tasks.txt``, and the current commit to ``commit.txt`` so every task can
-check it runs the code the configs were generated from.
+configs goes to ``tasks.txt`` and the current commit to ``commit.txt``.
+
+The code is snapshotted too: a detached git worktree of that commit at
+``<array dir>/code``, which every task runs from (with this repo's ``.venv``). You can
+keep committing and editing here while arrays are queued; a task only ever sees the code
+its configs were generated with. The connectome-snns library is *not* snapshotted (it is
+an editable install), so library changes do reach queued tasks; the run framework records
+the library commit and dirty flag in each run's metadata.
 
     uv run python slurm/prepare_array.py fig03-observed-fraction fig04-reconstruction-errors
 
@@ -64,6 +70,17 @@ def clean_commit():
     ).stdout.strip()
 
 
+def snapshot_code(code_dir, commit):
+    """Detached worktree of ``commit``; the tasks run the figure scripts from here."""
+    subprocess.run(
+        ["git", "worktree", "add", "--detach", str(code_dir), commit],
+        cwd=REPO,
+        check=True,
+        capture_output=True,
+    )
+    return code_dir
+
+
 def prepare(figure, commit, stamp, dry_run=False, split=None):
     folder = REPO / figure
     experiment_path = folder / "experiment.toml"
@@ -90,6 +107,7 @@ def prepare(figure, commit, stamp, dry_run=False, split=None):
     config_dir = array_dir / "configs"
     config_dir.mkdir(parents=True, exist_ok=True)
     grid_dir.mkdir(parents=True, exist_ok=True)
+    code_dir = snapshot_code(array_dir / "code", commit)
     shutil.copy2(folder / "run_grid_search.py", grid_dir / "run_grid_search.py")
 
     tasks = []
@@ -98,6 +116,9 @@ def prepare(figure, commit, stamp, dry_run=False, split=None):
         with open(params_file, "w") as f:
             toml.dump(params, f)
         run_experiment = deepcopy(experiment)
+        run_experiment["script"] = str(
+            code_dir / Path(experiment["script"]).resolve().relative_to(REPO)
+        )
         run_experiment["parameters_file"] = str(params_file)
         run_experiment["output_dir"] = str(grid_dir / description)
         if run_experiment.get("wandb", {}).get("enabled", False):
@@ -110,6 +131,7 @@ def prepare(figure, commit, stamp, dry_run=False, split=None):
     (array_dir / "commit.txt").write_text(commit + "\n")
     job = figure.split("-")[0]
     if not split:
+        (array_dir / "code.txt").write_text(f"{code_dir}\n")
         (array_dir / "tasks.txt").write_text("\n".join(tasks) + "\n")
         (array_dir / "logs").mkdir(exist_ok=True)
         print(f"\n{figure}: {len(tasks)} runs -> {array_dir}")
@@ -124,6 +146,7 @@ def prepare(figure, commit, stamp, dry_run=False, split=None):
         (part_dir / "logs").mkdir(parents=True, exist_ok=True)
         (part_dir / "tasks.txt").write_text("\n".join(part_tasks) + "\n")
         (part_dir / "commit.txt").write_text(commit + "\n")
+        (part_dir / "code.txt").write_text(f"{code_dir}\n")
         print(
             sbatch_line(
                 part_dir,

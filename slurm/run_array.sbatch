@@ -1,6 +1,7 @@
 #!/bin/bash
 # One grid run per array task. Generate the array with slurm/prepare_array.py, which
-# prints the matching sbatch command (array range, time limit, log path).
+# prints the matching sbatch command (array range, time limit, log path) and makes the
+# code snapshot each task runs from, so the main repo stays free to edit.
 #
 #   sbatch --array=0-N --time=HH:MM:SS --output=<array dir>/logs/%a.log \
 #          slurm/run_array.sbatch <array dir>
@@ -26,22 +27,20 @@ line=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$ARRAY_DIR/tasks.txt")
 config=$(cut -f1 <<<"$line")
 description=$(cut -f2 <<<"$line")
 
-cd "$REPO"
+PYTHON="$REPO/.venv/bin/python"
+CODE=$(cat "$ARRAY_DIR/code.txt")
 
-# The configs were generated at a specific commit and the run scripts are loaded from
-# this checkout, so refuse to run if the code has moved on.
+# Run from the array's code snapshot (a git worktree of the commit the configs were
+# generated at), so commits and edits in the main repo never reach queued tasks.
 expected=$(cat "$ARRAY_DIR/commit.txt")
-actual=$(git rev-parse HEAD)
+actual=$(git -C "$CODE" rev-parse HEAD)
 if [[ "$actual" != "$expected" ]]; then
-    echo "Checkout is at $actual but the array was prepared at $expected; aborting." >&2
+    echo "Code snapshot $CODE is at $actual, expected $expected; aborting." >&2
     exit 1
 fi
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-    echo "Repository has uncommitted changes; aborting." >&2
-    exit 1
-fi
+cd "$CODE"
 
-output_dir=$(uv run python -c "import toml,sys; print(toml.load(sys.argv[1])['output_dir'])" "$config")
+output_dir=$("$PYTHON" -c "import toml,sys; print(toml.load(sys.argv[1])['output_dir'])" "$config")
 if [[ -f "$output_dir/final_model_state.pt" ]]; then
     echo "$description already finished; nothing to do."
     exit 0
@@ -51,5 +50,6 @@ if [[ -e "$output_dir" ]]; then
     exit 1
 fi
 
-echo "Task $SLURM_ARRAY_TASK_ID: $description on $(hostname), GPU ${CUDA_VISIBLE_DEVICES:-?}"
-./run --no-commit "$config" < /dev/null
+echo "Task $SLURM_ARRAY_TASK_ID: $description on $(hostname), GPU ${CUDA_VISIBLE_DEVICES:-?}, code $CODE"
+# Snapshot is a clean checkout, so the framework's git check passes and records the commit.
+"$PYTHON" -m connectome_snns.run_experiment "$config" < /dev/null
