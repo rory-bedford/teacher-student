@@ -106,7 +106,7 @@ their baseline condition, so this grid runs first.
   factor (variance 0.5, mean 1); the scaling factors start at 1, so the correct values
   are the inverse factors. Per-seed draw.
 
-### Training (archived visible-driven recipe, stabilised)
+### Training (archived visible-driven recipe + unobserved-rate penalties)
 
 | Setting | Value | Note |
 |---|---|---|
@@ -116,8 +116,8 @@ their baseline condition, so this grid runs first.
 | chunks per update | 6 | |
 | loss | van Rossum, τ_rise 10 ms, τ_decay 100 ms, + unobserved-rate penalties | mean and SD of each cell type's unobserved rates vs the observed teacher neurons, weight 0.5 each (as archived full-inference/hidden and Figure 6). Added 2026-09-17: without them, 10% synapse dropout silenced the unobserved inhibitory population (6 vs 16 Hz by mid-training, E→I scaling factor 0.24× target) |
 | optimiser | Adam, β = (0.95, 0.999), eps = 1e-8 | archived eps = 1e-4 was silently dropped by the config class, so never applied |
-| learning rate | 4e-3 → 4e-4, cosine over epochs | archived 8e-3 → 5e-4, halved for stability. Adam moves ≈ lr per update in log space and a run has ~600 updates, so this still covers the perturbation (1e-3 would not). The archived cosine was given the chunk count, so the rate barely decayed; fixed |
-| gradient clip | 2.0 | as archived full-inference/hidden (visible-driven used 5.0; its FF-group clip 3.5 was silently dropped) |
+| learning rate | 8e-3 → 5e-4, cosine over epochs | as archived. Tried 4e-3 → 4e-4 with clip 2 (2026-09-17): at epoch 31 held-out Fluctuation R² 0.79 / 0.85 and observed Activity R² 0.89, vs 0.86 / 0.90 and 0.98 for this recipe, so reverted. The archived cosine was given the chunk count, so the rate barely decayed; fixed |
+| gradient clip | 5.0 | archived FF-group clip 3.5 was silently dropped too |
 | surrogate gradient scale | 5.0 | |
 | precision | fp32 | archived fp16; fp16 does not reproduce the teacher at the correct scaling factors |
 | physiology | teacher's, verbatim | the archived visible-driven run used mitral g_bar [4.0, 0.4] and NMDA τ_decay 70, not the teacher's [6.0, 0.1] and 60 |

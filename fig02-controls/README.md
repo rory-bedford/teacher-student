@@ -134,7 +134,7 @@ feedforward weights was considered and not included.
 | initialisation | each block at its **mean weight including absent synapses** × perturbation | density-matched: every neuron starts with the teacher's total recurrent drive per block |
 | learning rate | Adam, **5e-3 → 5e-4** cosine over 50 epochs | weights move ~lr per update in log space; ~600 updates |
 | gradient clip | 100 | archived |
-| feedforward scaling factors | lr 4e-3 → 4e-4, clip 2 | as Figure 1 |
+| feedforward scaling factors | lr 8e-3 → 5e-4, clip 5 | as Figure 1 |
 
 **History (smoke run, 2026-09-17).** The first version used the archived initialisation
 (fully connected at the mean *non-zero* weight, ≈16× the teacher's drive at ~6% density) and lr

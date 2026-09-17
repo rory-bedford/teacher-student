@@ -4,11 +4,11 @@
 # factors trained. Figures 2-5 use this exact configuration as their baseline and
 # change a single [student] entry.
 #
-# Training recipe: chunking/epochs from the archived visible-driven two-layer run
-# (hidden-activity/testing-strategies/visible-driven); scaling-factor lr, clip and the
-# unobserved-rate penalties from the archived two-layer runs with structural mismatch
-# (full-inference/hidden), and lr halved to 4e-3: the VR-only lr 8e-3 recipe let the unobserved
-# inhibitory population fall silent under 10% synapse dropout. See README.md.
+# Training recipe: the archived visible-driven two-layer run
+# (hidden-activity/testing-strategies/visible-driven), plus the unobserved-rate penalties
+# of the archived two-layer runs with structural mismatch (full-inference/hidden): the
+# VR-only recipe let the unobserved inhibitory population fall silent under 10% synapse
+# dropout. (lr 4e-3 / clip 2 was tried and converged worse on held-out data.) See README.md.
 
 [simulation]
 seed = 44                              # overridden per run by run_grid_search.py
@@ -31,9 +31,9 @@ mixed_precision = false
 
 [optimiser]
 surrgrad_scale = 5.0
-lr_scaling = 4e-3
-lr_min_scaling = 4e-4
-grad_clip_scaling = 2.0
+lr_scaling = 8e-3
+lr_min_scaling = 5e-4
+grad_clip_scaling = 5.0
 beta1 = 0.95
 beta2 = 0.999
 eps = 1e-8                             # the archived eps = 1e-4 was never applied

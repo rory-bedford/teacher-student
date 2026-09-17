@@ -27,9 +27,9 @@ mixed_precision = false
 
 [optimiser]
 surrgrad_scale = 5.0
-lr_scaling = 4e-3
-lr_min_scaling = 4e-4
-grad_clip_scaling = 2.0
+lr_scaling = 8e-3
+lr_min_scaling = 5e-4
+grad_clip_scaling = 5.0
 beta1 = 0.95
 beta2 = 0.999
 eps = 1e-8                             # the archived eps = 1e-4 was never applied
