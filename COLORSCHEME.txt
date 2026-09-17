@@ -1,0 +1,6 @@
+Primary (backgrounds):             #263640   dark slate
+Secondary (text, headings):        #ffffff   white
+
+Accent blue (graphs):              #5096c0
+Accent red (graphs):               #e87878
+Accent yellow (graphs):            #e9c46a
