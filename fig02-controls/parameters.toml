@@ -12,7 +12,7 @@ seed = 44                              # overridden per run by run_grid_search.p
 chunk_size = 160
 
 [student]
-observed_fraction = 0.1                # of modelled neurons; drawn at random per seed
+observed_fraction = 0.5                # of modelled neurons; drawn at random per seed
 recurrent_model = "shuffle_weights"    # overridden per run: learnt | shuffle_weights | configuration_model
 
 [training]

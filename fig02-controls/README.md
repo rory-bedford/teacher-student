@@ -6,6 +6,23 @@
 
 **The headline contrast:** 6 parameters with the connectome beat 25 million parameters without it.
 
+## Observed fraction: 50%, not 10% (2026-09-18)
+
+At 10% observed both wrong-connectome controls (shuffled weights, configuration model) lost their
+unobserved excitatory population entirely (0.36-0.38 Hz vs the teacher's 4.5) while still lowering
+the loss through inhibition alone; the configuration model did the same under the earlier VR-only
+recipe (0.02 Hz), so this is the regime rather than the recipe. With 90% of each neuron's recurrent
+input coming from the student's own spikes, a wrong connectome has nothing holding it near the
+teacher's operating point. The archived controls figure
+(`archive/figures/data/controls__ff-learnt__obs-90__recur-81__wn-mixed__bar.csv`) was *fully
+observed* and gave Full Connectome 0.91 / Learnt-Recurrence 0.61 / Shuffle-Connections 0.55 /
+Shuffle-Weights -0.26 Fluctuation R².
+
+So the controls now run at **50% observed**, which matches the reconstruction budget of the real
+dataset and is the healthiest point of Figure 3's sweep. The full-connectome baseline for the bars
+is Figure 3's `obs-0.5` runs (same recipe and seeds), not Figure 1. The 10% runs are kept in
+`bernstein/_superseded/fig02-controls-obs-0.1/` as the collapse observation.
+
 ## Configuration
 
 Identical to Figure 1 in every respect except the connectivity given to the student:
@@ -14,7 +31,7 @@ Identical to Figure 1 in every respect except the connectivity given to the stud
 |---|---|
 | feedforward connections | reconstructed |
 | recurrent reconstruction | 100% |
-| observed fraction | **10%** (same as Figure 1) |
+| observed fraction | **50%** (2026-09-18; was 10%, see below) |
 | weight noise | **0** — for every variant |
 | seeds | **≥3 per variant** |
 | training budget | identical across variants |
