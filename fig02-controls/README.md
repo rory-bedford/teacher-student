@@ -95,7 +95,7 @@ Figure 1 for the two six-parameter controls (learnt recurrence: see below).
 | Variant | Implementation | Free parameters |
 |---|---|---|
 | Full connectome | Figure 1 | 6 |
-| Learnt recurrence | every recurrent block replaced by a full-rank, fully connected log-weight matrix, shared across the two layers; mitral connectome and its 2 scaling factors kept | **25,000,002** (5000² + 2) |
+| Learnt recurrence | every recurrent block replaced by a dense, full-rank matrix of free log-weights, shared across the two layers; true feedforward pattern and its 2 scaling factors kept (see below) | **25,000,002** (5000² + 2) |
 | Shuffle weights | non-zero weights permuted within each E/I block; topology untouched (archived function) | 6 |
 | Configuration-model rewire | within each block, in-stubs randomly re-paired with out-stubs; self-connections and duplicate synapses repaired by swapping targets with random distinct edges; the block's weights then randomly reassigned | 6 |
 
@@ -104,19 +104,46 @@ in- and out-degree and the weight multiset in all four blocks, has no self-conne
 shares 6–7% of the teacher's synapses (= the connection density, i.e. chance). Shuffle
 weights keeps the topology identical.
 
-### Learnt recurrence — settings and a concern
+### What the learnt-recurrence control is — state this on the slide
 
-Archived no-connectome control (`full-inference/no-hidden-units`, phase 2): initialised
-**fully connected at each block's mean non-zero teacher weight** (times the perturbation);
-Adam lr 1e-3 → 5e-4, gradient clip 100, trained alongside the mitral scaling factors (lr
-8e-3 as Figure 1). Same epochs and data as every other variant.
+It isolates the **recurrent** connectome and nothing else. Exactly like every other variant
+(and Figure 1), the student is given:
 
-Flag before running: that initialisation gives each neuron roughly 1/density ≈ 16× the
-teacher's total recurrent drive. With ~600 optimiser updates at lr ≈ 1e-3, log-weights can
-move by less than the ≈2.8 needed to undo it, so this control may fail from its initialisation
-rather than from lacking the connectome. The archived run had 250 phase-2 epochs to recover.
-If that matters for the claim, a density-matched initialisation (block mean *including* zeros)
-is a one-line change in `common/model.py` (`learnt_recurrence_block`).
+- the **true feedforward weight pattern** (mitral -> E/I), which is perturbed by an unknown
+  per-pathway factor and rescaled by **2 learnt feedforward scaling factors** (mitral->E,
+  mitral->I). So it knows *which* inputs each neuron receives, not their absolute scale;
+- the true recorded activity of the feedforward units and of the 10% observed neurons
+  (teacher forcing), identical held-out evaluation, identical training budget (50 epochs).
+
+What it does **not** get is the recurrent connectome: every recurrent block (E->E, E->I, I->E,
+I->I) is a **dense, fully connected, full-rank matrix of free weights** — 5000² = 25,000,000
+parameters, shared between the simulated unobserved population and the observed neurons — with no
+scaling factors on top. Total free parameters: **25,000,002** (vs 6 with the connectome). Suggested
+slide wording: *"learnt recurrence: all 25M recurrent weights free; feedforward pattern and
+recordings as for the connectome model"*.
+
+Because it is handed the feedforward pattern, this control is **conservative** — it starts with
+more of the true circuit than a generic data-constrained RNN would. A version that also learns the
+feedforward weights was considered and not included.
+
+### Learnt recurrence — settings
+
+| Setting | Value | Why |
+|---|---|---|
+| parametrisation | log-weights, `exp(W)`, all pairs, per E/I block | archived no-connectome control |
+| initialisation | each block at its **mean weight including absent synapses** × perturbation | density-matched: every neuron starts with the teacher's total recurrent drive per block |
+| learning rate | Adam, **5e-3 → 5e-4** cosine over 50 epochs | weights move ~lr per update in log space; ~600 updates |
+| gradient clip | 100 | archived |
+| feedforward scaling factors | lr 8e-3 → 5e-4, clip 5 | as Figure 1 |
+
+**History (smoke run, 2026-09-17).** The first version used the archived initialisation
+(fully connected at the mean *non-zero* weight, ≈16× the teacher's drive at ~6% density) and lr
+1e-3 → 5e-4. In 50 epochs it did not fit even the observed neurons: van Rossum loss 433 -> 269
+(Figure 1: 337 -> 88), observed E rate 2.8 vs 4.5 Hz, mitral->E scaling factor compensating to 4.7×.
+Held-out unobserved Fluctuation R² was 0.04 — but that could not be separated from bad
+initialisation, so the initialisation and learning rate were changed as above before running the
+grid. The superseded run is kept at
+`bernstein/fig02-controls/_superseded-learnt-meannonzero-init__seed-44/`.
 
 ### Panels as implemented
 
