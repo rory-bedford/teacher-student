@@ -146,6 +146,28 @@ epoch → **≈ 3.6 h per run, ≈ 11 GPU-h for the 3 seeds**.
   controlled one. Test on seed 44 (old recipe, K = 20): ceiling Fluctuation R² 0.92 / 0.94
   (observed / unobserved), Activity R² 0.998; trained student 0.86 / 0.90 and 0.98. Scoring
   single draws instead gave noisy ceilings that could fall below the student.
+- **Observed vs unobserved is not comparable within one seed (2026-09-18).** In the seed-44 runs
+  the unobserved group scores higher than the observed one on Fluctuation R² (0.844 vs 0.798 here,
+  and the same ordering in the *ceiling*, 0.940 vs 0.920, where no training is involved). This is a
+  property of the neuron draw, not of the model:
+  - Decomposing the pooled metric for this run: residual and within-neuron variance are equal
+    between the groups to within 4%; the whole difference is the denominator. The unobserved pool
+    has 1.5x the between-neuron variance, i.e. a wider spread of mean rates, and pooled R² counts
+    that spread as explainable variance.
+  - Firing rates are very heavy-tailed, so the spread of a group is set by its few fastest cells.
+    Seed 44's observed sample misses the tail (fastest observed cell 176 Hz vs 268 Hz unobserved).
+    Across seeds the ratio of observed to complement spread is 0.66 (seed 44), 2.09 (45), 1.05 (46),
+    1.60 (47), 0.82 (48) — seed 44 is simply an unlucky draw, and every figure inherits it because
+    the observed sets are nested prefixes of one permutation per seed.
+  - Size-matching the groups does not remove it (matched 500-neuron subsets of the unobserved pool
+    still give 0.842); averaging over seeds does.
+  - Scoring each neuron against its own mean (per-neuron R², equal weight per neuron, cells >= 1 Hz)
+    makes the groups equivalent — observed sits at the 52nd-55th percentile of matched subsets — but
+    it discards the between-neuron variance, so values drop a lot (Figure 1: 0.55 vs a ceiling of
+    0.81) and our stored ceilings do not apply to it.
+  - **Read the unobserved group as the headline** and treat single-seed observed/unobserved
+    differences as noise until all three seeds are in.
+
 - **Correction to Status above:** the archived 0.997 / 0.995 were rates computed on *training*
   trial 0 (`compute_per_neuron_rates` reads the training `spike_data.zarr`), not held-out
   stimuli, and came from the EM-clamped model rather than this one. Fig 1 is retrained here.

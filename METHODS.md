@@ -54,6 +54,7 @@ One caveat to be aware of for questions, not to act on: the two groups are not a
 - Reported **separately for observed and unobserved** neurons. Unobserved is the discriminative group; every model can fit what it is shown.
 - ~~Shuffled-identity floor~~ — **dropped 2026-09-17**: not reported on any figure (overrides the per-figure READMEs). The reference is instead a **ceiling**: a perfectly specified student under the same teacher forcing and spike-flip perturbations (see `fig01-full-reconstruction/README.md`, Evaluation).
 - **≥3 seeds** per condition, with spread shown.
+- **Do not compare observed with unobserved within one seed.** Pooled R² counts the spread of mean rates across the group as explainable variance, and with heavy-tailed rates that spread is set by a handful of fast cells, so which neurons land in the observed sample shifts the value (seed 44's observed draw misses the tail, which is why unobserved looks better there). It averages out over seeds; see `fig01-full-reconstruction/README.md`.
 
 ---
 
