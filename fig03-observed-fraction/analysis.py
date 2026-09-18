@@ -11,7 +11,7 @@ Writes, next to this script:
 The perturbation rows need the teacher's calibrated current
 (``slurm/submit_perturbation.sh``); without it only the held-out rows are written.
 
-The teacher's participation ratio (marked on panel a) is not computed here: figures.py
+The teacher's dimensionality (the band marked on panel a) is not computed here: figures.py
 reads generate-teacher-activity/teacher_dimensionality.csv (generate-teacher-activity/dimensionality.py).
 """
 
@@ -28,11 +28,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.evaluation import (
     collect,
     completed_runs,
+    run_parameters,
 )
 from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
 BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
+#: Fractions reported by the figure, matching run_grid_search.OBSERVED_FRACTIONS. Runs at
+#: 0.5% and 1% observed finished but are not reported: below ~5% the fit itself collapses
+#: (see run_grid_search.py), 2% is kept to show the cliff. Their run folders are still on
+#: disk, so add a fraction back here to include it again.
+REPORTED_FRACTIONS = (0.02, 0.05, 0.25, 0.5)
+
+
+def reported(run_dir):
+    fraction = float(run_parameters(run_dir)["student"]["observed_fraction"])
+    return any(abs(fraction - f) < 1e-9 for f in REPORTED_FRACTIONS)
 
 
 def label(params, evaluation):
@@ -46,6 +57,10 @@ def main(runs_dir, baseline_dir, out_dir):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     baseline_runs = completed_runs(baseline_dir)
     runs = baseline_runs + completed_runs(runs_dir)
+    skipped = [r for r in runs if not reported(r)]
+    for run in skipped:
+        print(f"  not reported (observed fraction outside the figure): {run.name}")
+    runs = [r for r in runs if reported(r)]
     if not runs:
         raise SystemExit("No completed runs")
     summary, rates = collect(runs, label, device)
