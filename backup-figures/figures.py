@@ -2,9 +2,9 @@
 
     uv run python backup-figures/figures.py
 
-    backup-a-scaling-factors   the six tied scaling factors, fully observed vs 50%
-                               observed: recovered exactly when everything is seen,
-                               compensating when half the network is simulated.
+    backup-a-scaling-factors   the six tied scaling factors, fully observed vs Figure 1's
+                               10% observed: recovered exactly when everything is seen,
+                               drifting when most of the network is simulated.
 
 Reads the CSVs the figure folders' ``analysis.py`` already write (no evaluation here), in
 the same archived style as the talk figures (``common/style.py``), one SVG per panel.
@@ -36,11 +36,20 @@ FIGURE = "backup"
 SCALING_FACTORS_CSV = (
     HERE.parent / "fig01-full-reconstruction" / "fig01_scaling_factors.csv"
 )
-#: (value of the ``observed`` column, label, filled marker) per condition.
-CONDITIONS = (
-    ("full", "Fully observed", True),
-    ("partial", "50% observed", False),
-)
+#: (value of the ``observed`` column, filled marker) per condition; the label carries the
+#: run's own observed fraction, read from the CSV, so it cannot drift from the runs.
+CONDITIONS = (("full", True), ("partial", False))
+
+
+def condition_label(factors, condition):
+    """ "Fully observed" / "10% observed", from the runs' own observed fraction."""
+    rows = factors[factors["observed"] == condition]
+    if rows.empty:
+        return condition
+    fractions = sorted(rows["observed_fraction"].unique())
+    if fractions == [1.0]:
+        return "Fully observed"
+    return ", ".join(f"{fraction:.0%} observed" for fraction in fractions)
 
 
 def scaling_factors(factors):
@@ -52,7 +61,7 @@ def scaling_factors(factors):
     order = sorted(factors["scaling_factor"].unique())
     fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.15, SINGLE[1]))
     offsets = np.linspace(-0.12, 0.12, len(CONDITIONS))
-    for (condition, _, filled), offset in zip(CONDITIONS, offsets):
+    for (condition, filled), offset in zip(CONDITIONS, offsets):
         rows = factors[factors["observed"] == condition]
         for x, name in enumerate(order):
             values = rows[rows["scaling_factor"] == name]
@@ -104,9 +113,9 @@ def scaling_factors(factors):
                 markersize=7,
                 color=LEGEND_GREY,
                 markerfacecolor=LEGEND_GREY if filled else "none",
-                label=label,
+                label=condition_label(factors, condition),
             )
-            for _, label, filled in CONDITIONS
+            for condition, filled in CONDITIONS
         ],
         loc="upper left",
         frameon=True,

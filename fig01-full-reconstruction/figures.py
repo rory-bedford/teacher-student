@@ -48,8 +48,6 @@ FIGURE = "fig01"
 RASTER_SECONDS = 3.0
 PERTURBATION_CSV = "fig01_perturbation.csv"
 GROUPS = {"observed": "Observed", "unobserved": "Unobserved"}
-#: How this figure's own runs are described under panel (d)'s axis.
-PARTIAL_LABEL = "50% observed"
 
 
 def raster(spikes):

@@ -20,7 +20,8 @@ Shuffle-Weights -0.26 Fluctuation R².
 
 So the controls now run at **50% observed**, which matches the reconstruction budget of the real
 dataset and is the healthiest point of Figure 3's sweep. The full-connectome baseline for the bars
-is Figure 1's seed-matched runs (same recipe, same observed fraction), which are not retrained here. The 10% runs are kept in
+is Figure 3's `obs-0.5` runs (same recipe, same observed fraction, seed-matched), not Figure 1 --
+Figure 1 runs at 10% observed. The 10% runs are kept in
 `bernstein/_superseded/fig02-controls-obs-0.1/` as the collapse observation.
 
 ## Configuration

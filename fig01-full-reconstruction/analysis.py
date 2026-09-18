@@ -7,7 +7,8 @@ Writes, next to this script:
     fig01_summary.csv   seed, evaluation{held_out,perturbation}, group, cell_type, n_cells,
                         metric, value, ceiling_value
     fig01_rates.csv     neuron_id, cell_type, observed, seed, teacher/student rate, fluctuation_r2
-    fig01_scaling_factors.csv   seed, observed{full,partial}, scaling_factor, value, target
+    fig01_scaling_factors.csv   seed, observed{full,partial}, observed_fraction,
+                                scaling_factor, value, target
     fig01_spikes.csv    neuron_id, observed, seed, source, time_s   (raster, first seed)
     fig01_perturbation.csv  seed, neuron_id, cell_type, targeted, teacher/student/ceiling
                         delta_rate_hz   (one row per unobserved neuron)
@@ -71,12 +72,22 @@ def main(runs_dir, out_dir, fully_observed_dir=None):
         summary += summary_rows(evaluation)
         rates += rate_rows(evaluation)
         factors += scaling_factor_rows(
-            run, seed=int(evaluation["seed"]), observed="partial"
+            run,
+            seed=int(evaluation["seed"]),
+            observed="partial",
+            observed_fraction=float(
+                run_parameters(run)["student"]["observed_fraction"]
+            ),
         )
     for run in fully_observed_runs(fully_observed_dir) if fully_observed_dir else []:
         print(f"Scaling factors of fully observed {run.name}")
         factors += scaling_factor_rows(
-            run, seed=int(run_parameters(run)["simulation"]["seed"]), observed="full"
+            run,
+            seed=int(run_parameters(run)["simulation"]["seed"]),
+            observed="full",
+            observed_fraction=float(
+                run_parameters(run)["student"]["observed_fraction"]
+            ),
         )
 
     delta_summary, delta_rates = collect_perturbation(

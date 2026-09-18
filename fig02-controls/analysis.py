@@ -1,6 +1,6 @@
 """Figure 2 — evaluate the connectivity controls (and Figure 1) on held-out stimuli.
 
-Run after training (Figure 1's runs supply the full-connectome variant):
+Run after training (Figure 3's obs-0.5 runs supply the full-connectome variant):
     uv run python fig02-controls/analysis.py
 
 Writes, next to this script:
@@ -27,7 +27,11 @@ from common.evaluation import collect, completed_runs
 from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
-BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
+#: The full-connectome bar comes from Figure 3's sweep, not Figure 1: this figure runs at
+#: 50% observed and Figure 1 runs at 10%, so Figure 1's runs would land in a different
+#: column. figures.py plots one observed fraction at a time and would otherwise drop
+#: every control (2026-09-18).
+BASELINE = HERE.parent / "fig03-observed-fraction" / "experiment.toml"
 VARIANT_NAMES = {
     "connectome": "full_connectome",
     "learnt": "learnt_recurrence",
