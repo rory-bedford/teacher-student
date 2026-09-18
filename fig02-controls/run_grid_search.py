@@ -23,7 +23,7 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-VARIANTS = ["learnt", "shuffle_weights", "configuration_model"]
+VARIANTS = ["learnt", "shuffle_inputs", "configuration_model"]
 #: The fully observed comparison needs its own baseline, so it includes "connectome".
 FULLY_OBSERVED_VARIANTS = ["connectome"] + VARIANTS
 

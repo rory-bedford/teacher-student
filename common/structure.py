@@ -7,7 +7,8 @@ all read from the ``[student]`` table of ``parameters.toml``:
     neuron_removal_fraction   neurons deleted from the student entirely (Fig 4a)
     synapse_dropout_fraction  recurrent synapses deleted, every neuron kept (Fig 4b)
     weight_noise              archived multiplicative log-normal noise, per cell-type pair (Fig 5)
-    recurrent_model           "connectome" | "learnt" | "shuffle_weights" | "configuration_model" (Fig 2)
+    recurrent_model           "connectome" | "learnt" | "shuffle_weights" | "shuffle_inputs" |
+                              "configuration_model" (Fig 2)
     reconstructed_fraction    fraction of the 6500 pooled units in the reconstructed segment S (Fig 6)
     recorded_pool_fraction    fixed recorded pool over the 5000 recurrent neurons (Fig 6)
 
@@ -23,7 +24,13 @@ from pathlib import Path
 import numpy as np
 
 #: Recurrent-model options for the Figure 2 controls.
-RECURRENT_MODELS = ("connectome", "learnt", "shuffle_weights", "configuration_model")
+RECURRENT_MODELS = (
+    "connectome",
+    "learnt",
+    "shuffle_weights",
+    "shuffle_inputs",
+    "configuration_model",
+)
 
 # Independent random streams, so changing one manipulation's level never changes
 # the draws of another (e.g. the observed split is identical across a noise sweep).
@@ -98,6 +105,32 @@ def shuffle_weights_within_connectome(weights, cell_type_indices, rng):
             pair &= weights != 0
             values = weights[pair]
             weights[pair] = values[rng.permutation(values.size)]
+    return weights
+
+
+def shuffle_weights_within_neuron(weights, cell_type_indices, rng):
+    """Permute each neuron's input weights among its own presynaptic partners.
+
+    Within one postsynaptic neuron and one presynaptic cell type, the multiset of incoming
+    weights is reassigned at random over that neuron's existing inputs. Topology, Dale's
+    law, each neuron's total input from each cell type and its whole distribution of input
+    strengths are preserved exactly; only *which* partner supplies which strength changes.
+    The weight analogue of the configuration model, and a gentler control than
+    :func:`shuffle_weights_within_connectome`, which redraws a neuron's drive entirely.
+    """
+    weights = weights.copy()
+    for cell_type in range(int(cell_type_indices.max()) + 1):
+        rows = np.flatnonzero(cell_type_indices == cell_type)
+        block = weights[rows]
+        present = block != 0
+        # Sort each column by a random key with absent synapses last: the first
+        # present.sum(axis=0) entries are that neuron's weights in random order.
+        keys = np.where(present, rng.random(block.shape), np.inf)
+        shuffled = np.take_along_axis(block, np.argsort(keys, axis=0), axis=0)
+        # Slots to write them back into, in row order, again with absent synapses last.
+        slots = np.argsort(~present, axis=0, kind="stable")
+        np.put_along_axis(block, slots, shuffled, axis=0)
+        weights[rows] = block
     return weights
 
 
@@ -237,6 +270,8 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
     # --- Recurrent connectivity manipulations.
     if recurrent_model == "shuffle_weights":
         rec = shuffle_weights_within_connectome(rec, ct, _rng(seed, _STREAM_REWIRE))
+    elif recurrent_model == "shuffle_inputs":
+        rec = shuffle_weights_within_neuron(rec, ct, _rng(seed, _STREAM_REWIRE))
     elif recurrent_model == "configuration_model":
         rec = configuration_model_rewire(rec, ct, _rng(seed, _STREAM_REWIRE))
 

@@ -26,6 +26,7 @@ VARIANT_NAMES = {
     "connectome": "full_connectome",
     "learnt": "learnt_recurrence",
     "shuffle_weights": "shuffle_weights",
+    "shuffle_inputs": "shuffle_inputs",
     "configuration_model": "configuration_model",
 }
 
