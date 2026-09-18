@@ -213,14 +213,35 @@ def train_student(
         loss_cfg.get("hidden_rate_std", 0.0) > 0
     )
     if rate_penalties and sets["unobserved"].size > 0:
-        teacher_trial = np.array(dataset.target_spike_data[0, :, sets["observed"]])
+        # Which neurons define the target rates. "observed" (default) uses only the
+        # recorded cells, so no unobserved activity enters training; with few observed
+        # cells and this teacher's heavy-tailed rates a typical sample lands well below
+        # the population mean (25 cells: E 1.4 vs 3.9 Hz), which drags the unobserved
+        # population towards silence. "population" uses every neuron's rate instead: the
+        # same target for every condition, at the cost of assuming the region's mean rate
+        # is known.
+        target_from = loss_cfg.get("rate_target", "observed")
+        if target_from == "population":
+            target_ids = np.arange(ct.size)
+        elif target_from == "observed":
+            target_ids = sets["observed"]
+        else:
+            raise ValueError('rate_target must be "observed" or "population"')
+        teacher_trial = np.array(dataset.target_spike_data[0, :, target_ids])
         rates = teacher_trial.sum(axis=0) / (teacher_trial.shape[0] * dt / 1000.0)
-        observed_types = ct[sets["observed"]]
+        target_types = ct[target_ids]
         target_mean = np.array(
-            [rates[observed_types == b].mean() for b in range(len(rec_names))]
+            [rates[target_types == b].mean() for b in range(len(rec_names))]
         )
         target_std = np.array(
-            [rates[observed_types == b].std() for b in range(len(rec_names))]
+            [rates[target_types == b].std() for b in range(len(rec_names))]
+        )
+        print(
+            f"  Rate-penalty targets from the {target_from} neurons: "
+            + ", ".join(
+                f"{name} {m:.2f} +- {sd:.2f} Hz"
+                for name, m, sd in zip(rec_names, target_mean, target_std)
+            )
         )
         hidden_types = torch.from_numpy(ct[sets["unobserved"]]).long()
         if loss_cfg["hidden_rate_mean"] > 0:
