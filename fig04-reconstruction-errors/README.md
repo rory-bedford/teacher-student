@@ -98,11 +98,11 @@ are ordered seed by seed. `PRIORITY.md` budgets 2 seeds: set `SEEDS = [44, 45]`.
 
 ### Error models (`common/structure.py`)
 
-- **Neuron removal** (`neuron_removal_fraction` ∈ {0.1, 0.2, 0.3, 0.5}): a random subset of
+- **Neuron removal** (`neuron_removal_fraction` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}): a random subset of
   recurrent neurons is deleted from the student — it neither simulates them nor receives
   their spikes (the archived hidden-units semantics). Observed neurons are 10% of the
   **retained** neurons, drawn after removal.
-- **Synapse dropout** (`synapse_dropout_fraction` ∈ {0.1, 0.2, 0.3, 0.5}): each recurrent
+- **Synapse dropout** (`synapse_dropout_fraction` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}): each recurrent
   synapse is deleted independently with that probability; every neuron stays.
 - Feedforward (mitral) input is always fully reconstructed.
 
