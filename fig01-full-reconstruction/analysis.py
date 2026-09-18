@@ -36,7 +36,7 @@ from common.evaluation import (
 from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
-N_RASTER_OBSERVED = 2
+N_RASTER_OBSERVED = 3
 N_RASTER_UNOBSERVED = 3
 
 

@@ -1,12 +1,24 @@
-"""Figure 3 — build fig03.svg from the CSVs written by analysis.py.
+"""Figure 3 — one SVG per panel from the CSVs written by analysis.py.
 
     uv run python fig03-observed-fraction/figures.py
     uv run python fig03-observed-fraction/figures.py --scatter-fractions 0.25 0.05 0.02
 
-Panel (b) shows rate scatters at three observed fractions: by default the lowest
-fraction still within 10% of the ceiling (above threshold), the fraction closest to
-half the ceiling (near), and the lowest fraction run (below). Pass
+    fig03-a-curve                Fluctuation R² vs observed fraction, observed / unobserved
+    fig03-b-scatter              unobserved firing rates at three observed fractions
+    fig03-c-delta-fluctuation    perturbation: ΔFluctuation R² vs observed fraction
+
+The x-range is whatever analysis.py reported (its ``REPORTED_FRACTIONS``): the sweep
+starts at 2% observed, the first point that fails, because below ~5% the fit itself
+collapses. Panel (b) shows rate scatters at three observed fractions: by default the
+lowest fraction still within 10% of the ceiling (above threshold), the fraction closest
+to half the ceiling (near), and the lowest fraction run (below). Pass
 --scatter-fractions to choose them by hand once the curve is known.
+
+Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
+100%. Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
+reported by the scatter panel instead.
+``placeholder_figures/fig03-observed-fraction/figures.py`` calls ``main`` here with a
+watermark and fake CSVs, so content edits show up in both.
 """
 
 import argparse
@@ -16,31 +28,39 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from connectome_snns.visualization import FLOOR_COLOR
-
-from common.plotting import (
-    FIGURE_WIDTH,
-    GROUP_COLORS,
-    GROUP_LABELS,
-    METRIC_LABELS,
-    ceiling_line,
-    panel_label,
-    perturbation_sweep,
-    r2_title,
+from common.plotting import METRIC_LABELS, perturbation_sweep, r2_title
+from common.style import (
+    LEGEND_GREY,
+    SINGLE,
+    TICK_SIZE,
+    TRIPLE,
+    apply_style,
+    ceiling,
+    nice_max,
     rate_scatter,
-    seed_errorbar,
-    use_talk_style,
+    save,
+    sweep_legend,
+    sweep_series,
 )
 
 HERE = Path(__file__).resolve().parent
+FIGURE = "fig03"
 #: Teacher dimensionality (PCA of smoothed spikes), pooled over all training trials.
+#: A figure's own ``fig03_dimensionality.csv`` wins if present (the PLACEHOLDER build
+#: estimates one).
 TEACHER_DIMENSIONALITY = (
     HERE.parent / "generate-teacher-activity" / "teacher_dimensionality.csv"
 )
+DIMENSIONALITY_CSV = "fig03_dimensionality.csv"
 N_NEURONS = 5000
+GROUPS = {
+    "observed": ("Observed", OBSERVED_COLOR),
+    "unobserved": ("Unobserved", UNOBSERVED_COLOR),
+}
 
 
 def default_scatter_fractions(summary):
@@ -57,120 +77,161 @@ def default_scatter_fractions(summary):
     return [above, near, below]
 
 
-def main(data_dir, out_path, scatter_fractions):
-    use_talk_style()
-    summary = pd.read_csv(data_dir / "fig03_summary.csv")
-    rates = pd.read_csv(data_dir / "fig03_rates.csv")
-    dimensionality = pd.read_csv(TEACHER_DIMENSIONALITY).iloc[0]
-    n_seeds = summary.groupby("obs_fraction")["seed"].nunique().min()
-    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
+def dimensionality_band(ax, dimensionality):
+    """The teacher's dominant subspace, as a fraction of the population.
 
-    rows = 3 if has_perturbation else 2
-    ratios = [1.3, 1.0] + ([1.0] if has_perturbation else [])
-    fig = plt.figure(
-        figsize=(FIGURE_WIDTH, (18 if has_perturbation else 13) / 2.54),
-        layout="constrained",
-    )
-    grid = fig.add_gridspec(rows, 3, height_ratios=ratios)
-
-    # (a) Fluctuation R² against observed fraction.
-    ax = fig.add_subplot(grid[0, :])
-    for group in ("observed", "unobserved"):
-        seed_errorbar(
-            ax,
-            summary,
-            "obs_fraction",
-            group,
-            "fluctuation_r2",
-            GROUP_COLORS[group],
-            GROUP_LABELS[group],
-        )
-        ceiling_line(
-            ax, summary, "obs_fraction", "fluctuation_r2", group, GROUP_COLORS[group]
-        )
-    # The teacher's dominant subspace, as a fraction of the population: the band the
-    # observed sample stops spanning is where the fit fails. The participation ratio
-    # (41 neurons, 0.8%) sits well inside the collapsed region and is not marked.
-    low = dimensionality["n_pcs_80pct_var"] / N_NEURONS
+    The band the observed sample stops spanning is where the fit fails. The
+    participation ratio (41 neurons, 0.8%) sits well inside the collapsed region and is
+    not marked. An estimated CSV may carry only the 90% count, in which case the band
+    collapses to that one line.
+    """
     high = dimensionality["n_pcs_90pct_var"] / N_NEURONS
-    ax.axvspan(low, high, color=FLOOR_COLOR, alpha=0.12, linewidth=0)
-    ax.axvline(high, color=FLOOR_COLOR, linewidth=0.8)
-    ax.text(
-        high,
-        0.02,
-        f" teacher PCs for 80-90% of variance\n"
-        f" {dimensionality['n_pcs_80pct_var']:.0f}-{dimensionality['n_pcs_90pct_var']:.0f}"
-        " neurons (training trials)",
-        transform=ax.get_xaxis_transform(),
-        fontsize=6,
-        color="#555555",
-        va="bottom",
+    low = (
+        dimensionality["n_pcs_80pct_var"] / N_NEURONS
+        if "n_pcs_80pct_var" in dimensionality
+        else high
     )
-    ax.set_xscale("log")
-    ax.set_xlabel("Observed fraction")
-    ax.set_ylabel("Fluctuation R²")
-    ax.legend(frameon=False, loc="lower right")
+    if low < high:
+        ax.axvspan(low, high, color=LEGEND_GREY, alpha=0.12, linewidth=0)
+        label = (
+            f"Teacher PCs for 80-90% of Variance\n"
+            f"({dimensionality['n_pcs_80pct_var']:.0f}-"
+            f"{dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
+        )
+    else:
+        label = (
+            f"Teacher PCs for 90% of Variance\n"
+            f"({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
+        )
+    ax.axvline(high, color=LEGEND_GREY, linewidth=1, alpha=0.6)
+    ax.text(
+        high * 1.08,
+        0.03,
+        label,
+        transform=ax.get_xaxis_transform(),
+        fontsize=TICK_SIZE - 1,
+        color=LEGEND_GREY,
+    )
+
+
+def neuron_axis(ax):
     top = ax.secondary_xaxis(
         "top", functions=(lambda f: f * N_NEURONS, lambda n: n / N_NEURONS)
     )
-    top.set_xlabel("Observed neurons")
-    ax.set_title(
-        "··· ceiling (perfectly specified student)",
-        fontsize=6.5,
-    )
-    panel_label(ax, "a")
+    top.set_xlabel("Observed Neurons")
+    return top
 
-    # (b) scatters at three fractions.
-    fractions = scatter_fractions or default_scatter_fractions(summary)
-    seed = int(rates["seed"].min())
-    for column, fraction in enumerate(fractions):
-        ax = fig.add_subplot(grid[1, column])
-        subset = rates[
+
+def curve(summary, dimensionality):
+    """(a) Fluctuation R² against observed fraction, observed and unobserved."""
+    fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.25, SINGLE[1] * 1.1))
+    for group, (_, color) in GROUPS.items():
+        rows = summary[
+            (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
+        ]
+        sweep_series(ax, rows, "obs_fraction", "fluctuation_r2", color)
+        ceiling(
+            ax,
+            summary[
+                (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
+            ],
+            "obs_fraction",
+            color,
+        )
+    dimensionality_band(ax, dimensionality)
+    ax.set_xscale("log")
+    ax.set_ylim(min(0.0, summary["value"].min() - 0.05), 1.0)
+    ax.set_xlabel("Observed Fraction")
+    ax.set_ylabel("Fluctuation R²")
+    neuron_axis(ax)
+    sweep_legend(ax, {label: color for label, color in GROUPS.values()}, metrics=False)
+    ax.set_title("How Few Neurons Need to Be Observed?", pad=12)
+    fig.tight_layout()
+    return fig
+
+
+def scatters(summary, rates, fractions, seed):
+    """(b) unobserved firing rates at three observed fractions."""
+    subsets = [
+        rates[
             np.isclose(rates["obs_fraction"], fraction)
             & (rates["seed"] == seed)
             & (rates["observed"] == 0)
         ]
+        for fraction in fractions
+    ]
+    max_rate = nice_max(
+        pd.concat(subsets)[["teacher_rate_hz", "student_rate_hz"]].to_numpy()
+    )
+    fig, axes = plt.subplots(1, 3, figsize=TRIPLE)
+    for ax, fraction, subset in zip(axes, fractions, subsets):
         rows = summary[np.isclose(summary["obs_fraction"], fraction)]
         n_observed = int(rows["n_observed"].iloc[0])
         rate_scatter(
             ax,
             subset,
-            r2_title(f"Unobserved, {n_observed} observed", rows, "unobserved"),
+            r2_title(f"{n_observed} Observed", rows, "unobserved"),
+            max_rate,
         )
-        ax.title.set_fontsize(5)
-        if column == 0:
-            panel_label(ax, "b")
+        ax.title.set_fontsize(TICK_SIZE)
+    fig.suptitle("Unobserved Neurons, Student vs Teacher Activity")
+    fig.tight_layout()
+    return fig
 
-    # (c) perturbation: a separate row, so dropping it is one line.
-    if has_perturbation:
-        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
-            ax = fig.add_subplot(grid[2, column])
-            perturbation_sweep(ax, summary, "obs_fraction", metric)
-            ax.set_xscale("log")
-            ax.set_xlabel("Observed fraction")
-            ax.set_ylabel(METRIC_LABELS[metric])
-            ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
-            if column == 0:
-                ax.legend(frameon=False, fontsize=6)
-                ax.set_title(
-                    "Inhibiting 25% of unobserved I cells (··· ceiling)\n"
-                    + METRIC_LABELS[metric],
-                    fontsize=6,
-                )
-                panel_label(ax, "c")
 
-    fig.suptitle(
-        "How few neurons do you need to observe?\n"
-        f"(full reconstruction; held-out stimuli; mean ± SD over {n_seeds} seeds; scatters seed {seed})"
+def delta_sweep(summary, metric):
+    """Perturbation panel: Δ R² of each non-targeted population against observed fraction."""
+    fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.25, SINGLE[1]))
+    perturbation_sweep(ax, summary, "obs_fraction", metric)
+    # perturbation_sweep draws at the compact talk weights; the archived panels are
+    # thicker (see common/style.py sweep_series).
+    for line in ax.get_lines():
+        line.set_linewidth(1.5)
+        if line.get_marker() not in (None, "None", ""):
+            line.set_markersize(5)
+    ax.set_xscale("log")
+    ax.set_xlabel("Observed Fraction")
+    ax.set_ylabel(METRIC_LABELS[metric])
+    neuron_axis(ax)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
+    ax.set_title(
+        f"{METRIC_LABELS[metric]}: Inhibiting 25% of Unobserved I Cells", pad=12
     )
-    fig.savefig(out_path)
-    print(f"Saved {out_path}")
+    fig.tight_layout()
+    return fig
+
+
+def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
+    apply_style()
+    summary = pd.read_csv(data_dir / "fig03_summary.csv")
+    rates = pd.read_csv(data_dir / "fig03_rates.csv")
+    estimated = data_dir / DIMENSIONALITY_CSV
+    dimensionality = pd.read_csv(
+        estimated if estimated.exists() else TEACHER_DIMENSIONALITY
+    ).iloc[0]
+
+    def output(fig, letter, slug):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+
+    held_out = summary
+    if "evaluation" in summary:
+        held_out = summary[summary["evaluation"] == "held_out"]
+    output(curve(held_out, dimensionality), "a", "curve")
+
+    fractions = scatter_fractions or default_scatter_fractions(held_out)
+    seed = int(rates["seed"].min())
+    output(scatters(held_out, rates, fractions, seed), "b", "scatter")
+
+    # The perturbation panels are separate files, so dropping them from the talk is
+    # dropping two SVGs.
+    if (summary["metric"] == "delta_fluctuation_r2").any():
+        output(delta_sweep(summary, "delta_fluctuation_r2"), "c", "delta-fluctuation")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
-    parser.add_argument("--out", type=Path, default=HERE / "fig03.svg")
+    parser.add_argument("--out-dir", type=Path, default=HERE)
     parser.add_argument("--scatter-fractions", type=float, nargs=3, default=None)
     args = parser.parse_args()
-    main(args.data, args.out, args.scatter_fractions)
+    main(args.data, args.out_dir, args.scatter_fractions)

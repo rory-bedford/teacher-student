@@ -1,6 +1,18 @@
-"""Figure 2 — build fig02.svg from the CSVs written by analysis.py.
+"""Figure 2 — one SVG per panel from the CSVs written by analysis.py.
 
-uv run python fig02-controls/figures.py
+    uv run python fig02-controls/figures.py
+
+    fig02-a-bars-fluctuation        Fluctuation R², observed / unobserved, per variant
+    fig02-b-bars-delta-fluctuation  perturbation: ΔFluctuation R² per population
+    fig02-c-schematic               toy connectivity matrix under each variant
+
+Activity R² (and ΔActivity R²) are scored and kept in the CSVs but no longer plotted
+(2026-09-18): rates are reported by the scatter panels instead. Add the metric back to
+``main`` to restore those bars.
+
+Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
+100%. ``placeholder_figures/fig02-controls/figures.py`` calls ``main`` here with a
+watermark and fake CSVs, so content edits show up in both.
 
 Plots ``PLOTTED_VARIANTS``, a subset of the variants analysis.py scores: the weight
 shuffle is trained and scored but not shown (see the constant).
@@ -19,23 +31,23 @@ from connectome_snns.visualization import (
     LEARNT_RECURRENCE_COLOR,
     SHUFFLE_WEIGHTS_COLOR,
 )
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+from matplotlib.ticker import MultipleLocator
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import (
-    FIGURE_WIDTH,
-    METRIC_LABELS,
-    panel_label,
-    use_talk_style,
-)
+from common.plotting import METRIC_LABELS
 from common.structure import (
     configuration_model_rewire,
     shuffle_weights_within_connectome,
     shuffle_weights_within_neuron,
 )
+from common.style import LEGEND_GREY, TICK_SIZE, apply_style, save
 
 HERE = Path(__file__).resolve().parent
-#: Plotted bars — a SUBSET of what analysis.py scores. "shuffle_inputs" (shuffle weights
+FIGURE = "fig02"
+#: Plotted bars — a SUBSET of what analysis.py scores. "shuffle_inputs" (shuffled weights
 #: within neuron) is trained on every seed and stays in fig02_summary.csv / fig02_rates.csv,
 #: but is not plotted (2026-09-18): it overlaps with Figure 5's weight noise, which makes
 #: the same point as a graded curve. Add it back to this list to restore the bar.
@@ -45,10 +57,10 @@ PLOTTED_VARIANTS = [
     "configuration_model",
 ]
 VARIANT_LABELS = {
-    "full_connectome": "Full\nconnectome",
-    "learnt_recurrence": "Learnt\nrecurrence",
-    "shuffle_inputs": "Shuffled\nweights",
-    "configuration_model": "Config.-model\nrewire",
+    "full_connectome": "Full Connectome",
+    "learnt_recurrence": "Learnt Recurrence",
+    "shuffle_inputs": "Shuffled Weights",
+    "configuration_model": "Configuration Model",
 }
 VARIANT_COLORS = {
     "full_connectome": FULL_CONNECTOME_COLOR,
@@ -56,15 +68,15 @@ VARIANT_COLORS = {
     "shuffle_inputs": SHUFFLE_WEIGHTS_COLOR,
     "configuration_model": CONFIGURATION_MODEL_COLOR,
 }
-#: (group, cell_type, alpha, hatch) per bar within a variant.
-HELD_OUT_SERIES = (
-    ("observed", "all", 0.45, None),
-    ("unobserved", "all", 1.0, None),
+#: (group, cell_type, x label) per group of bars, held-out and perturbation.
+HELD_OUT_GROUPS = (
+    ("observed", "all", "Observed"),
+    ("unobserved", "all", "Unobserved"),
 )
-#: The perturbation's non-targeted unobserved populations (targets scored separately).
-PERTURBATION_SERIES = (
-    ("unobserved", "excitatory", 0.45, None),
-    ("unobserved", "inhibitory", 1.0, None),
+PERTURBATION_GROUPS = (
+    ("unobserved", "excitatory", "Non-targeted E"),
+    ("unobserved", "inhibitory", "Non-targeted I"),
+    ("targeted", "inhibitory", "Targeted I"),
 )
 
 
@@ -72,64 +84,70 @@ def format_count(n):
     return f"{n / 1e6:.0f}M" if n >= 1e6 else f"{n:,}"
 
 
-def grouped_bars(ax, summary, metric, series=None):
-    """Bars per variant, two populations each (light, dark) with dotted ceilings.
-
-    ``series`` is (group, cell_type, alpha) per bar: the held-out pairing by default,
-    or the perturbation's non-targeted E and I populations.
-    """
-    series = series or HELD_OUT_SERIES
+def bars(summary, metric, groups=HELD_OUT_GROUPS):
+    """Archived controls bar chart: populations on x, one bar per variant, legend above."""
     rows = summary[summary["metric"] == metric]
     variants = [v for v in PLOTTED_VARIANTS if v in set(rows["variant"])]
-    width = 0.38
-    for g, (group, cell_type, alpha, hatch) in enumerate(series):
+    width = 0.8 / max(len(variants), 1)
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+    for g, (group, cell_type, _) in enumerate(groups):
         for i, variant in enumerate(variants):
             sub = rows[
                 (rows["variant"] == variant)
                 & (rows["group"] == group)
                 & (rows["cell_type"] == cell_type)
             ]
-            x = i + (g - 0.5) * width
+            if sub.empty:
+                continue
+            x = g + (i - (len(variants) - 1) / 2) * width
             ax.bar(
                 x,
                 sub["value"].mean(),
                 width,
                 color=VARIANT_COLORS[variant],
-                alpha=alpha,
-                hatch=hatch,
+                edgecolor="white",
+                linewidth=0.5,
             )
             ax.errorbar(
                 x,
                 sub["value"].mean(),
                 yerr=sub["value"].std() if len(sub) > 1 else 0,
                 color="k",
-                capsize=1.5,
-                linewidth=0.6,
+                capsize=3,
+                linewidth=1,
             )
-            ax.scatter(
-                np.full(len(sub), x),
-                sub["value"],
-                s=3,
-                color="k",
-                zorder=3,
-                linewidths=0,
-            )
+            ax.scatter(np.full(len(sub), x), sub["value"], s=8, color="k", zorder=3)
             ax.hlines(
                 sub["ceiling_value"].mean(),
                 x - width / 2,
                 x + width / 2,
                 colors="k",
                 linestyles=":",
-                linewidth=0.8,
+                linewidth=1.2,
             )
-    ax.set_xticks(range(len(variants)))
-    ax.set_xticklabels([VARIANT_LABELS[v] for v in variants])
-    ax.axhline(0, color="k", linewidth=0.5)
+    ax.set_xticks(range(len(groups)))
+    ax.set_xticklabels([label for _, _, label in groups])
     ax.set_ylabel(METRIC_LABELS[metric])
-    return variants
+    ymin = min(0.0, rows["value"].min()) - 0.05 if not rows.empty else -0.05
+    ax.set_ylim(ymin, 1.05)
+    ax.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax.axhline(0, color="k", linewidth=0.5)
+    handles = [
+        Patch(color=VARIANT_COLORS[v], label=VARIANT_LABELS[v]) for v in variants
+    ]
+    handles.append(Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling"))
+    ax.legend(
+        handles=handles,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.0),
+        ncol=3,
+        frameon=True,
+    )
+    fig.tight_layout()
+    return fig
 
 
-def schematic(fig, cell, params_by_variant, label="c"):
+def toy_matrices():
     """Toy connectivity matrix under each variant, generated with the real functions."""
     rng = np.random.default_rng(3)
     n_e, n_i = 16, 4
@@ -145,7 +163,6 @@ def schematic(fig, cell, params_by_variant, label="c"):
     )
     toy[:n_e, n_e:] = (rng.random((n_e, n_i)) < 0.4) * rng.gamma(2.0, 0.5, (n_e, n_i))
     np.fill_diagonal(toy, 0)
-
     matrices = {
         "full_connectome": toy,
         "learnt_recurrence": np.ones_like(toy),
@@ -159,39 +176,41 @@ def schematic(fig, cell, params_by_variant, label="c"):
             toy, types, np.random.default_rng(1)
         ),
     }
+    return matrices, n_e, float(np.percentile(toy[toy > 0], 90))
+
+
+def schematic(params_by_variant):
+    matrices, n_e, vmax = toy_matrices()
     variants = [v for v in PLOTTED_VARIANTS if v in matrices]
-    grid = cell.subgridspec(1, len(variants), wspace=0.1)
-    for k, variant in enumerate(variants):
-        ax = fig.add_subplot(grid[0, k])
-        matrix = matrices[variant]
-        cmap = "Greys" if variant != "learnt_recurrence" else "Oranges"
+    fig, axes = plt.subplots(1, len(variants), figsize=(2.75 * len(variants), 3.4))
+    for ax, variant in zip(np.atleast_1d(axes), variants):
         ax.imshow(
-            matrix,
-            cmap=cmap,
+            matrices[variant],
+            cmap="Greys" if variant != "learnt_recurrence" else "Oranges",
             vmin=0,
-            vmax=np.percentile(toy[toy > 0], 90),
+            vmax=vmax,
             interpolation="nearest",
         )
-        ax.axhline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=0.8)
-        ax.axvline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=0.8)
+        ax.axhline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=1.2)
+        ax.axvline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=1.2)
         count = params_by_variant.get(variant)
         ax.set_title(
-            VARIANT_LABELS[variant].replace("\n", " ")
-            + (f"\n{format_count(count)} params" if count is not None else ""),
-            fontsize=6.5,
+            VARIANT_LABELS[variant]
+            + (f"\n{format_count(count)} Parameters" if count is not None else ""),
+            fontsize=TICK_SIZE,
             color=VARIANT_COLORS[variant],
         )
         ax.set_xticks([])
         ax.set_yticks([])
         ax.grid(False)
-        if k == 0:
-            panel_label(ax, label)
+    fig.tight_layout()
+    return fig
 
 
-def main(data_dir, out_path, observed_fraction=None):
-    use_talk_style()
+def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
+    apply_style()
     summary = pd.read_csv(data_dir / "fig02_summary.csv")
-    # The grid holds two observation levels (see run_grid_search.py); plot one per figure.
+    # The grid held two observation levels until 2026-09-18; plot one per figure.
     if "observed_fraction" not in summary:  # CSVs written before 2026-09-18
         summary["observed_fraction"] = np.nan
     if "cell_type" not in summary:  # CSVs written before the perturbation panel
@@ -205,71 +224,29 @@ def main(data_dir, out_path, observed_fraction=None):
     if summary.empty:
         raise SystemExit(f"no runs at observed_fraction {observed_fraction}")
     params_by_variant = summary.groupby("variant")["n_free_params"].first().to_dict()
-    plotted = summary[summary["variant"].isin(PLOTTED_VARIANTS)]
-    n_seeds = plotted.groupby("variant")["seed"].nunique().min()
-    observed = observed_fraction
 
-    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
-    rows = 4 if has_perturbation else 3
-    ratios = [1.3, 0.9] + ([0.9] if has_perturbation else []) + [0.7]
-    fig = plt.figure(
-        figsize=(FIGURE_WIDTH, (22 if has_perturbation else 17) / 2.54),
-        layout="constrained",
-    )
-    grid = fig.add_gridspec(rows, 1, height_ratios=ratios)
+    def output(fig, letter, slug):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
-    ax = fig.add_subplot(grid[0])
-    grouped_bars(ax, summary, "fluctuation_r2")
-    ax.set_title(
-        "Fluctuation R², held-out stimuli (light: observed, dark: unobserved;"
-        " ··· ceiling)",
-        fontsize=7,
-    )
-    panel_label(ax, "a")
+    output(bars(summary, "fluctuation_r2"), "a", "bars-fluctuation")
 
-    ax = fig.add_subplot(grid[1])
-    grouped_bars(ax, summary, "activity_r2")
-    ax.set_title("Activity R²", fontsize=7)
-    panel_label(ax, "b")
+    # The perturbation panel is a separate file, so dropping it from the talk is
+    # dropping one SVG.
+    if (summary["metric"] == "delta_fluctuation_r2").any():
+        fig = bars(summary, "delta_fluctuation_r2", PERTURBATION_GROUPS)
+        output(fig, "b", "bars-delta-fluctuation")
 
-    # (c) perturbation: a separate row, so dropping it is one line.
-    if has_perturbation:
-        cells = grid[2].subgridspec(1, 2, wspace=0.05)
-        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
-            ax = fig.add_subplot(cells[0, column])
-            grouped_bars(ax, summary, metric, PERTURBATION_SERIES)
-            ax.set_title(METRIC_LABELS[metric], fontsize=7)
-            ax.tick_params(axis="x", labelsize=5)
-            if column == 0:
-                # The intervention goes in the y label: the half-width axes cannot
-                # hold a title describing it without overflowing the figure.
-                ax.set_ylabel("Inhibiting 25% of\nunobserved I cells", fontsize=6.5)
-                ax.set_title(
-                    f"{METRIC_LABELS[metric]} (light: non-targeted E, dark: I)",
-                    fontsize=6,
-                )
-                panel_label(ax, "c")
-            else:
-                ax.set_ylabel(None)
-
-    schematic(fig, grid[rows - 1], params_by_variant, "d" if has_perturbation else "c")
-
-    fig.suptitle(
-        "The connectome is what's doing the work: 6 parameters with it beat 25M without\n"
-        f"({observed:.0%} observed; mean ± SD over {n_seeds} seeds)"
-    )
-    fig.savefig(out_path)
-    print(f"Saved {out_path}")
+    output(schematic(params_by_variant), "c", "schematic")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
-    parser.add_argument("--out", type=Path, default=HERE / "fig02.svg")
+    parser.add_argument("--out-dir", type=Path, default=HERE)
     parser.add_argument(
         "--observed-fraction",
         type=float,
         help="which observation level to plot (default: the lowest present)",
     )
     args = parser.parse_args()
-    main(args.data, args.out, args.observed_fraction)
+    main(args.data, args.out_dir, args.observed_fraction)

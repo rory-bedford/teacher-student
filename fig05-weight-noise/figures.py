@@ -1,6 +1,17 @@
-"""Figure 5 — build fig05.svg from the CSVs written by analysis.py.
+"""Figure 5 — one SVG per panel from the CSVs written by analysis.py.
 
     uv run python fig05-weight-noise/figures.py
+
+    fig05-a-curve                   R² vs weight noise, observed / unobserved, both metrics
+    fig05-b-contrast                unobserved Fluctuation R²: weight noise | neuron removal
+    fig05-c-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
+
+Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
+reported by the scatter panels of figures 1 and 3.
+
+Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
+100%. ``placeholder_figures/fig05-weight-noise/figures.py`` calls ``main`` here with a
+watermark and fake CSVs, so content edits show up in both.
 
 Panel (b) reads Figure 4's neuron-removal curve from
 ../fig04-reconstruction-errors/fig04_summary.csv, so run Figure 4's analysis first.
@@ -12,94 +23,96 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from connectome_snns.visualization import NEURON_REMOVAL_COLOR, WEIGHT_NOISE_COLOR
+from connectome_snns.visualization import (
+    NEURON_REMOVAL_COLOR,
+    OBSERVED_COLOR,
+    UNOBSERVED_COLOR,
+    WEIGHT_NOISE_COLOR,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import (
-    FIGURE_WIDTH,
-    GROUP_COLORS,
-    GROUP_LABELS,
-    METRIC_LABELS,
-    ceiling_line,
-    panel_label,
-    perturbation_sweep,
-    seed_errorbar,
-    use_talk_style,
+from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
+from common.style import (
+    PAIR,
+    SINGLE,
+    apply_style,
+    ceiling,
+    save,
+    sweep_legend,
+    sweep_series,
 )
 
 HERE = Path(__file__).resolve().parent
 FIG04_SUMMARY = HERE.parent / "fig04-reconstruction-errors" / "fig04_summary.csv"
+FIGURE = "fig05"
+GROUPS = {
+    "observed": ("Observed", OBSERVED_COLOR),
+    "unobserved": ("Unobserved", UNOBSERVED_COLOR),
+}
 
 
-def main(data_dir, fig04_summary, out_path):
-    use_talk_style()
-    summary = pd.read_csv(data_dir / "fig05_summary.csv")
-    n_seeds = summary.groupby("weight_noise")["seed"].nunique().min()
-    clipped = summary.groupby("weight_noise")["noise_clipped_fraction"].mean()
-    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
+def held_out(summary):
+    """The held-out rows; CSVs written before the perturbation panel have no column."""
+    if "evaluation" in summary:
+        return summary[summary["evaluation"] == "held_out"]
+    return summary
 
-    rows = 3 if has_perturbation else 2
-    ratios = [1.1, 1.0] + ([1.0] if has_perturbation else [])
-    fig = plt.figure(
-        figsize=(FIGURE_WIDTH, (16.5 if has_perturbation else 11.5) / 2.54),
-        layout="constrained",
-    )
-    grid = fig.add_gridspec(rows, 2, height_ratios=ratios)
 
-    # (a) Fluctuation R² against weight noise.
-    ax = fig.add_subplot(grid[0, :])
-    for group in ("observed", "unobserved"):
-        seed_errorbar(
+def group_rows(summary, group, metric, cell_type="all"):
+    rows = summary[(summary["group"] == group) & (summary["metric"] == metric)]
+    if "cell_type" in rows:
+        rows = rows[rows["cell_type"] == cell_type]
+    return rows
+
+
+def curve(summary, clipped):
+    """(a) Fluctuation R² against weight noise, per population, with dotted ceilings."""
+    rows = held_out(summary)
+    fig, ax = plt.subplots(figsize=SINGLE)
+    for group, (_, color) in GROUPS.items():
+        sweep_series(
             ax,
-            summary,
+            group_rows(rows, group, "fluctuation_r2"),
             "weight_noise",
-            group,
             "fluctuation_r2",
-            GROUP_COLORS[group],
-            GROUP_LABELS[group],
+            color,
         )
-        ceiling_line(
-            ax, summary, "weight_noise", "fluctuation_r2", group, GROUP_COLORS[group]
-        )
-    ax.set_xlabel("Weight noise")
+        ceiling(ax, group_rows(rows, group, "fluctuation_r2"), "weight_noise", color)
+    ax.set_xlim(-0.025, rows["weight_noise"].max() + 0.025)
+    # Limits from the data, not fixed: the real sweep runs lower than the estimates.
+    ax.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
+    ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel("Fluctuation R²")
-    ax.legend(frameon=False)
+    sweep_legend(ax, {label: color for label, color in GROUPS.values()}, metrics=False)
+    # The mean/SD-preserving perturbation clips at zero; report how much it clipped.
     ax.set_title(
-        "··· ceiling\nweights clipped at zero: "
+        "Robustness to Weight Noise\n"
+        + "clipped at zero: "
         + ", ".join(f"{100 * v:.1f}% @ {k:g}" for k, v in clipped.items() if k > 0),
-        fontsize=6,
+        fontsize=9,
     )
-    panel_label(ax, "a")
+    fig.tight_layout()
+    return fig
 
-    # (b) the contrast: weight noise vs neuron removal, shared y.
-    left = fig.add_subplot(grid[1, 0])
-    rows = summary[
-        (summary["group"] == "unobserved") & (summary["metric"] == "fluctuation_r2")
-    ]
-    stats = rows.groupby("weight_noise")["value"].agg(["mean", "std"])
-    left.errorbar(
-        stats.index,
-        stats["mean"],
-        yerr=stats["std"].fillna(0),
-        color=WEIGHT_NOISE_COLOR,
-        marker="o",
-        markersize=3,
-        capsize=1.5,
-    )
-    left.set_xlabel("Weight noise")
-    left.set_ylabel("Fluctuation R² (unobserved)")
-    left.set_title("Imprecise weights")
-    panel_label(left, "b")
 
-    right = fig.add_subplot(grid[1, 1], sharey=left)
+def contrast(summary, fig04_summary):
+    """(b) The contrast panel: imprecise weights beside missing connections, shared y."""
+    rows = group_rows(held_out(summary), "unobserved", "fluctuation_r2")
+    fig, (left, right) = plt.subplots(1, 2, figsize=PAIR, sharey=True)
+    sweep_series(left, rows, "weight_noise", "fluctuation_r2", WEIGHT_NOISE_COLOR)
+    left.set_xlabel("Weight Noise Fraction")
+    left.set_ylabel("Fluctuation R² (Unobserved)")
+    left.set_title("Imprecise Weights")
     if Path(fig04_summary).exists():
-        fig04 = pd.read_csv(fig04_summary)
+        fig04 = held_out(pd.read_csv(fig04_summary))
         removal = fig04[
             (fig04["error_model"] == "neuron_removal")
             & (fig04["group"] == "unobserved")
             & (fig04["metric"] == "fluctuation_r2")
         ]
+        if "cell_type" in removal:
+            removal = removal[removal["cell_type"] == "all"]
         stats = removal.groupby("level")[["mean_kappa_lost", "value"]].mean()
         spread = removal.groupby("level")["value"].std().fillna(0)
         right.errorbar(
@@ -107,47 +120,66 @@ def main(data_dir, fig04_summary, out_path):
             stats["value"],
             yerr=spread,
             color=NEURON_REMOVAL_COLOR,
-            marker="o",
-            markersize=3,
-            capsize=1.5,
+            marker="s",
+            linestyle="--",
+            linewidth=1.5,
+            markersize=5,
+            capsize=2.5,
         )
     else:
         right.text(
             0.5, 0.5, "run fig04 analysis.py", transform=right.transAxes, ha="center"
         )
-    right.set_xlabel("Input volume lost (κ)")
-    right.set_title("Missing connections")
-    right.tick_params(labelleft=False)
+    right.set_xlabel("Input Volume Lost (κ)")
+    right.set_title("Missing Connections")
+    left.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
+    fig.suptitle("Imprecise Weights Cost Less Than Missing Connections")
+    fig.tight_layout()
+    return fig
 
-    # (c) perturbation: a separate row, so dropping it is one line.
-    if has_perturbation:
-        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
-            ax = fig.add_subplot(grid[2, column])
-            perturbation_sweep(ax, summary, "weight_noise", metric)
-            ax.set_xlabel("Weight noise")
-            ax.set_ylabel(METRIC_LABELS[metric])
-            ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
-            if column == 0:
-                ax.legend(frameon=False, fontsize=6)
-                ax.set_title(
-                    "Inhibiting 25% of unobserved I cells (··· ceiling)\n"
-                    + METRIC_LABELS[metric],
-                    fontsize=6,
-                )
-                panel_label(ax, "c")
 
-    fig.suptitle(
-        "Weight precision is not the binding constraint\n"
-        f"(10% observed; held-out stimuli; mean ± SD over {n_seeds} seeds)"
-    )
-    fig.savefig(out_path)
-    print(f"Saved {out_path}")
+def perturbation(summary, metric):
+    """The intervention's effect against weight noise, one population per colour."""
+    rows = summary[summary["evaluation"] == "perturbation"]
+    fig, ax = plt.subplots(figsize=SINGLE)
+    series = {}
+    for group, cell_type, color, label in PERTURBATION_SERIES:
+        subset = group_rows(rows, group, metric, cell_type)
+        # sweep_series looks its marker/linestyle up by the base metric name, so the
+        # delta panels keep the archived Activity o- / Fluctuation s-- convention.
+        base_metric = metric.replace("delta_", "")
+        sweep_series(ax, subset, "weight_noise", base_metric, color)
+        ceiling(ax, subset, "weight_noise", color)
+        series[label] = color
+    ax.set_xlabel("Weight Noise Fraction")
+    ax.set_ylabel(METRIC_LABELS[metric])
+    sweep_legend(ax, series, metrics=False)
+    ax.set_title(f"{METRIC_LABELS[metric]}\nInhibiting 25% of Unobserved I Cells")
+    fig.tight_layout()
+    return fig
+
+
+def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
+    apply_style()
+    summary = pd.read_csv(data_dir / "fig05_summary.csv")
+    clipped = summary.groupby("weight_noise")["noise_clipped_fraction"].mean()
+
+    def output(fig, letter, slug):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+
+    output(curve(summary, clipped), "a", "curve")
+    output(contrast(summary, fig04_summary), "b", "contrast")
+
+    # The perturbation panels are separate files, so dropping them from the talk is
+    # dropping two SVGs.
+    if (summary["metric"] == "delta_fluctuation_r2").any():
+        output(perturbation(summary, "delta_fluctuation_r2"), "c", "delta-fluctuation")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
     parser.add_argument("--fig04-summary", type=Path, default=FIG04_SUMMARY)
-    parser.add_argument("--out", type=Path, default=HERE / "fig05.svg")
+    parser.add_argument("--out-dir", type=Path, default=HERE)
     args = parser.parse_args()
-    main(args.data, args.fig04_summary, args.out)
+    main(args.data, args.fig04_summary, args.out_dir)
