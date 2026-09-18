@@ -1,6 +1,6 @@
 """Figure 3 — evaluate the observed-fraction sweep (and Figure 1) on held-out stimuli.
 
-Run after training (Figure 1's runs supply the 10% point):
+Run after training (Figure 1's runs supply the 50% point):
     uv run python fig03-observed-fraction/analysis.py
 
 Writes, next to this script:
@@ -38,7 +38,7 @@ BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
 #: 0.5% and 1% observed finished but are not reported: below ~5% the fit itself collapses
 #: (see run_grid_search.py), 2% is kept to show the cliff. Their run folders are still on
 #: disk, so add a fraction back here to include it again.
-REPORTED_FRACTIONS = (0.02, 0.05, 0.25, 0.5)
+REPORTED_FRACTIONS = (0.02, 0.05, 0.25, 0.5)  # 0.5 comes from Figure 1
 
 
 def reported(run_dir):

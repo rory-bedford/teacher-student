@@ -11,7 +11,10 @@ seed = 44                              # overridden per run by run_grid_search.p
 chunk_size = 160
 
 [student]
-observed_fraction = 0.1                # of modelled neurons; drawn at random per seed
+observed_fraction = 0.5                # of modelled neurons; drawn at random per seed
+# 50% observed throughout (2026-09-18, was 0.1): roughly the proportion of reconstructed
+# neurons expected to have activity recorded. It also recovers the six scaling factors to
+# within 20% (fig00-parameter-recovery), where 10% observed left them at 0.57-1.19.
 weight_noise = 0.1                     # overridden per run
 
 [training]

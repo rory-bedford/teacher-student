@@ -1,4 +1,7 @@
-"""Figure 3 — four observed fractions x three seeds (12 runs).
+"""Figure 3 — three observed fractions x three seeds (9 runs).
+
+The 50% point of the sweep is Figure 1 itself (analysis.py reads its runs), so it is not
+run again here.
 
 The 10% point is Figure 1 and is read from its runs by analysis.py. Runs are ordered
 seed by seed (coarse curve first), and within a seed from the lowest fraction up, since
@@ -24,7 +27,7 @@ SEEDS = [44, 45, 46]
 #: unobserved AND observed excitatory populations fall silent, whatever the rate-penalty
 #: targets or learning rate -- see probes on 2026-09-18), so 0.5% and 1% are not reported.
 #: The 2% point is kept deliberately, to show the cliff.
-OBSERVED_FRACTIONS = [0.02, 0.05, 0.25, 0.5]
+OBSERVED_FRACTIONS = [0.02, 0.05, 0.25]
 
 
 def custom_config_generator(base_params):

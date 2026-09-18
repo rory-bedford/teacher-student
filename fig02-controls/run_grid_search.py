@@ -1,7 +1,7 @@
 """Figure 2 — the connectivity controls, plus the fully observed check (12 runs).
 
-The three controls run at 50% observed against Figure 3's obs-0.5 runs as the
-full-connectome baseline, which is not retrained here (Figure 1 runs at 10% observed). Runs are ordered seed by seed, so
+The three controls run at 50% observed against Figure 1's runs as the full-connectome
+baseline, which is not retrained here. Runs are ordered seed by seed, so
 every control has one seed before any has two.
 
 The fully observed set of all four variants was dropped on 2026-09-18 (it appears in no
