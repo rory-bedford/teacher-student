@@ -17,7 +17,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
     FIGURE_WIDTH,
+    METRIC_LABELS,
     panel_label,
+    perturbation_sweep,
     r2_title,
     rate_scatter,
     spike_raster,
@@ -46,9 +48,15 @@ def main(data_dir, out_path, scatter_fractions):
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
     fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
     n_seeds = sweep.groupby("reconstructed_fraction")["seed"].nunique().min()
+    has_perturbation = (sweep["metric"] == "delta_activity_r2").any()
 
-    fig = plt.figure(figsize=(FIGURE_WIDTH, 21 / 2.54), layout="constrained")
-    grid = fig.add_gridspec(4, 2, height_ratios=[1.2, 1.0, 1.0, 0.55])
+    rows = 5 if has_perturbation else 4
+    ratios = [1.2, 1.0, 1.0, 0.55] + ([1.0] if has_perturbation else [])
+    fig = plt.figure(
+        figsize=(FIGURE_WIDTH, (26 if has_perturbation else 21) / 2.54),
+        layout="constrained",
+    )
+    grid = fig.add_gridspec(rows, 2, height_ratios=ratios)
 
     # (b) the sweep.
     ax = fig.add_subplot(grid[0, :])
@@ -163,6 +171,27 @@ def main(data_dir, out_path, scatter_fractions):
         f"{min(levels):.0%} reconstructed: teacher (grey) vs student", fontsize=7
     )
     panel_label(ax, "c")
+
+    # (d) perturbation: a separate row, so dropping it is one line. The targets are
+    # held-out (unobserved) I cells; unreconstructed units are teacher-forced.
+    if has_perturbation:
+        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
+            ax = fig.add_subplot(grid[4, column])
+            perturbation_sweep(
+                ax, sweep, "reconstructed_fraction", metric, group="heldout"
+            )
+            ax.set_xlim(1.05, 0.0)
+            ax.set_xlabel("Fraction of units reconstructed")
+            ax.set_ylabel(METRIC_LABELS[metric])
+            ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
+            if column == 0:
+                ax.legend(frameon=False, fontsize=6)
+                ax.set_title(
+                    "Inhibiting 25% of held-out I cells (··· ceiling)\n"
+                    + METRIC_LABELS[metric],
+                    fontsize=6,
+                )
+                panel_label(ax, "d")
 
     fig.suptitle(
         "Unreconstructed inputs break prediction of unobserved neurons\n"

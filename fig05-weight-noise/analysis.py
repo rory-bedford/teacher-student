@@ -4,7 +4,8 @@ Run after training (Figure 1's runs supply weight noise 0):
     uv run python fig05-weight-noise/analysis.py
 
 Writes, next to this script:
-    fig05_summary.csv   weight_noise, noise_clipped_fraction, seed, group, metric, value, ceiling_value
+    fig05_summary.csv   weight_noise, noise_clipped_fraction, seed, evaluation{held_out,perturbation},
+                        group, cell_type, n_cells, metric, value, ceiling_value
     fig05_rates.csv     weight_noise, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
 
 noise_clipped_fraction is the fraction of non-zero weights the archived noise pushed
@@ -15,12 +16,14 @@ import argparse
 import sys
 from pathlib import Path
 
+import pandas as pd
 import torch
 from connectome_snns.utils.reproducibility import load_experiment_config
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.evaluation import collect, completed_runs
+from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
 BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
@@ -39,12 +42,14 @@ def main(runs_dir, baseline_dir, out_dir):
     if not runs:
         raise SystemExit("No completed runs")
     summary, rates = collect(runs, label, device)
+    delta_summary, _ = collect_perturbation(runs, label, device)
+    summary = pd.concat([summary, pd.DataFrame(delta_summary)], ignore_index=True)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     summary.to_csv(out_dir / "fig05_summary.csv", index=False)
     rates.to_csv(out_dir / "fig05_rates.csv", index=False)
     print(
-        summary.groupby(["weight_noise", "group", "metric"])[
+        summary.groupby(["weight_noise", "evaluation", "group", "cell_type", "metric"])[
             ["value", "ceiling_value", "noise_clipped_fraction"]
         ].mean()
     )

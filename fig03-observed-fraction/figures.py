@@ -1,7 +1,7 @@
 """Figure 3 — build fig03.svg from the CSVs written by analysis.py.
 
     uv run python fig03-observed-fraction/figures.py
-    uv run python fig03-observed-fraction/figures.py --scatter-fractions 0.25 0.02 0.005
+    uv run python fig03-observed-fraction/figures.py --scatter-fractions 0.25 0.05 0.02
 
 Panel (b) shows rate scatters at three observed fractions: by default the lowest
 fraction still within 10% of the ceiling (above threshold), the fraction closest to
@@ -25,8 +25,10 @@ from common.plotting import (
     FIGURE_WIDTH,
     GROUP_COLORS,
     GROUP_LABELS,
+    METRIC_LABELS,
     ceiling_line,
     panel_label,
+    perturbation_sweep,
     r2_title,
     rate_scatter,
     seed_errorbar,
@@ -34,7 +36,7 @@ from common.plotting import (
 )
 
 HERE = Path(__file__).resolve().parent
-#: Teacher participation ratio, pooled over all training trials.
+#: Teacher dimensionality (PCA of smoothed spikes), pooled over all training trials.
 TEACHER_DIMENSIONALITY = (
     HERE.parent / "generate-teacher-activity" / "teacher_dimensionality.csv"
 )
@@ -61,9 +63,15 @@ def main(data_dir, out_path, scatter_fractions):
     rates = pd.read_csv(data_dir / "fig03_rates.csv")
     dimensionality = pd.read_csv(TEACHER_DIMENSIONALITY).iloc[0]
     n_seeds = summary.groupby("obs_fraction")["seed"].nunique().min()
+    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
 
-    fig = plt.figure(figsize=(FIGURE_WIDTH, 13 / 2.54), layout="constrained")
-    grid = fig.add_gridspec(2, 3, height_ratios=[1.3, 1.0])
+    rows = 3 if has_perturbation else 2
+    ratios = [1.3, 1.0] + ([1.0] if has_perturbation else [])
+    fig = plt.figure(
+        figsize=(FIGURE_WIDTH, (18 if has_perturbation else 13) / 2.54),
+        layout="constrained",
+    )
+    grid = fig.add_gridspec(rows, 3, height_ratios=ratios)
 
     # (a) Fluctuation R² against observed fraction.
     ax = fig.add_subplot(grid[0, :])
@@ -80,13 +88,19 @@ def main(data_dir, out_path, scatter_fractions):
         ceiling_line(
             ax, summary, "obs_fraction", "fluctuation_r2", group, GROUP_COLORS[group]
         )
-    pr_fraction = dimensionality["participation_ratio"] / N_NEURONS
-    ax.axvline(pr_fraction, color=FLOOR_COLOR, linewidth=0.8)
+    # The teacher's dominant subspace, as a fraction of the population: the band the
+    # observed sample stops spanning is where the fit fails. The participation ratio
+    # (41 neurons, 0.8%) sits well inside the collapsed region and is not marked.
+    low = dimensionality["n_pcs_80pct_var"] / N_NEURONS
+    high = dimensionality["n_pcs_90pct_var"] / N_NEURONS
+    ax.axvspan(low, high, color=FLOOR_COLOR, alpha=0.12, linewidth=0)
+    ax.axvline(high, color=FLOOR_COLOR, linewidth=0.8)
     ax.text(
-        pr_fraction,
+        high,
         0.02,
-        f" teacher participation ratio\n {dimensionality['participation_ratio']:.0f} neurons"
-        " (training trials)",
+        f" teacher PCs for 80-90% of variance\n"
+        f" {dimensionality['n_pcs_80pct_var']:.0f}-{dimensionality['n_pcs_90pct_var']:.0f}"
+        " neurons (training trials)",
         transform=ax.get_xaxis_transform(),
         fontsize=6,
         color="#555555",
@@ -126,6 +140,24 @@ def main(data_dir, out_path, scatter_fractions):
         ax.title.set_fontsize(5)
         if column == 0:
             panel_label(ax, "b")
+
+    # (c) perturbation: a separate row, so dropping it is one line.
+    if has_perturbation:
+        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
+            ax = fig.add_subplot(grid[2, column])
+            perturbation_sweep(ax, summary, "obs_fraction", metric)
+            ax.set_xscale("log")
+            ax.set_xlabel("Observed fraction")
+            ax.set_ylabel(METRIC_LABELS[metric])
+            ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
+            if column == 0:
+                ax.legend(frameon=False, fontsize=6)
+                ax.set_title(
+                    "Inhibiting 25% of unobserved I cells (··· ceiling)\n"
+                    + METRIC_LABELS[metric],
+                    fontsize=6,
+                )
+                panel_label(ax, "c")
 
     fig.suptitle(
         "How few neurons do you need to observe?\n"

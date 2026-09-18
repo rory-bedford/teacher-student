@@ -1,4 +1,4 @@
-"""Figure 3 — six observed fractions x three seeds (18 runs).
+"""Figure 3 — four observed fractions x three seeds (12 runs).
 
 The 10% point is Figure 1 and is read from its runs by analysis.py. Runs are ordered
 seed by seed (coarse curve first), and within a seed from the lowest fraction up, since
@@ -20,7 +20,11 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-OBSERVED_FRACTIONS = [0.005, 0.01, 0.02, 0.05, 0.25, 0.5]
+#: 2% is the first point that fails: below ~5% observed the fit itself collapses (the
+#: unobserved AND observed excitatory populations fall silent, whatever the rate-penalty
+#: targets or learning rate -- see probes on 2026-09-18), so 0.5% and 1% are not reported.
+#: The 2% point is kept deliberately, to show the cliff.
+OBSERVED_FRACTIONS = [0.02, 0.05, 0.25, 0.5]
 
 
 def custom_config_generator(base_params):

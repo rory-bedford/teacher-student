@@ -10,7 +10,8 @@ recurrent teacher weights) that comes from inside the reconstructed segment.
 
 Writes, next to this script:
     fig06_summary.csv   reconstructed_fraction, recorded_pool_fraction, kappa, n_free_params, n_in_loss,
-                        seed, group, metric, value, ceiling_value
+                        seed, evaluation{held_out,perturbation}, group, cell_type, n_cells, metric,
+                        value, ceiling_value
     fig06_rates.csv     reconstructed_fraction, recorded_pool_fraction, neuron_id, cell_type, group, seed,
                         teacher_rate_hz, student_rate_hz, fluctuation_r2
     fig06_spikes.csv    reconstructed_fraction, neuron_id, group, seed, source, time_s
@@ -36,6 +37,11 @@ from common.evaluation import (
     run_parameters,
     spike_rows,
     summary_rows,
+)
+from common.perturbation import (
+    evaluate_perturbation,
+    perturbation_summary_rows,
+    unavailable_reason,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -74,6 +80,22 @@ def main(runs_dir, out_dir):
             row["group"] = "observed" if row.pop("observed") else "heldout"
             rates.append(row)
 
+        # The perturbation targets 25% of the held-out (unobserved) I cells; the
+        # unreconstructed units are teacher-forced, so they are never targets.
+        reason = unavailable_reason(run)
+        if reason is not None:
+            print(f"  no perturbation: {reason}")
+        else:
+            for row in perturbation_summary_rows(
+                evaluate_perturbation(run, device),
+                **labels,
+                kappa=float(np.mean(evaluation["kappa"][modelled])),
+                n_free_params=int(evaluation["n_free_params"]),
+                n_in_loss=int(evaluation["n_observed"]),
+            ):
+                row["group"] = GROUP_NAMES.get(row["group"], row["group"])
+                summary.append(row)
+
         level = (labels["reconstructed_fraction"], labels["recorded_pool_fraction"])
         if level not in rastered_levels and evaluation["n_unobserved"] > 0:
             rastered_levels.add(level)
@@ -88,10 +110,18 @@ def main(runs_dir, out_dir):
     summary.to_csv(out_dir / "fig06_summary.csv", index=False)
     pd.DataFrame(rates).to_csv(out_dir / "fig06_rates.csv", index=False)
     pd.DataFrame(spikes).to_csv(out_dir / "fig06_spikes.csv", index=False)
+    held_out = summary[summary["evaluation"] == "held_out"]
     print(
-        summary.groupby(
+        held_out.groupby(
             ["recorded_pool_fraction", "reconstructed_fraction", "group", "metric"]
         )[["kappa", "n_free_params", "n_in_loss", "value", "ceiling_value"]].mean()
+    )
+    print(
+        summary[summary["evaluation"] == "perturbation"]
+        .groupby(["reconstructed_fraction", "group", "cell_type", "metric"])[
+            ["value", "ceiling_value"]
+        ]
+        .mean()
     )
 
 

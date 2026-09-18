@@ -9,7 +9,9 @@ connectivity and the removal mask alone; the feedforward input, which is always
 reconstructed, is not in the denominator.
 
 Writes, next to this script:
-    fig04_summary.csv      error_model, level, mean_kappa_lost, seed, group, metric, value, ceiling_value
+    fig04_summary.csv      error_model, level, mean_kappa_lost, seed,
+                           evaluation{held_out,perturbation}, group, cell_type, n_cells, metric,
+                           value, ceiling_value
     fig04_per_neuron.csv   error_model, level, seed, neuron_id, cell_type, observed, kappa_lost,
                            fluctuation_r2, teacher_rate_hz, student_rate_hz
 """
@@ -31,6 +33,11 @@ from common.evaluation import (
     rate_rows,
     run_parameters,
     summary_rows,
+)
+from common.perturbation import (
+    evaluate_perturbation,
+    perturbation_summary_rows,
+    unavailable_reason,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -68,6 +75,10 @@ def main(runs_dir, baseline_dir, out_dir):
         modelled = np.concatenate(
             [evaluation["observed_ids"], evaluation["unobserved_ids"]]
         )
+        reason = unavailable_reason(run)
+        if reason is not None:
+            print(f"  no perturbation: {reason}")
+        perturbation = None if reason else evaluate_perturbation(run, device)
         for model, level in conditions(run_parameters(run)):
             labels = {
                 "error_model": model,
@@ -75,6 +86,8 @@ def main(runs_dir, baseline_dir, out_dir):
                 "mean_kappa_lost": float(kappa[modelled].mean()),
             }
             summary += summary_rows(evaluation, **labels)
+            if perturbation is not None:
+                summary += perturbation_summary_rows(perturbation, **labels)
             for row in rate_rows(evaluation, error_model=model, level=level):
                 row["kappa_lost"] = float(kappa[row["neuron_id"]])
                 per_neuron.append(row)
@@ -98,9 +111,9 @@ def main(runs_dir, baseline_dir, out_dir):
         out_dir / "fig04_per_neuron.csv", index=False
     )
     print(
-        summary.groupby(["error_model", "level", "group", "metric"])[
-            ["mean_kappa_lost", "value", "ceiling_value"]
-        ].mean()
+        summary.groupby(
+            ["error_model", "level", "evaluation", "group", "cell_type", "metric"]
+        )[["mean_kappa_lost", "value", "ceiling_value"]].mean()
     )
 
 

@@ -18,6 +18,8 @@ from common.plotting import (
     FIGURE_WIDTH,
     GROUP_LABELS,
     INHIBITORY_COLOR,
+    delta_mean_inset,
+    delta_rate_scatter,
     panel_label,
     r2_title,
     rate_scatter,
@@ -27,6 +29,38 @@ from common.plotting import (
 
 HERE = Path(__file__).resolve().parent
 RASTER_SECONDS = 3.0
+PERTURBATION_CSV = "fig01_perturbation.csv"
+
+
+def perturbation_panel(fig, cell, summary, deltas):
+    """(d) the intervention's effect: teacher vs student Δrate, one point per neuron."""
+    ax = fig.add_subplot(cell)
+    delta_rate_scatter(ax, deltas)
+    delta_mean_inset(ax, deltas)
+    ax.legend(loc="upper left", markerscale=3, frameon=False, fontsize=6)
+    rows = summary[summary["evaluation"] == "perturbation"]
+    scores = []
+    for metric, short in (
+        ("delta_activity_r2", "ΔAct"),
+        ("delta_fluctuation_r2", "ΔFlu"),
+    ):
+        values = []
+        for cell_type, label in (("excitatory", "E"), ("inhibitory", "I")):
+            m = rows[
+                (rows["metric"] == metric)
+                & (rows["group"] == "unobserved")
+                & (rows["cell_type"] == cell_type)
+            ]
+            if not m.empty:
+                values.append(
+                    f"{label} {m['value'].mean():.2f} [{m['ceiling_value'].mean():.2f}]"
+                )
+        if values:
+            scores.append(f"{short} R²: " + ", ".join(values))
+    ax.set_title(
+        "Inhibiting 25% of unobserved I cells\n" + "\n".join(scores), fontsize=6
+    )
+    panel_label(ax, "d")
 
 
 def main(data_dir, out_path):
@@ -36,10 +70,25 @@ def main(data_dir, out_path):
     spikes = pd.read_csv(data_dir / "fig01_spikes.csv")
     seed = int(spikes["seed"].iloc[0])
     rates_seed = rates[rates["seed"] == seed]
-    n_seeds = summary["seed"].nunique()
+    if "evaluation" in summary:
+        summary["evaluation"] = summary["evaluation"].fillna("held_out")
+    else:  # CSVs written before the perturbation panel
+        summary["evaluation"] = "held_out"
+    held_out = summary[summary["evaluation"] == "held_out"]
+    n_seeds = held_out["seed"].nunique()
+    # The perturbation CSV is absent when the teacher has no calibrated current.
+    perturbation = data_dir / PERTURBATION_CSV
+    deltas = pd.read_csv(perturbation) if perturbation.exists() else None
+    if deltas is not None:
+        deltas = deltas[deltas["seed"] == seed]
+        if deltas.empty:
+            deltas = None
 
-    fig = plt.figure(figsize=(FIGURE_WIDTH, 16 / 2.54), layout="constrained")
-    grid = fig.add_gridspec(3, 2, height_ratios=[1.0, 1.35, 0.9])
+    rows = 3 if deltas is None else 4
+    height = 16 if deltas is None else 23
+    ratios = [1.0, 1.35, 0.9] + ([] if deltas is None else [1.35])
+    fig = plt.figure(figsize=(FIGURE_WIDTH, height / 2.54), layout="constrained")
+    grid = fig.add_gridspec(rows, 2, height_ratios=ratios)
 
     # (a) raster: observed and unobserved neurons on a held-out stimulus.
     ax = fig.add_subplot(grid[0, :])
@@ -67,7 +116,7 @@ def main(data_dir, out_path):
     for column, group in enumerate(("observed", "unobserved")):
         ax = fig.add_subplot(grid[1, column])
         subset = rates_seed[rates_seed["observed"] == int(group == "observed")]
-        title = r2_title(GROUP_LABELS[group], summary, group)
+        title = r2_title(GROUP_LABELS[group], held_out, group)
         rate_scatter(ax, subset, title, max_rate=max_rate)
         if column == 0:
             ax.legend(loc="upper left", markerscale=3, frameon=False)
@@ -90,8 +139,8 @@ def main(data_dir, out_path):
                 alpha=0.6,
                 label=cell_type[0].upper(),
             )
-        rows = summary[
-            (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
+        rows = held_out[
+            (held_out["group"] == group) & (held_out["metric"] == "fluctuation_r2")
         ]
         ax.axvline(
             rows["ceiling_value"].mean(),
@@ -106,6 +155,10 @@ def main(data_dir, out_path):
         if column == 0:
             ax.legend(frameon=False)
             panel_label(ax, "c")
+
+    # (d) perturbation: kept a separate panel, so dropping it is one line.
+    if deltas is not None:
+        perturbation_panel(fig, grid[3, :], summary, deltas)
 
     fig.suptitle(
         f"Full reconstruction recovers the teacher, including unobserved neurons\n"

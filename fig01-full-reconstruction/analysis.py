@@ -4,9 +4,15 @@ Run after training:
     uv run python fig01-full-reconstruction/analysis.py
 
 Writes, next to this script:
-    fig01_summary.csv   seed, group, metric, value, ceiling_value
+    fig01_summary.csv   seed, evaluation{held_out,perturbation}, group, cell_type, n_cells,
+                        metric, value, ceiling_value
     fig01_rates.csv     neuron_id, cell_type, observed, seed, teacher/student rate, fluctuation_r2
     fig01_spikes.csv    neuron_id, observed, seed, source, time_s   (raster, first seed)
+    fig01_perturbation.csv  seed, neuron_id, cell_type, targeted, teacher/student/ceiling
+                        delta_rate_hz   (one row per unobserved neuron)
+
+The perturbation rows and CSV need the teacher's calibrated current
+(``slurm/submit_perturbation.sh``); without it the held-out CSVs are still written.
 """
 
 import argparse
@@ -27,6 +33,7 @@ from common.evaluation import (
     spike_rows,
     summary_rows,
 )
+from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
 N_RASTER_OBSERVED = 2
@@ -46,18 +53,28 @@ def main(runs_dir, out_dir):
         summary += summary_rows(evaluation)
         rates += rate_rows(evaluation)
 
+    delta_summary, delta_rates = collect_perturbation(
+        runs, lambda params, _: {}, device
+    )
+    summary += delta_summary
+
     first = evaluate_run(runs[0], device)
     neurons = pick_raster_neurons(first, N_RASTER_OBSERVED, N_RASTER_UNOBSERVED)
     spikes = spike_rows(first, neurons)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(summary).to_csv(out_dir / "fig01_summary.csv", index=False)
+    summary = pd.DataFrame(summary)
+    summary.to_csv(out_dir / "fig01_summary.csv", index=False)
     pd.DataFrame(rates).to_csv(out_dir / "fig01_rates.csv", index=False)
     pd.DataFrame(spikes).to_csv(out_dir / "fig01_spikes.csv", index=False)
+    if delta_rates:
+        pd.DataFrame(delta_rates).to_csv(
+            out_dir / "fig01_perturbation.csv", index=False
+        )
     print(
-        pd.DataFrame(summary)
-        .groupby(["group", "metric"])[["value", "ceiling_value"]]
-        .agg(["mean", "std"])
+        summary.groupby(["evaluation", "group", "cell_type", "metric"])[
+            ["value", "ceiling_value"]
+        ].agg(["mean", "std"])
     )
 
 

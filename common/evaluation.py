@@ -427,7 +427,11 @@ def collect(runs, labeller, device):
 
 
 def summary_rows(evaluation, **labels):
-    """One row per (group, metric) — the ``*_summary.csv`` layout."""
+    """One row per (group, metric) — the ``*_summary.csv`` layout.
+
+    ``evaluation = "held_out"`` distinguishes these rows from the perturbation rows
+    that ``common.perturbation`` appends to the same CSV.
+    """
     rows = []
     for group in GROUPS:
         for metric in METRICS:
@@ -435,7 +439,10 @@ def summary_rows(evaluation, **labels):
                 {
                     **labels,
                     "seed": int(evaluation["seed"]),
+                    "evaluation": "held_out",
                     "group": group,
+                    "cell_type": "all",
+                    "n_cells": int(evaluation[f"n_{group}"]),
                     "metric": metric,
                     "value": float(evaluation[f"{group}_{metric}"]),
                     "ceiling_value": float(evaluation[f"{group}_{metric}_ceiling"]),

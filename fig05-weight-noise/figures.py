@@ -20,8 +20,10 @@ from common.plotting import (
     FIGURE_WIDTH,
     GROUP_COLORS,
     GROUP_LABELS,
+    METRIC_LABELS,
     ceiling_line,
     panel_label,
+    perturbation_sweep,
     seed_errorbar,
     use_talk_style,
 )
@@ -35,9 +37,15 @@ def main(data_dir, fig04_summary, out_path):
     summary = pd.read_csv(data_dir / "fig05_summary.csv")
     n_seeds = summary.groupby("weight_noise")["seed"].nunique().min()
     clipped = summary.groupby("weight_noise")["noise_clipped_fraction"].mean()
+    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
 
-    fig = plt.figure(figsize=(FIGURE_WIDTH, 11.5 / 2.54), layout="constrained")
-    grid = fig.add_gridspec(2, 2, height_ratios=[1.1, 1.0])
+    rows = 3 if has_perturbation else 2
+    ratios = [1.1, 1.0] + ([1.0] if has_perturbation else [])
+    fig = plt.figure(
+        figsize=(FIGURE_WIDTH, (16.5 if has_perturbation else 11.5) / 2.54),
+        layout="constrained",
+    )
+    grid = fig.add_gridspec(rows, 2, height_ratios=ratios)
 
     # (a) Fluctuation R² against weight noise.
     ax = fig.add_subplot(grid[0, :])
@@ -110,6 +118,23 @@ def main(data_dir, fig04_summary, out_path):
     right.set_xlabel("Input volume lost (κ)")
     right.set_title("Missing connections")
     right.tick_params(labelleft=False)
+
+    # (c) perturbation: a separate row, so dropping it is one line.
+    if has_perturbation:
+        for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
+            ax = fig.add_subplot(grid[2, column])
+            perturbation_sweep(ax, summary, "weight_noise", metric)
+            ax.set_xlabel("Weight noise")
+            ax.set_ylabel(METRIC_LABELS[metric])
+            ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
+            if column == 0:
+                ax.legend(frameon=False, fontsize=6)
+                ax.set_title(
+                    "Inhibiting 25% of unobserved I cells (··· ceiling)\n"
+                    + METRIC_LABELS[metric],
+                    fontsize=6,
+                )
+                panel_label(ax, "c")
 
     fig.suptitle(
         "Weight precision is not the binding constraint\n"

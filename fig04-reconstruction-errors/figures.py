@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
     FIGURE_WIDTH,
+    METRIC_LABELS,
     panel_label,
     use_talk_style,
 )
@@ -30,6 +31,62 @@ MODEL_LABELS = {
     "synapse_dropout": "Synapse dropout",
 }
 MAX_POINTS = 20000
+#: The perturbation's non-targeted unobserved populations (targets scored separately).
+PERTURBATION_CELL_TYPES = (("excitatory", "E", "-"), ("inhibitory", "I", "--"))
+
+
+def perturbation_panels(fig, grid, summary):
+    """Δ R² of the intervention against input volume lost, one panel per metric.
+
+    Same x-axis, colours and dotted ceilings as panel (a); E and I of the non-targeted
+    unobserved population are the solid and dashed lines.
+    """
+    rows = summary[summary["evaluation"] == "perturbation"]
+    for column, metric in enumerate(("delta_activity_r2", "delta_fluctuation_r2")):
+        ax = fig.add_subplot(grid[1, column])
+        for model, color in MODEL_COLORS.items():
+            for cell_type, short, linestyle in PERTURBATION_CELL_TYPES:
+                sub = rows[
+                    (rows["error_model"] == model)
+                    & (rows["metric"] == metric)
+                    & (rows["group"] == "unobserved")
+                    & (rows["cell_type"] == cell_type)
+                ]
+                if sub.empty:
+                    continue
+                stats = sub.groupby("level")[
+                    ["mean_kappa_lost", "value", "ceiling_value"]
+                ].mean()
+                spread = sub.groupby("level")["value"].std().fillna(0.0)
+                ax.errorbar(
+                    stats["mean_kappa_lost"],
+                    stats["value"],
+                    yerr=spread,
+                    color=color,
+                    marker="o",
+                    markersize=3,
+                    linestyle=linestyle,
+                    capsize=1.5,
+                    label=f"{MODEL_LABELS[model]}, {short}",
+                )
+                ax.plot(
+                    stats["mean_kappa_lost"],
+                    stats["ceiling_value"],
+                    ":",
+                    color=color,
+                    linewidth=1.0,
+                )
+        ax.set_xlabel("Mean input volume lost (κ)")
+        ax.set_ylabel(METRIC_LABELS[metric])
+        ax.set_title(METRIC_LABELS[metric], fontsize=6.5)
+        if column == 0:
+            ax.legend(frameon=False, fontsize=5)
+            ax.set_title(
+                "Inhibiting 25% of unobserved I cells (··· ceiling)\n"
+                + METRIC_LABELS[metric],
+                fontsize=6,
+            )
+            panel_label(ax, "c")
 
 
 def main(data_dir, out_path):
@@ -41,8 +98,12 @@ def main(data_dir, out_path):
     ]
     n_seeds = rows.groupby(["error_model", "level"])["seed"].nunique().min()
 
-    fig = plt.figure(figsize=(FIGURE_WIDTH, 7.5 / 2.54), layout="constrained")
-    grid = fig.add_gridspec(1, 2)
+    has_perturbation = (summary["metric"] == "delta_activity_r2").any()
+    fig = plt.figure(
+        figsize=(FIGURE_WIDTH, (14 if has_perturbation else 7.5) / 2.54),
+        layout="constrained",
+    )
+    grid = fig.add_gridspec(2 if has_perturbation else 1, 2)
 
     # (a) unobserved Fluctuation R² against mean input volume lost.
     ax = fig.add_subplot(grid[0, 0])
@@ -118,6 +179,10 @@ def main(data_dir, out_path):
     ax.set_ylim(-1, 1)
     ax.legend(frameon=False, fontsize=6)
     panel_label(ax, "b")
+
+    # (c) perturbation: a separate row, so dropping it is one line.
+    if has_perturbation:
+        perturbation_panels(fig, grid, summary)
 
     fig.suptitle(
         "Reconstruction errors: does it matter how you lose input?\n"

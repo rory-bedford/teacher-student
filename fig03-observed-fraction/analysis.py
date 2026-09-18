@@ -4,8 +4,12 @@ Run after training (Figure 1's runs supply the 10% point):
     uv run python fig03-observed-fraction/analysis.py
 
 Writes, next to this script:
-    fig03_summary.csv          obs_fraction, n_observed, seed, group, metric, value, ceiling_value
+    fig03_summary.csv          obs_fraction, n_observed, seed, evaluation{held_out,perturbation},
+                               group, cell_type, n_cells, metric, value, ceiling_value
     fig03_rates.csv            obs_fraction, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
+
+The perturbation rows need the teacher's calibrated current
+(``slurm/submit_perturbation.sh``); without it only the held-out rows are written.
 
 The teacher's participation ratio (marked on panel a) is not computed here: figures.py
 reads generate-teacher-activity/teacher_dimensionality.csv (generate-teacher-activity/dimensionality.py).
@@ -15,6 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
+import pandas as pd
 import torch
 from connectome_snns.utils.reproducibility import load_experiment_config
 
@@ -24,6 +29,7 @@ from common.evaluation import (
     collect,
     completed_runs,
 )
+from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
 BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
@@ -43,12 +49,14 @@ def main(runs_dir, baseline_dir, out_dir):
     if not runs:
         raise SystemExit("No completed runs")
     summary, rates = collect(runs, label, device)
+    delta_summary, _ = collect_perturbation(runs, label, device)
+    summary = pd.concat([summary, pd.DataFrame(delta_summary)], ignore_index=True)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     summary.to_csv(out_dir / "fig03_summary.csv", index=False)
     rates.to_csv(out_dir / "fig03_rates.csv", index=False)
     print(
-        summary.groupby(["obs_fraction", "group", "metric"])[
+        summary.groupby(["obs_fraction", "evaluation", "group", "cell_type", "metric"])[
             ["value", "ceiling_value"]
         ].mean()
     )
