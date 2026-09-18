@@ -159,11 +159,22 @@ def schematic(fig, cell, params_by_variant):
             panel_label(ax, "c")
 
 
-def main(data_dir, out_path):
+def main(data_dir, out_path, observed_fraction=None):
     use_talk_style()
     summary = pd.read_csv(data_dir / "fig02_summary.csv")
+    # The grid holds two observation levels (see run_grid_search.py); plot one per figure.
+    if "observed_fraction" not in summary:  # CSVs written before 2026-09-18
+        summary["observed_fraction"] = np.nan
+    if observed_fraction is None:
+        observed_fraction = summary["observed_fraction"].min()
+    if np.isnan(observed_fraction):
+        summary["observed_fraction"] = observed_fraction = 0.5
+    summary = summary[np.isclose(summary["observed_fraction"], observed_fraction)]
+    if summary.empty:
+        raise SystemExit(f"no runs at observed_fraction {observed_fraction}")
     params_by_variant = summary.groupby("variant")["n_free_params"].first().to_dict()
     n_seeds = summary.groupby("variant")["seed"].nunique().min()
+    observed = observed_fraction
 
     fig = plt.figure(figsize=(FIGURE_WIDTH, 17 / 2.54), layout="constrained")
     grid = fig.add_gridspec(3, 1, height_ratios=[1.3, 0.9, 0.7])
@@ -186,7 +197,7 @@ def main(data_dir, out_path):
 
     fig.suptitle(
         "The connectome is what's doing the work: 6 parameters with it beat 25M without\n"
-        f"(10% observed; mean ± SD over {n_seeds} seeds)"
+        f"({observed:.0%} observed; mean ± SD over {n_seeds} seeds)"
     )
     fig.savefig(out_path)
     print(f"Saved {out_path}")
@@ -196,5 +207,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
     parser.add_argument("--out", type=Path, default=HERE / "fig02.svg")
+    parser.add_argument(
+        "--observed-fraction",
+        type=float,
+        help="which observation level to plot (default: the lowest present)",
+    )
     args = parser.parse_args()
-    main(args.data, args.out)
+    main(args.data, args.out, args.observed_fraction)

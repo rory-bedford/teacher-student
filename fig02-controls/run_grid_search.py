@@ -1,6 +1,10 @@
-"""Figure 2 — the three connectivity controls x three seeds (9 runs).
+"""Figure 2 — the connectivity controls at two observation levels (21 runs).
 
-The full-connectome variant is Figure 1 and is read from its runs by analysis.py.
+At the figure's observed fraction (50%) the three controls run against Figure 3's obs-0.5
+runs as the full-connectome baseline. A second set repeats all four variants, baseline
+included, with *every* modelled neuron observed: the regime of the archived controls
+figure, where each neuron's recurrent input is the teacher's own activity, so a wrong
+connectome degrades gracefully instead of compounding in a closed loop.
 Runs are ordered seed by seed, so every control has one seed before any has two.
 
 Run:
@@ -20,6 +24,8 @@ from common.grid import skip_completed
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
 VARIANTS = ["learnt", "shuffle_weights", "configuration_model"]
+#: The fully observed comparison needs its own baseline, so it includes "connectome".
+FULLY_OBSERVED_VARIANTS = ["connectome"] + VARIANTS
 
 
 def custom_config_generator(base_params):
@@ -29,6 +35,12 @@ def custom_config_generator(base_params):
             params["simulation"]["seed"] = seed
             params["student"]["recurrent_model"] = variant
             yield params, f"{variant}__seed-{seed}"
+        for variant in FULLY_OBSERVED_VARIANTS:
+            params = deepcopy(base_params)
+            params["simulation"]["seed"] = seed
+            params["student"]["recurrent_model"] = variant
+            params["student"]["observed_fraction"] = 1.0
+            yield params, f"{variant}-fully-observed__seed-{seed}"
 
 
 if __name__ == "__main__":
