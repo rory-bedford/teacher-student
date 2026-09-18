@@ -19,7 +19,7 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-LEVELS = [0.1, 0.2, 0.3, 0.5]
+LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5]
 ERROR_MODELS = {
     "synapse_dropout": "synapse_dropout_fraction",
     "neuron_removal": "neuron_removal_fraction",

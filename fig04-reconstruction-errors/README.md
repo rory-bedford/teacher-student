@@ -87,7 +87,7 @@ Error model (b) does not exist yet.
 ### How to run
 
 ```bash
-./run --grid fig04-reconstruction-errors/experiment.toml   # 2 models x 4 levels x 3 seeds = 24 runs
+./run --grid fig04-reconstruction-errors/experiment.toml   # 2 models x 5 levels x 3 seeds = 30 runs
 uv run python fig04-reconstruction-errors/analysis.py       # reads Figure 1's runs as level 0
 uv run python fig04-reconstruction-errors/figures.py        # fig04.svg
 ```
