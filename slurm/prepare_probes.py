@@ -22,16 +22,26 @@ from slurm.prepare_array import clean_commit, snapshot_code
 
 #: Conditions to probe: (label, figure folder, [student] overrides).
 CONDITIONS = [
+    ("obs0.01", "fig03-observed-fraction", {"observed_fraction": 0.01}),
     ("obs0.02", "fig03-observed-fraction", {"observed_fraction": 0.02}),
-    ("obs0.10", "fig03-observed-fraction", {"observed_fraction": 0.10}),
 ]
 #: Variants: (label, {table: {key: value}}).
 VARIANTS = [
-    ("baseline", {}),
-    ("nopenalty", {"loss": {"hidden_rate_mean": 0.0, "hidden_rate_std": 0.0}}),
-    ("nostd", {"loss": {"hidden_rate_std": 0.0}}),
-    ("lr2e-3", {"optimiser": {"lr_scaling": 2e-3, "lr_min_scaling": 2e-4}}),
-    ("clip1", {"optimiser": {"grad_clip_scaling": 1.0}}),
+    ("poptarget", {"loss": {"rate_target": "population"}}),
+    (
+        "poptarget-lr2e-3",
+        {
+            "loss": {"rate_target": "population"},
+            "optimiser": {"lr_scaling": 2e-3, "lr_min_scaling": 2e-4},
+        },
+    ),
+    (
+        "nopenalty-lr2e-3",
+        {
+            "loss": {"hidden_rate_mean": 0.0, "hidden_rate_std": 0.0},
+            "optimiser": {"lr_scaling": 2e-3, "lr_min_scaling": 2e-4},
+        },
+    ),
 ]
 
 
