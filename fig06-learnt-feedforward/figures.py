@@ -42,7 +42,6 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
-    nice_max,
     rate_scatter,
     save,
     spike_raster,
@@ -87,7 +86,6 @@ def scatters(sweep, rates, fraction, seed):
         & (rates["recorded_pool_fraction"] < 1.0)
         & (rates["seed"] == seed)
     ]
-    max_rate = nice_max(level[["teacher_rate_hz", "student_rate_hz"]].to_numpy())
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
         r2 = group_rows(

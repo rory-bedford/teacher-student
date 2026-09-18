@@ -15,7 +15,7 @@ Identical to Figure 1 except for the swept degradation:
 | feedforward connections | reconstructed |
 | weight noise | 0 |
 | trained parameters | 6 scaling factors |
-| observed fraction | **10% of retained neurons** (matches Figure 1) |
+| observed fraction | **50% of retained neurons** (matches Figure 1; 2026-09-18, was 10%) |
 | seeds | ≥3 per point |
 
 ### Error models
@@ -74,7 +74,7 @@ Error model (b) does not exist yet.
 
 ## Notes
 
-- Removed neurons cannot be observed — removal implies unobserved. Define the observed fraction relative to **retained** neurons so it stays 10% at every degradation level, otherwise observation and reconstruction vary together.
+- Removed neurons cannot be observed — removal implies unobserved. Define the observed fraction relative to **retained** neurons so it stays 50% at every degradation level, otherwise observation and reconstruction vary together.
 - Random removal loses roughly the same mean volume as its neuron fraction, so panel (a)'s x-axis will look similar to "fraction removed". The value of the volume axis is that it makes model (b) comparable and gives panel (b) its covariate.
 - If the two models separate, the one-sentence version for the talk is: *what you are missing matters more than how much.*
 

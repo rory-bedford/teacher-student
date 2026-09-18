@@ -13,7 +13,7 @@ The foundation of the talk, and the recapitulation of the known result (Beiran &
 | feedforward connections | **reconstructed** (given to student) |
 | feedforward activity | recorded |
 | recurrent reconstruction | **100%** |
-| observed fraction | **10%** |
+| observed fraction | **50%** (2026-09-18; was 10%, roughly the fraction of reconstructed neurons expected to have activity recorded) |
 | weight noise | **0** |
 | trained parameters | cell-type × cell-type scaling factors only ⟨n_params = ?⟩ |
 | seeds | ≥3 for summary numbers; one seed shown in raster/scatter |

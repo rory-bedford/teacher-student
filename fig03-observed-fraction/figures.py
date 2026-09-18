@@ -41,7 +41,6 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
-    nice_max,
     rate_scatter,
     save,
     sweep_legend,
@@ -161,9 +160,6 @@ def scatters(summary, rates, fractions, seed):
         ]
         for fraction in fractions
     ]
-    max_rate = nice_max(
-        pd.concat(subsets)[["teacher_rate_hz", "student_rate_hz"]].to_numpy()
-    )
     fig, axes = plt.subplots(1, 3, figsize=TRIPLE)
     for ax, fraction, subset in zip(axes, fractions, subsets):
         rows = summary[np.isclose(summary["obs_fraction"], fraction)]
@@ -172,7 +168,6 @@ def scatters(summary, rates, fractions, seed):
             ax,
             subset,
             r2_title(f"{n_observed} Observed", rows, "unobserved"),
-            max_rate,
         )
         ax.title.set_fontsize(TICK_SIZE)
     fig.suptitle("Unobserved Neurons, Student vs Teacher Activity")

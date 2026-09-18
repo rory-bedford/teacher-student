@@ -19,7 +19,6 @@ from connectome_snns.visualization import (
     use_project_style,
 )
 from matplotlib.lines import Line2D
-from matplotlib.ticker import ScalarFormatter
 
 EXCITATORY = FIGURE_CORAL
 INHIBITORY = FIGURE_BLUE
@@ -84,16 +83,12 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
     print(f"Saved {path}")
 
 
-#: Rate scatters are symlog: linear below this many Hz, logarithmic above. The teacher's
-#: rates span 0 to ~270 Hz with a median of 0.4 and a third of the population silent, so a
-#: linear axis crushes the bulk and a log axis cannot plot the silent cells at all.
-RATE_LINTHRESH = 1.0
-#: Rates above this are drawn at the axis edge as triangles, with their count annotated.
-#: The teacher has a tail to ~270 Hz: the library's ``tau_ref`` is dead config (it is
-#: required and stored but never used in the timestep), so nothing enforces a refractory
-#: period and the fastest cells fire with 2 ms inter-spike intervals. Teacher and student
-#: share the model, so the comparison is unaffected -- the tail is just a distraction.
-RATE_CLIP = 100.0
+#: Rate scatters are linear over 0 to this many Hz (2026-09-18). The teacher's rates run
+#: to ~270 Hz with a median of 0.4, so the axis is cut rather than scaled: the tail is a
+#: handful of cells firing every 2 ms (nothing enforces a refractory period in the model),
+#: and they are not what the figure is about. Cells beyond the limit are counted in the
+#: axis label, not plotted.
+RATE_MAX_HZ = 40.0
 
 
 def nice_max(values, step=10):
@@ -101,13 +96,12 @@ def nice_max(values, step=10):
     return float(step * np.ceil(np.nanmax(values) / step))
 
 
-def rate_scatter(ax, rates, title, max_rate, clip=RATE_CLIP):
+def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     """Archived teacher-vs-student firing-rate scatter, coloured by cell type.
 
-    Symlog axes (linear below ``RATE_LINTHRESH``, so silent cells are still plotted) and
-    clipped at ``clip``: cells beyond it are drawn as triangles on the boundary and
-    counted in the axis label, rather than stretching the axis over a tail nothing in the
-    talk depends on. Pass ``clip=None`` to plot every cell in place.
+    Linear axes over 0 to ``clip`` Hz. Cells beyond it are left off and counted in the
+    axis label, rather than stretching the axis (or piling up on its edge) over a tail
+    nothing in the talk depends on. Pass ``clip=None`` to plot every cell.
     """
     limit = max_rate if clip is None else min(clip, max_rate)
     beyond = 0
@@ -121,16 +115,6 @@ def rate_scatter(ax, rates, title, max_rate, clip=RATE_CLIP):
         if clip is not None:
             outside = (teacher > limit) | (student > limit)
             beyond += int(outside.sum())
-            if outside.any():
-                ax.scatter(
-                    teacher[outside].clip(upper=limit),
-                    student[outside].clip(upper=limit),
-                    s=12,
-                    marker="^",
-                    alpha=0.7,
-                    color=color,
-                    rasterized=True,
-                )
             teacher, student = teacher[~outside], student[~outside]
         ax.scatter(
             teacher,
@@ -143,22 +127,12 @@ def rate_scatter(ax, rates, title, max_rate, clip=RATE_CLIP):
         )
     max_rate = limit
     ax.plot([0, max_rate], [0, max_rate], "k--", linewidth=1, alpha=0.5)
-    for axis in ("x", "y"):
-        getattr(ax, f"set_{axis}scale")(
-            "symlog", linthresh=RATE_LINTHRESH, linscale=0.4
-        )
-    ticks = [0, 1, 10, 100]
-    ticks = [t for t in ticks if t <= max_rate] or [0, max_rate]
-    ax.set_xticks(ticks)
-    ax.set_yticks(ticks)
-    ax.get_xaxis().set_major_formatter(ScalarFormatter())
-    ax.get_yaxis().set_major_formatter(ScalarFormatter())
     ax.set_xlim(0, max_rate)
     ax.set_ylim(0, max_rate)
     ax.set_aspect("equal")
     label = "Teacher Firing Rate (Hz)"
     if beyond:
-        label += f"  ({beyond} \u25b2 above {limit:g} Hz)"
+        label += f"  ({beyond} cells above {limit:g} Hz not shown)"
     ax.set_xlabel(label)
     ax.set_ylabel("Student Firing Rate (Hz)")
     ax.set_title(title)

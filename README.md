@@ -15,7 +15,7 @@ Read `METHODS.md` first, then `PRIORITY.md`.
 |---|---|
 | `generate-teacher-activity/` | The teacher network + spike data → `bernstein/teacher-activity/` |
 | `common/` | Student construction, training, held-out evaluation and plotting shared by all figures |
-| `fig01-full-reconstruction/` | Full reconstruction, 10% observed (the baseline for Figs 2–5) |
+| `fig01-full-reconstruction/` | Full reconstruction, 50% observed (the baseline for Figs 2–5) |
 | `fig02-controls/` | Learnt recurrence, shuffled weights, configuration-model rewire |
 | `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 0.5% |
 | `fig04-reconstruction-errors/` | Neuron removal vs synapse dropout |

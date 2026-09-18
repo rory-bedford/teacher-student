@@ -2,33 +2,20 @@
 
 ## In progress
 
-### Perturbation evaluation (Figures 1 and 2)
+### Nothing
 
-Teacher-forced, as specified in `fig01-full-reconstruction/SMOKETEST.md` (sections 1–2). A constant
-hyperpolarising current on a random 25% of each run's unobserved I cells, in teacher and student;
-the student is forced with the teacher's perturbed observed activity; scored on Δ = perturbed −
-unperturbed for unobserved non-targeted neurons (E / I), targeted cells reported separately.
+The perturbation evaluation is **done** (2026-09-18): `common.perturbation.evaluate_perturbation`
+is cached per run as `perturbation.npz`, every figure's `analysis.py` writes its delta rows, and
+every figure has a perturbation panel. The perturbed teacher is shared between runs with the same
+target set. Figure 1 also carries the Δrate scatter and the mean-Δ-per-population panel.
 
-Done (2026-09-17):
-- Smoke test on the old-recipe Figure 1 seed-44 run (`bernstein/_tests/perturbation-smoketest-oldrecipe-seed44/`,
-  NOTES.md there). Non-targeted unobserved ΔActivity R² 0.93 (E) / 0.92 (I), ceilings 0.96;
-  ΔFluctuation R² 0.66 / 0.67, ceilings 0.77 / 0.76. Teacher: targeted I −11 Hz, other I +3.7 Hz,
-  E +0.7 Hz (disinhibition; mean I rate rises slightly).
-- Current calibrated once on the teacher: rest-potential shift −99.5 mV ≈ −90 pA for a 50% rate
-  loss (`bernstein/_evaluation/perturbation-calibration/current.toml`).
-- Staged SLURM pipeline (`slurm/submit_perturbation.sh`) and GPU scoring (38 s).
+The claim to test with it, once all seeds are in: the connectome's advantage over the controls is
+larger on perturbations than on held-out stimuli. Do not make that claim in the talk until Figure
+2's controls are scored on more than seed 44 -- on the old-recipe smoke test only missing
+connections (Figure 4's dropout) showed the asymmetry, and the wrong-connectome controls were bad
+at both.
 
-Still to do:
-- Move the smoke-test logic into the shared analysis (`common/perturbation.py`, cached per run) so
-  every figure's `analysis.py` computes it; runs sharing a seed share the perturbed teacher.
-- Figure 1: Δrate scatter panel (teacher vs student Δrate per neuron, targeted cells marked, inset of
-  mean Δ per population); draft at `.../perturbation-smoketest-oldrecipe-seed44/fig01_perturbation_draft.png`.
-  Consider a symlog axis: a few neurons change by ±100 Hz, most by < 20 Hz.
-- Figure 2: second row of bars per variant — ΔActivity R² as headline, ΔFluctuation R² alongside.
-- Rerun on the new-recipe Figure 1 seed-44 run once it finishes, then all Figure 1–2 seeds.
-- **The claim to test:** the connectome's advantage over the controls is larger on perturbations
-  than on held-out stimuli. No perturbation claim in the talk until Figure 2's controls are scored.
-- Optional: SMOKETEST.md section 3 (free running) — not implemented.
+Not implemented: SMOKETEST.md section 3 (free running).
 
 ## Planned
 
@@ -66,6 +53,28 @@ Caveat before any use: the smooth-cell partner count may be detection-limited on
 
 Deferred entirely. Would be the same experiment as Figure 6 with a non-random rule for choosing the reconstructed segment S — a connected subpopulation rather than a random draw — at matched budget.
 
+## Decisions log
+
+### 2026-09-18
+
+- **50% observed everywhere** (was 10%): roughly the fraction of reconstructed neurons expected to
+  have activity. Figure 1 is the canonical 50% run set -- Figure 2's baseline bar and Figure 3's
+  top point both read its runs. Old 10% runs in `bernstein/_superseded/obs-0.1/`.
+- **Figure 2 is two panels**, held-out and perturbation ΔFluctuation R², three controls (full
+  connectome, learnt recurrence, configuration model). The weight shuffle (`shuffle_inputs`, each
+  neuron's input weights permuted among its own partners) is still trained and still in the CSVs
+  but not plotted: it overlaps with Figure 5's weight noise. The schematic was dropped.
+- **Figure 3 stops at 2% observed.** Below ~5% the fit itself collapses -- the excitatory
+  population falls silent even on *observed* neurons, whatever the rate-penalty targets or
+  learning rate (probes 20260918-143330 and the local poptarget runs). 2% is kept to show the cliff.
+- **Fluctuation R² only** outside the rate scatters; scatters are linear 0-40 Hz.
+- **Figure 1 gained** the scaling-factor recovery panel (its runs beside Figure 2's fully observed
+  ones) and the mean-Δrate panel, split off the Δ scatter.
+- **A graded weight control does not exist in the shuffle family.** Untrained damage scans: at
+  equal per-neuron weight correlation (0.99), weight noise costs 0.22 R² and a shuffle costs 0.78;
+  only a partial shuffle of 1-2% of synapses lands mid-range, and that is dynamically the same
+  thing as mild weight noise. Scans in the session log, not kept.
+
 ## Decisions log (2026-09-17)
 
 - **Figures 1–5 training recipe:** archived visible-driven recipe (lr 8e-3 → 5e-4, clip 5) plus
@@ -75,7 +84,9 @@ Deferred entirely. Would be the same experiment as Figure 6 with a non-random ru
   traces averaged across draws before scoring; ceiling = perfectly specified student under the same
   forcing and flips. No shuffled floor and no Poisson noise ceiling on the figures.
 - **Weight noise (Figure 5):** the mean/SD-preserving perturbation and its clipping are intentional.
-- **Figure 3:** marks the teacher participation ratio from `generate-teacher-activity/dimensionality.py`
-  (all training trials, PR 41.4), not the held-out trial.
+- **Figure 3:** marks the band between the teacher's 80% and 90% variance PCs (104-236 neurons,
+  2.1-4.7% of the population) from `generate-teacher-activity/dimensionality.py`, not the
+  participation ratio (41 neurons, 0.8%) -- that sits inside the collapsed region and would imply
+  the opposite of what the sweep shows.
 - **Cluster:** SLURM arrays run from per-submission code snapshots; nodes call `.venv/bin/python`
   directly (never `uv run`); W&B key from `/tachyon/.../.netrc-wandb`.

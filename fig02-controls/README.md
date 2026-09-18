@@ -129,7 +129,7 @@ It isolates the **recurrent** connectome and nothing else. Exactly like every ot
 - the **true feedforward weight pattern** (mitral -> E/I), which is perturbed by an unknown
   per-pathway factor and rescaled by **2 learnt feedforward scaling factors** (mitral->E,
   mitral->I). So it knows *which* inputs each neuron receives, not their absolute scale;
-- the true recorded activity of the feedforward units and of the 10% observed neurons
+- the true recorded activity of the feedforward units and of the observed neurons
   (teacher forcing), identical held-out evaluation, identical training budget (50 epochs).
 
 What it does **not** get is the recurrent connectome: every recurrent block (E->E, E->I, I->E,

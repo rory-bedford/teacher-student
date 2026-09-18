@@ -4,11 +4,12 @@
 
     fig02-a-bars-fluctuation        Fluctuation R², observed / unobserved, per variant
     fig02-b-bars-delta-fluctuation  perturbation: ΔFluctuation R² per population
-    fig02-c-schematic               toy connectivity matrix under each variant
 
-Activity R² (and ΔActivity R²) are scored and kept in the CSVs but no longer plotted
-(2026-09-18): rates are reported by the scatter panels instead. Add the metric back to
-``main`` to restore those bars.
+Two panels only (2026-09-18): held-out Fluctuation R² and the perturbation's
+ΔFluctuation R², both with every plotted variant side by side. Activity R² is still
+scored and kept in the CSVs but not plotted (rates are reported by the scatter panels of
+Figures 1 and 3), and the connectivity schematic was dropped -- it belongs on a slide of
+its own, not in this figure.
 
 Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
 100%. ``placeholder_figures/fig02-controls/figures.py`` calls ``main`` here with a
@@ -38,12 +39,7 @@ from matplotlib.ticker import MultipleLocator
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import METRIC_LABELS
-from common.structure import (
-    configuration_model_rewire,
-    shuffle_weights_within_connectome,
-    shuffle_weights_within_neuron,
-)
-from common.style import LEGEND_GREY, TICK_SIZE, apply_style, clear_panels, save
+from common.style import LEGEND_GREY, apply_style, clear_panels, save
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig02"
@@ -78,10 +74,6 @@ PERTURBATION_GROUPS = (
     ("unobserved", "inhibitory", "Non-targeted I"),
     ("targeted", "inhibitory", "Targeted I"),
 )
-
-
-def format_count(n):
-    return f"{n / 1e6:.0f}M" if n >= 1e6 else f"{n:,}"
 
 
 def bars(summary, metric, groups=HELD_OUT_GROUPS):
@@ -147,66 +139,6 @@ def bars(summary, metric, groups=HELD_OUT_GROUPS):
     return fig
 
 
-def toy_matrices():
-    """Toy connectivity matrix under each variant, generated with the real functions."""
-    rng = np.random.default_rng(3)
-    n_e, n_i = 16, 4
-    types = np.array([0] * n_e + [1] * n_i)
-    assemblies = np.repeat(np.arange(4), 4)
-    probability = np.where(np.equal.outer(assemblies, assemblies), 0.6, 0.08)
-    toy = np.zeros((n_e + n_i, n_e + n_i), dtype=np.float32)
-    toy[:n_e, :n_e] = (rng.random((n_e, n_e)) < probability) * rng.gamma(
-        2.0, 0.5, (n_e, n_e)
-    )
-    toy[n_e:, :] = (rng.random((n_i, n_e + n_i)) < 0.5) * rng.gamma(
-        2.0, 1.0, (n_i, n_e + n_i)
-    )
-    toy[:n_e, n_e:] = (rng.random((n_e, n_i)) < 0.4) * rng.gamma(2.0, 0.5, (n_e, n_i))
-    np.fill_diagonal(toy, 0)
-    matrices = {
-        "full_connectome": toy,
-        "learnt_recurrence": np.ones_like(toy),
-        "shuffle_inputs": shuffle_weights_within_neuron(
-            toy, types, np.random.default_rng(1)
-        ),
-        "shuffle_weights": shuffle_weights_within_connectome(
-            toy, types, np.random.default_rng(1)
-        ),
-        "configuration_model": configuration_model_rewire(
-            toy, types, np.random.default_rng(1)
-        ),
-    }
-    return matrices, n_e, float(np.percentile(toy[toy > 0], 90))
-
-
-def schematic(params_by_variant):
-    matrices, n_e, vmax = toy_matrices()
-    variants = [v for v in PLOTTED_VARIANTS if v in matrices]
-    fig, axes = plt.subplots(1, len(variants), figsize=(2.75 * len(variants), 3.4))
-    for ax, variant in zip(np.atleast_1d(axes), variants):
-        ax.imshow(
-            matrices[variant],
-            cmap="Greys" if variant != "learnt_recurrence" else "Oranges",
-            vmin=0,
-            vmax=vmax,
-            interpolation="nearest",
-        )
-        ax.axhline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=1.2)
-        ax.axvline(n_e - 0.5, color=VARIANT_COLORS[variant], linewidth=1.2)
-        count = params_by_variant.get(variant)
-        ax.set_title(
-            VARIANT_LABELS[variant]
-            + (f"\n{format_count(count)} Parameters" if count is not None else ""),
-            fontsize=TICK_SIZE,
-            color=VARIANT_COLORS[variant],
-        )
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.grid(False)
-    fig.tight_layout()
-    return fig
-
-
 def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
@@ -224,7 +156,6 @@ def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     summary = summary[np.isclose(summary["observed_fraction"], observed_fraction)]
     if summary.empty:
         raise SystemExit(f"no runs at observed_fraction {observed_fraction}")
-    params_by_variant = summary.groupby("variant")["n_free_params"].first().to_dict()
 
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
@@ -236,8 +167,6 @@ def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     if (summary["metric"] == "delta_fluctuation_r2").any():
         fig = bars(summary, "delta_fluctuation_r2", PERTURBATION_GROUPS)
         output(fig, "b", "bars-delta-fluctuation")
-
-    output(schematic(params_by_variant), "c", "schematic")
 
 
 if __name__ == "__main__":

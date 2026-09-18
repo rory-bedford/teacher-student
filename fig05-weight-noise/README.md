@@ -14,7 +14,7 @@ Identical to Figure 1 except for the swept degradation:
 |---|---|
 | feedforward connections | reconstructed |
 | recurrent reconstruction | 100% |
-| observed fraction | **10%** (matches Figures 1–4) |
+| observed fraction | **50%** (matches Figures 1–4; 2026-09-18, was 10%) |
 | trained parameters | 6 scaling factors |
 | **weight noise** | **swept**, 0 → 0.5 |
 | seeds | ≥3 per point |

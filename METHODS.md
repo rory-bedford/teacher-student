@@ -16,6 +16,48 @@ For each figure, **read the relevant values off the existing implementation and 
 
 ---
 
+## Observation level: 50% observed everywhere (2026-09-18)
+
+Every figure with a fixed observation level runs at **50% of modelled neurons observed**:
+roughly the fraction of reconstructed neurons expected to have activity recorded. Figure
+3 sweeps the level instead, and takes its 50% point from Figure 1's runs; Figure 6 fixes
+`recorded_pool_fraction = 0.5`. Earlier runs at 10% observed are in
+`bernstein/_superseded/obs-0.1/` (a move, not a deletion) and stay available if a figure
+needs the harder regime to show an effect.
+
+---
+
+## What the fit recovers, and what it does not
+
+The student's six tied scaling factors are the only free parameters in the fully
+reconstructed case, and the true model is scaling factor 1.0 for all six (the student's
+physiology is the teacher's). What training recovers depends on the observation level:
+
+| observed | learnt / true | note |
+|---|---|---|
+| 100% | 1.00 (7 d.p.) | no unobserved population, so the rate penalties do not exist as loss terms; the van Rossum term alone has a zero-loss optimum at the truth, reached from a log-normal initialisation up to 2x off |
+| 50% | 0.79-1.01 | typical error 6% |
+| 10% | 0.57-1.19 | |
+| <=2% | 0.23-11.1 | the fit itself fails; not reported |
+
+Two things make partial observation different, and neither is "the same loss, harder":
+the rate penalties are **absent** when nothing is unobserved, and at 50% observed the SD
+penalty is ~18% of the total loss; and the van Rossum term's own optimum moves, because
+a partly free-running network cannot match the teacher spike for spike.
+
+So state results as **prediction**, not parameter recovery: at 50% observed the student
+predicts unobserved activity well while its parameters drift, and the perfectly specified
+student (scaling factor 1.0) scores *higher* on held-out data than the trained one. Part
+of every figure's gap to its ceiling is therefore our own regulariser, not missing
+information. Do not claim recovered parameters outside the fully observed case.
+
+**Neuron model caveat:** `tau_ref` appears in the physiology but is never applied by the
+simulator, so there is no refractory period -- the fastest teacher cells fire with 2 ms
+inter-spike intervals, up to ~270 Hz. Teacher and student share the model, so every
+comparison holds, but do not describe the network as having an 8 ms refractory period.
+
+---
+
 ## Model
 
 Spiking teacher–student. Teacher: **5000 recurrent neurons** (E/I assemblies, tuned to zebrafish Dp) driven by **1500 feedforward units**.
@@ -71,7 +113,11 @@ Gaussian noise **added** to existing weights, then rescaled so the **mean and va
 - Fixed colours across all figures for: full connectome, learnt recurrence, shuffle weights, configuration-model rewire, observed, unobserved, floor. Never reassigned.
 - Titles state the finding, not the topic.
 - Vector output at final size; axis fonts legible at 12 cm wide on a projected slide.
-- Each figure folder carries its own `README.md`, named CSVs, `plot_figNN.py`, the output, and the run config.
+- **One SVG per panel**, `figNN-<letter>-<slug>.svg`, at the size it is inserted into the talk at 100%. A rebuild deletes that figure's existing panels first (`common.style.clear_panels`), so an orphan from an earlier build cannot end up on a slide.
+- Style is the archived paper figures, shared in `common/style.py`; the same panel functions serve `placeholder_figures/`, which only adds a watermark and fake CSVs.
+- **Fluctuation R² only** outside the rate scatters (2026-09-18): Activity R² is still scored and kept in every CSV, but the scatters are where rates are reported.
+- Rate scatters are linear over **0-40 Hz**; cells beyond are counted in the axis label, not plotted.
+- Each figure folder carries its own `README.md`, named CSVs, `analysis.py`, `figures.py`, the panel SVGs, and the run config.
 
 ---
 

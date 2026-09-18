@@ -223,7 +223,7 @@ def delta_rate_scatter(ax, deltas, symlog=True, threshold=10.0):
         ax.scatter(
             subset["teacher_delta_rate_hz"],
             subset["student_delta_rate_hz"],
-            s=2,
+            s=6,
             alpha=0.5,
             color=color,
             marker=marker,
@@ -231,7 +231,7 @@ def delta_rate_scatter(ax, deltas, symlog=True, threshold=10.0):
             linewidths=0,
             rasterized=True,
         )
-    ax.plot([-limit, limit], [-limit, limit], "k--", linewidth=0.6, alpha=0.5)
+    ax.plot([-limit, limit], [-limit, limit], "k--", linewidth=1, alpha=0.5)
     if symlog:
         ax.set_xscale("symlog", linthresh=threshold)
         ax.set_yscale("symlog", linthresh=threshold)
