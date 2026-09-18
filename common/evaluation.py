@@ -397,6 +397,33 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
     return out
 
 
+def scaling_factor_rows(run_dir, **labels):
+    """Final learnt value and true target of each tied scaling factor, one row each.
+
+    Read from the run's ``training_metrics.csv`` rather than the model state: the run
+    already logs both the value and the target it should recover.
+    """
+    metrics = pd.read_csv(Path(run_dir) / "training_metrics.csv")
+    last = metrics.iloc[-1]
+    rows = []
+    for column in metrics.columns:
+        if not column.endswith("_value") or not column.startswith("scaling_factors/"):
+            continue
+        name = column[len("scaling_factors/") : -len("_value")]
+        target = f"scaling_factors/{name}_target"
+        if target not in metrics:
+            continue
+        rows.append(
+            {
+                **labels,
+                "scaling_factor": name,
+                "value": float(last[column]),
+                "target": float(last[target]),
+            }
+        )
+    return rows
+
+
 def raster(evaluation, group, source, n_steps=None):
     """Unpack a stored raster: (time, neurons) bool, first ``RASTER_SECONDS`` post burn-in."""
     packed = evaluation[f"{group}_{source}_raster"]

@@ -1,0 +1,7 @@
+seed,scaling_factor,value,target
+44,excitatory_to_excitatory,0.9589427356694256,1.0
+44,excitatory_to_inhibitory,0.5730203615360852,1.0
+44,inhibitory_to_excitatory,1.1927656856582975,1.0
+44,inhibitory_to_inhibitory,0.5666014128646859,1.0
+44,mitral_to_excitatory,1.1029891631887347,1.0
+44,mitral_to_inhibitory,0.6335816507244796,1.0
