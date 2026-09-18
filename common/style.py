@@ -59,6 +59,17 @@ def apply_style():
     )
 
 
+def clear_panels(out_dir, figure, suffix=""):
+    """Delete this figure's existing panel SVGs before a rebuild.
+
+    Panels are named per letter, so re-lettering or dropping a panel otherwise leaves an
+    orphan SVG behind that looks current in the folder and can be pasted into a slide by
+    mistake. Every figure's ``main`` calls this first.
+    """
+    for path in sorted(Path(out_dir).glob(f"{figure}-*{suffix}.svg")):
+        path.unlink()
+
+
 def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
     """``<out_dir>/<figure>-<letter>-<slug><suffix>.svg``, e.g. fig01-a-raster.svg.
 

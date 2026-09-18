@@ -43,7 +43,7 @@ from common.structure import (
     shuffle_weights_within_connectome,
     shuffle_weights_within_neuron,
 )
-from common.style import LEGEND_GREY, TICK_SIZE, apply_style, save
+from common.style import LEGEND_GREY, TICK_SIZE, apply_style, clear_panels, save
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig02"
@@ -209,6 +209,7 @@ def schematic(params_by_variant):
 
 def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig02_summary.csv")
     # The grid held two observation levels until 2026-09-18; plot one per figure.
     if "observed_fraction" not in summary:  # CSVs written before 2026-09-18

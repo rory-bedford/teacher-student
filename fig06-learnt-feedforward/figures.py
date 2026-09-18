@@ -41,6 +41,7 @@ from common.style import (
     WIDE,
     apply_style,
     ceiling,
+    clear_panels,
     nice_max,
     rate_scatter,
     save,
@@ -235,6 +236,7 @@ def perturbation(sweep, metric):
 
 def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig06_summary.csv")
     rates = pd.read_csv(data_dir / "fig06_rates.csv")
     spikes = pd.read_csv(data_dir / "fig06_spikes.csv")

@@ -40,6 +40,7 @@ from common.style import (
     TRIPLE,
     apply_style,
     ceiling,
+    clear_panels,
     nice_max,
     rate_scatter,
     save,
@@ -203,6 +204,7 @@ def delta_sweep(summary, metric):
 
 def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig03_summary.csv")
     rates = pd.read_csv(data_dir / "fig03_rates.csv")
     estimated = data_dir / DIMENSIONALITY_CSV

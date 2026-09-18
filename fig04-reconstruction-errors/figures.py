@@ -33,6 +33,7 @@ from common.style import (
     TICK_SIZE,
     apply_style,
     ceiling,
+    clear_panels,
     save,
     sweep_legend,
     sweep_series,
@@ -193,6 +194,7 @@ def delta_sweep(summary, metric):
 
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig04_summary.csv")
     per_neuron = pd.read_csv(data_dir / "fig04_per_neuron.csv")
     held_out = summary

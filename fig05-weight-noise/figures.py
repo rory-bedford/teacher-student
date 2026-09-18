@@ -38,6 +38,7 @@ from common.style import (
     SINGLE,
     apply_style,
     ceiling,
+    clear_panels,
     save,
     sweep_legend,
     sweep_series,
@@ -161,6 +162,7 @@ def perturbation(summary, metric):
 
 def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig05_summary.csv")
     clipped = summary.groupby("weight_noise")["noise_clipped_fraction"].mean()
 

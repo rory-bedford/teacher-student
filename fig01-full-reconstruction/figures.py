@@ -37,6 +37,7 @@ from common.style import (
     TICK_SIZE,
     WIDE,
     apply_style,
+    clear_panels,
     nice_max,
     rate_scatter,
     save,
@@ -127,6 +128,7 @@ def delta_scatter(summary, deltas):
 
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
+    clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig01_summary.csv")
     rates = pd.read_csv(data_dir / "fig01_rates.csv")
     spikes = pd.read_csv(data_dir / "fig01_spikes.csv")
