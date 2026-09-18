@@ -34,21 +34,18 @@ HERE = Path(__file__).resolve().parent
 VARIANTS = [
     "full_connectome",
     "learnt_recurrence",
-    "shuffle_weights",
     "shuffle_inputs",
     "configuration_model",
 ]
 VARIANT_LABELS = {
     "full_connectome": "Full\nconnectome",
     "learnt_recurrence": "Learnt\nrecurrence",
-    "shuffle_weights": "Shuffle weights\n(all partners)",
     "shuffle_inputs": "Shuffle weights\nwithin neuron",
     "configuration_model": "Config.-model\nrewire",
 }
 VARIANT_COLORS = {
     "full_connectome": FULL_CONNECTOME_COLOR,
     "learnt_recurrence": LEARNT_RECURRENCE_COLOR,
-    "shuffle_weights": SHUFFLE_WEIGHTS_COLOR,
     "shuffle_inputs": SHUFFLE_WEIGHTS_COLOR,
     "configuration_model": CONFIGURATION_MODEL_COLOR,
 }

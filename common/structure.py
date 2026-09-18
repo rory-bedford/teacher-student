@@ -24,6 +24,9 @@ from pathlib import Path
 import numpy as np
 
 #: Recurrent-model options for the Figure 2 controls.
+#: "shuffle_weights" (permute a block's values over all its synapses) is superseded by
+#: "shuffle_inputs" as Figure 2's weight control; it is kept so the runs already on disk
+#: stay reproducible.
 RECURRENT_MODELS = (
     "connectome",
     "learnt",
