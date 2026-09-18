@@ -93,9 +93,7 @@ def scatters(sweep, rates, fraction, seed):
             group,
             "activity_r2",
         )["value"].mean()
-        rate_scatter(
-            ax, level[level["group"] == group], f"{label} (R² = {r2:.3f})", max_rate
-        )
+        rate_scatter(ax, level[level["group"] == group], f"{label} (R² = {r2:.3f})")
     fig.suptitle(
         f"Degeneracy Under Partial Reconstruction ({fraction:.0%} Reconstructed)"
     )
