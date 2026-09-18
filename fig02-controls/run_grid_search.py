@@ -1,11 +1,12 @@
-"""Figure 2 — the connectivity controls at two observation levels (21 runs).
+"""Figure 2 — the connectivity controls at the figure's observed fraction (9 runs).
 
-At the figure's observed fraction (50%) the three controls run against Figure 3's obs-0.5
-runs as the full-connectome baseline. A second set repeats all four variants, baseline
-included, with *every* modelled neuron observed: the regime of the archived controls
-figure, where each neuron's recurrent input is the teacher's own activity, so a wrong
-connectome degrades gracefully instead of compounding in a closed loop.
-Runs are ordered seed by seed, so every control has one seed before any has two.
+The three controls run at 50% observed against Figure 1's seed-matched runs as the
+full-connectome baseline, which is not retrained here. Runs are ordered seed by seed, so
+every control has one seed before any has two.
+
+A fully observed set (all four variants, baseline included, observed_fraction = 1.0) was
+dropped on 2026-09-18: it appears in no panel. The runs already finished for it are left
+in place and show up as non-grid folders in STATUS.md.
 
 Run:
     ./run --grid fig02-controls/experiment.toml
@@ -24,8 +25,6 @@ from common.grid import skip_completed
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
 VARIANTS = ["learnt", "shuffle_inputs", "configuration_model"]
-#: The fully observed comparison needs its own baseline, so it includes "connectome".
-FULLY_OBSERVED_VARIANTS = ["connectome"] + VARIANTS
 
 
 def custom_config_generator(base_params):
@@ -35,12 +34,6 @@ def custom_config_generator(base_params):
             params["simulation"]["seed"] = seed
             params["student"]["recurrent_model"] = variant
             yield params, f"{variant}__seed-{seed}"
-        for variant in FULLY_OBSERVED_VARIANTS:
-            params = deepcopy(base_params)
-            params["simulation"]["seed"] = seed
-            params["student"]["recurrent_model"] = variant
-            params["student"]["observed_fraction"] = 1.0
-            yield params, f"{variant}-fully-observed__seed-{seed}"
 
 
 if __name__ == "__main__":

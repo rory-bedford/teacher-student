@@ -20,7 +20,7 @@ Shuffle-Weights -0.26 Fluctuation R².
 
 So the controls now run at **50% observed**, which matches the reconstruction budget of the real
 dataset and is the healthiest point of Figure 3's sweep. The full-connectome baseline for the bars
-is Figure 3's `obs-0.5` runs (same recipe and seeds), not Figure 1. The 10% runs are kept in
+is Figure 1's seed-matched runs (same recipe, same observed fraction), which are not retrained here. The 10% runs are kept in
 `bernstein/_superseded/fig02-controls-obs-0.1/` as the collapse observation.
 
 ## Configuration
@@ -42,7 +42,7 @@ Identical to Figure 1 in every respect except the connectivity given to the stud
 |---|---|---|
 | **Full connectome** | true topology and weights | **6** (FF→E, FF→I, E→E, E→I, I→E, I→I scalings) |
 | **Learnt recurrence** | no connectome; all recurrent weights free | ~5000² = **25 M** |
-| **Shuffle weights** | true topology, weights permuted among existing synapses | 6 |
+| **Shuffle weights within neuron** | true topology, each neuron's input weights permuted among its own presynaptic partners, so its total input weight is preserved exactly | 6 |
 | **Configuration-model rewire** | rewired **within each block** (E→E, E→I, …) preserving in/out degree sequences and the within-block weight distribution | 6 |
 
 **Why the configuration model rather than a random within-block rewire.** A fully random rewire destroys degree heterogeneity as well as specific wiring, so a failure is attributable to either. The configuration model preserves block statistics *and* degree and destroys only the specific wiring — the stringent null. If the full connectome still wins against it, that is the strong claim.
