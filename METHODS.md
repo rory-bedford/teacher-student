@@ -38,12 +38,20 @@ physiology is the teacher's). What training recovers depends on the observation 
 | 100% | 1.00 (7 d.p.) | no unobserved population, so the rate penalties do not exist as loss terms; the van Rossum term alone has a zero-loss optimum at the truth, reached from a log-normal initialisation up to 2x off |
 | 50% | 0.79-1.01 | typical error 6% |
 | 10% | 0.57-1.19 | |
-| <=2% | 0.23-11.1 | the fit itself fails; not reported |
+| <=2% | 0.23-11.1 | unreliable: succeeds on some observed draws, collapses on others |
 
 Two things make partial observation different, and neither is "the same loss, harder":
 the rate penalties are **absent** when nothing is unobserved, and at 50% observed the SD
 penalty is ~18% of the total loss; and the van Rossum term's own optimum moves, because
 a partly free-running network cannot match the teacher spike for spike.
+
+**Below ~25% observed the outcome is bimodal, not graded** (three seeds, 2026-09-19): a run
+either trains normally or loses its excitatory population entirely, and which happens depends
+on the observed draw rather than the fraction. Unobserved Fluctuation R² per seed: 2% observed
+-0.03 / 0.67 / -0.03; 5% observed 0.82 / -0.45 / 0.76; 25% observed 0.94 / 0.39 / 0.94; 50%
+observed 0.98 / 0.94 / 0.99. Report the individual seeds, not just mean +- SD, and describe the
+low end as unreliable rather than impossible -- it is an optimisation failure, not an
+information limit.
 
 So state results as **prediction**, not parameter recovery: at 50% observed the student
 predicts unobserved activity well while its parameters drift, and the perfectly specified

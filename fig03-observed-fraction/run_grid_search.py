@@ -23,10 +23,10 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-#: 2% is the first point that fails: below ~5% observed the fit itself collapses (the
+#: 2% is the first unreliable point: below ~25% observed a run either trains or collapses (the
 #: unobserved AND observed excitatory populations fall silent, whatever the rate-penalty
 #: targets or learning rate -- see probes on 2026-09-18), so 0.5% and 1% are not reported.
-#: The 2% point is kept deliberately, to show the cliff.
+#: The 2% point is kept deliberately, to show where the fit stops being reliable.
 OBSERVED_FRACTIONS = [0.02, 0.05, 0.25]
 
 

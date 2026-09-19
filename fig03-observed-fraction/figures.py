@@ -7,9 +7,9 @@
     fig03-b-scatter              unobserved firing rates at three observed fractions
     fig03-c-delta-fluctuation    perturbation: ΔFluctuation R² vs observed fraction
 
-The x-range is whatever analysis.py reported (its ``REPORTED_FRACTIONS``): the sweep
-starts at 2% observed, the first point that fails, because below ~5% the fit itself
-collapses. Panel (b) shows rate scatters at three observed fractions: by default the
+The x-range is whatever analysis.py reported (its ``REPORTED_FRACTIONS``): the sweep starts
+at 2% observed, and below ~25% observed a run either trains or collapses depending on the
+observed draw, so the per-seed points matter more than the mean. Panel (b) shows rate scatters at three observed fractions: by default the
 lowest fraction still within 10% of the ceiling (above threshold), the fraction closest
 to half the ceiling (near), and the lowest fraction run (below). Pass
 --scatter-fractions to choose them by hand once the curve is known.

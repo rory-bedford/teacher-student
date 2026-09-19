@@ -64,9 +64,10 @@ Deferred entirely. Would be the same experiment as Figure 6 with a non-random ru
   connectome, learnt recurrence, configuration model). The weight shuffle (`shuffle_inputs`, each
   neuron's input weights permuted among its own partners) is still trained and still in the CSVs
   but not plotted: it overlaps with Figure 5's weight noise. The schematic was dropped.
-- **Figure 3 stops at 2% observed.** Below ~5% the fit itself collapses -- the excitatory
-  population falls silent even on *observed* neurons, whatever the rate-penalty targets or
-  learning rate (probes 20260918-143330 and the local poptarget runs). 2% is kept to show the cliff.
+- **Figure 3 stops at 2% observed.** With three seeds (2026-09-19) the low end is bimodal, not a
+  cliff: each run either trains or loses its excitatory population, seed 45 succeeding at 2% where
+  44 and 46 failed, and the reverse at 5%. Mean unobserved R² is still monotonic (0.20 / 0.38 /
+  0.76 / 0.97) but SD reaches 0.72 at 5% observed. Plot the seeds individually.
 - **Fluctuation R² only** outside the rate scatters; scatters are linear 0-40 Hz.
 - **Figure 1 gained** the scaling-factor recovery panel (its runs beside Figure 2's fully observed
   ones) and the mean-Δrate panel, split off the Δ scatter.
