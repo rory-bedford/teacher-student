@@ -39,6 +39,7 @@ from common.style import (
     INHIBITORY,
     LEGEND_GREY,
     PAIR,
+    REFERENCE_GREY,
     SINGLE,
     STUDENT,
     TEACHER,
@@ -128,7 +129,7 @@ def scaling_factors(factors):
             # Coloured by the presynaptic population, so the three factors onto
             # inhibitory cells (all low) are visibly a group.
             color = {"excitatory": EXCITATORY, "inhibitory": INHIBITORY}.get(
-                name.split("_to_")[0], LEGEND_GREY
+                name.split("_to_")[0], REFERENCE_GREY
             )
             ax.scatter(
                 np.full(len(ratio), x + offset),
