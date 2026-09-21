@@ -3,8 +3,12 @@
     uv run python fig04-reconstruction-errors/figures.py
 
     fig04-a-curve                unobserved Fluctuation R² vs input volume lost, both models
-    fig04-b-per-neuron           per-neuron Fluctuation R² vs per-neuron volume lost
-    fig04-c-delta-fluctuation    perturbation: ΔFluctuation R² vs input volume lost
+    fig04-b-delta-fluctuation    perturbation: ΔFluctuation R² vs input volume lost
+
+The per-neuron panel (per-neuron R² against that neuron's own lost input) was deleted on
+2026-09-21: its premise was that neuron removal would spread per-neuron loss much wider
+than synapse dropout, and the data says the spreads match (SD 0.173 vs 0.178). Panel (a)
+makes the population claim more legibly. It is in the git history if ever wanted.
 
 Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
 reported by the scatter panels of figures 1 and 3.
@@ -20,14 +24,13 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from connectome_snns.visualization import NEURON_REMOVAL_COLOR, SYNAPSE_DROPOUT_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS
+from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -45,13 +48,22 @@ MODELS = {
     "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR),
     "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR),
 }
-MAX_POINTS = 20000
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
-PERTURBATION_CELL_TYPES = (("excitatory", "E", "-"), ("inhibitory", "I", "--"))
+#: The two error models as line styles in panel (b), where colour carries the population.
+MODEL_LINESTYLES = ("-", "--")
 
 
-def curve(summary):
+def limits(summary):
+    """One y range for panels (a) and (b), so the two read on the same scale."""
+    rows = summary[
+        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
+        & (summary["group"] == "unobserved")
+    ]
+    return min(0.0, float(rows["value"].min()) - 0.05), 1.0
+
+
+def curve(summary, ylim):
     """(a) unobserved Fluctuation R² against input volume lost, per error model."""
     unobserved = summary[summary["group"] == "unobserved"]
     fig, ax = plt.subplots(figsize=SINGLE)
@@ -63,21 +75,24 @@ def curve(summary):
         if rows.empty:
             continue
         # Plotted against the volume actually lost, not the nominal level: the two error
-        # models reach the same κ at different levels. Each run lost its own volume, so
-        # the line and the ceiling are grouped by level and placed at the level's mean κ,
-        # with the seeds scattered at their own (as in Figure 3).
+        # models reach the same fraction at different levels. The measured fraction is
+        # snapped to the nearest 0.1 so the two series align -- the realised values sit
+        # within 0.7% of the grid, far below anything this panel claims.
+        rows = rows.assign(
+            kappa_snapped=(rows["mean_kappa_lost"] * 10).round() / 10,
+        )
         sweep_series(
             ax,
             rows,
-            "mean_kappa_lost",
+            "kappa_snapped",
             "fluctuation_r2",
             color,
             seeds=True,
             errorbars=False,
             x_group="level",
         )
-        ceiling(ax, rows, "mean_kappa_lost", color, x_group="level")
-    ax.set_ylim(min(0.0, unobserved["value"].min() - 0.05), 1.0)
+        ceiling(ax, rows, "kappa_snapped", color, x_group="level")
+    ax.set_ylim(*ylim)
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel("Fluctuation R² (Unobserved)")
     sweep_legend(
@@ -93,62 +108,22 @@ def curve(summary):
     return fig
 
 
-def per_neuron_panel(per_neuron):
-    """(b) per-neuron Fluctuation R² against per-neuron κ, both error models pooled."""
-    neurons = per_neuron[
-        (per_neuron["observed"] == 0) & (per_neuron["level"] > 0)
-    ].dropna(subset=["fluctuation_r2"])
-    if len(neurons) > MAX_POINTS:
-        neurons = neurons.sample(MAX_POINTS, random_state=0)
-    bins = np.linspace(0, 1, 21)
-    fig, ax = plt.subplots(figsize=SINGLE)
-    handles = []
-    for model, (label, color) in MODELS.items():
-        sub = neurons[neurons["error_model"] == model]
-        if sub.empty:
-            continue
-        ax.scatter(
-            sub["kappa_lost"],
-            sub["fluctuation_r2"].clip(-1, 1),
-            s=3,
-            color=color,
-            alpha=0.15,
-            linewidths=0,
-            rasterized=True,
-        )
-        binned = sub.groupby(pd.cut(sub["kappa_lost"], bins), observed=True)[
-            "fluctuation_r2"
-        ].median()
-        ax.plot(
-            [interval.mid for interval in binned.index],
-            binned.values,
-            color=color,
-            linewidth=2.5,
-        )
-        handles.append(
-            Line2D([], [], color=color, linewidth=2.5, label=f"{label} (Median)")
-        )
-    ax.set_xlim(0, 1)
-    ax.set_ylim(-1, 1)
-    ax.set_xlabel("Fraction of That Neuron's Recurrent Input Lost")
-    ax.set_ylabel("Per-Neuron Fluctuation R²")
-    ax.legend(handles=handles, loc="lower left", frameon=True)
-    ax.set_title("Per-Neuron Prediction vs That Neuron's Input Lost")
-    fig.tight_layout()
-    return fig
+def delta_sweep(summary, metric, ylim):
+    """(b) Δ R² of the intervention against input volume lost.
 
-
-def delta_sweep(summary, metric):
-    """Δ R² of the intervention against input volume lost, one panel per metric.
-
-    Same x-axis, colours and dotted ceilings as panel (a); E and I of the non-targeted
-    unobserved population are the solid and dashed lines.
+    Coloured by population as in every other perturbation panel (E coral, I blue, from
+    ``common.plotting.PERTURBATION_SERIES``), with the two error models as solid and
+    dashed lines -- panel (a) colours by error model, but the perturbation panels are
+    consistent with Figures 3, 5 and 6 instead. Seeds as points, no error bars, and the
+    same y range as panel (a), as in Figure 3.
     """
     rows = summary[summary["evaluation"] == "perturbation"]
     fig, ax = plt.subplots(figsize=SINGLE)
     handles = []
-    for model, (label, color) in MODELS.items():
-        for cell_type, short, linestyle in PERTURBATION_CELL_TYPES:
+    for _, cell_type, color, label in PERTURBATION_SERIES:
+        for model, (model_label, _), linestyle in zip(
+            MODELS, MODELS.values(), MODEL_LINESTYLES
+        ):
             sub = rows[
                 (rows["error_model"] == model)
                 & (rows["metric"] == metric)
@@ -157,29 +132,22 @@ def delta_sweep(summary, metric):
             ]
             if sub.empty:
                 continue
-            stats = sub.groupby("level")[
-                ["mean_kappa_lost", "value", "ceiling_value"]
-            ].mean()
-            spread = sub.groupby("level")["value"].std().fillna(0.0)
-            ax.errorbar(
-                stats["mean_kappa_lost"],
-                stats["value"],
-                yerr=spread,
-                color=color,
+            # Snapped to the nominal grid, as in panel (a): the realised fractions sit
+            # within 0.7% of it and the two models would otherwise sit side by side.
+            sub = sub.assign(kappa_snapped=(sub["mean_kappa_lost"] * 10).round() / 10)
+            sweep_series(
+                ax,
+                sub,
+                "kappa_snapped",
+                metric,
+                color,
                 marker="o",
-                markersize=5,
                 linestyle=linestyle,
-                linewidth=1.5,
-                capsize=2.5,
+                seeds=True,
+                errorbars=False,
+                x_group="level",
             )
-            ax.plot(
-                stats["mean_kappa_lost"],
-                stats["ceiling_value"],
-                ":",
-                color=color,
-                linewidth=1.2,
-                alpha=0.7,
-            )
+            ceiling(ax, sub, "kappa_snapped", color, x_group="level")
             handles.append(
                 Line2D(
                     [],
@@ -189,12 +157,21 @@ def delta_sweep(summary, metric):
                     markersize=5,
                     linestyle=linestyle,
                     linewidth=1.5,
-                    label=f"{label}, {short}",
+                    label=f"{label}, {model_label}",
                 )
             )
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(METRIC_LABELS[metric])
-    sweep_legend(ax, {}, metrics=False, extra=handles)
+    ax.set_ylim(*ylim)
+    sweep_legend(
+        ax,
+        {},
+        metrics=False,
+        extra=handles,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
     ax.set_title(
         f"{METRIC_LABELS[metric]}: Inhibiting 25% of Unobserved I Cells",
         fontsize=TICK_SIZE + 1,
@@ -207,7 +184,6 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig04_summary.csv")
-    per_neuron = pd.read_csv(data_dir / "fig04_per_neuron.csv")
     held_out = summary
     if "evaluation" in summary:
         held_out = summary[summary["evaluation"] == "held_out"]
@@ -215,13 +191,15 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
-    output(curve(held_out), "a", "curve")
-    output(per_neuron_panel(per_neuron), "b", "per-neuron")
+    ylim = limits(summary)
+    output(curve(held_out, ylim), "a", "curve")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
-        output(delta_sweep(summary, "delta_fluctuation_r2"), "c", "delta-fluctuation")
+        output(
+            delta_sweep(summary, "delta_fluctuation_r2", ylim), "b", "delta-fluctuation"
+        )
 
 
 if __name__ == "__main__":

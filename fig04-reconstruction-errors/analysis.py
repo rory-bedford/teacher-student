@@ -12,8 +12,9 @@ Writes, next to this script:
     fig04_summary.csv      error_model, level, mean_kappa_lost, seed,
                            evaluation{held_out,perturbation}, group, cell_type, n_cells, metric,
                            value, ceiling_value
-    fig04_per_neuron.csv   error_model, level, seed, neuron_id, cell_type, observed, kappa_lost,
-                           fluctuation_r2, teacher_rate_hz, student_rate_hz
+
+The per-neuron table was dropped on 2026-09-21 with the panel that used it (see
+figures.py); ``rate_rows`` still has the data if it is ever wanted again.
 """
 
 import argparse
@@ -30,7 +31,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.evaluation import (
     completed_runs,
     evaluate_run,
-    rate_rows,
     run_parameters,
     summary_rows,
 )
@@ -67,7 +67,7 @@ def main(runs_dir, baseline_dir, out_dir):
     if not runs:
         raise SystemExit("No completed runs")
 
-    summary, per_neuron = [], []
+    summary = []
     for run in runs:
         print(f"Evaluating {run}")
         evaluation = evaluate_run(run, device)
@@ -88,28 +88,10 @@ def main(runs_dir, baseline_dir, out_dir):
             summary += summary_rows(evaluation, **labels)
             if perturbation is not None:
                 summary += perturbation_summary_rows(perturbation, **labels)
-            for row in rate_rows(evaluation, error_model=model, level=level):
-                row["kappa_lost"] = float(kappa[row["neuron_id"]])
-                per_neuron.append(row)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     summary = pd.DataFrame(summary)
     summary.to_csv(out_dir / "fig04_summary.csv", index=False)
-    columns = [
-        "error_model",
-        "level",
-        "seed",
-        "neuron_id",
-        "cell_type",
-        "observed",
-        "kappa_lost",
-        "fluctuation_r2",
-        "teacher_rate_hz",
-        "student_rate_hz",
-    ]
-    pd.DataFrame(per_neuron)[columns].to_csv(
-        out_dir / "fig04_per_neuron.csv", index=False
-    )
     print(
         summary.groupby(
             ["error_model", "level", "evaluation", "group", "cell_type", "metric"]
