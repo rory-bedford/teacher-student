@@ -1,7 +1,7 @@
 """Figure 5 — five weight-noise levels x three seeds (15 runs).
 
 Weight noise 0 is Figure 1 and is read from its runs by analysis.py. Runs are ordered
-seed by seed. To extend past 0.5 (README suggests 0.75 / 1.0 if the curve stays high),
+seed by seed. To extend past 0.5,
 append to NOISE_LEVELS.
 
 Run:

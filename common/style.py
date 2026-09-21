@@ -1,10 +1,10 @@
-"""Archived paper-figure style (archive/figures/make_figures.py), resized for slides.
+"""Paper-figure style of the earlier Dp work, resized for slides.
 
 Shared by each figure's ``figures.py`` and by the PLACEHOLDER builds in
 ``placeholder_figures/``, which call the same panel functions with a watermark.
 
 One file per panel. Sizes are the native size to insert into PowerPoint at 100%:
-the archive's poster fonts (18 / 19.2 / 21.6 pt on 12-inch figures) are scaled down
+its poster fonts (18 / 19.2 / 21.6 pt on 12-inch figures) are scaled down
 to 12 / 13 / 14 pt on ~6.5-inch panels.
 """
 

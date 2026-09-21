@@ -1,4 +1,4 @@
-# Figure 1 — full reconstruction, 10% of neurons observed.
+# Figure 1 — full reconstruction, 50% of neurons observed.
 #
 # Student: feedforward and recurrent connectome given, no weight noise, 6 scaling
 # factors trained. Figures 2-5 use this exact configuration as their baseline and

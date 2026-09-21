@@ -3,7 +3,8 @@
     uv run python fig02-controls/figures.py
 
     fig02-a-bars-held-out      held-out Fluctuation R²: observed | unobserved
-    fig02-b-bars-perturbation  perturbation ΔFluctuation R²: non-targeted E | I | targeted I
+    fig02-b-bars-perturbation  perturbation ΔFluctuation R²: unobserved E and I pooled,
+                               targeted cells excluded
     fig02-c-legend             the shared legend, stacked vertically, on its own
 
 Two figures (2026-09-21), each a row of subpanels one population wide. Every subpanel is

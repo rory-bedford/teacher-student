@@ -1,9 +1,0 @@
-# Parameters for compute-pcas
-# Gaussian-smooth feedforward spike trains and project to low-dimensional PCA space.
-
-[pca]
-# Standard deviation of the Gaussian smoothing kernel (milliseconds).
-gaussian_sigma_ms = 500.0
-
-# Number of principal components to retain.
-n_components = 1500

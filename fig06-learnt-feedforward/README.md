@@ -1,6 +1,6 @@
 # Figure 6 — Unreconstructed inputs break prediction of unobserved neurons
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
 
 **The climax of the talk.**
 
@@ -15,17 +15,21 @@ The unification this rests on: **an unreconstructed unit is indistinguishable fr
 | recorded pool | **2500 of 5000 recurrent neurons (50%)**, fixed for the whole sweep |
 | held-out pool | the other 2500, fixed |
 | weight noise | 0 |
-| recurrent scaling parameters | as in the existing implementation |
+| recurrent scaling parameters | 6 shared scaling factors, as in Figures 1–5 |
 | **reconstructed fraction** | **swept, 100% → 10%** |
 | seeds | 3 per level |
 
-**The 10% endpoint is the real operating point.** ~500 proofread cells in a ~5000-neuron circuit is 10%, so the sweep runs from the ideal case to the dataset actually in hand. Mark it on the figure.
+**The 10% endpoint is the real operating point.** ~500 proofread cells in a ~5000-neuron circuit is 10%, so the sweep runs from the ideal case to the dataset actually in hand. Panel (a) shades it and labels it *Our Dataset*.
 
 ## The swept factor — the reconstructed segment
 
 Pick a **reconstructed segment S** from the 6500 units (5000 recurrent + 1500 feedforward), drawn at **random** from the pooled set, with no distinction between feedforward and recurrent. Within S the full connectivity submatrix is known. Everything outside S has unknown connectivity but **known activity**, and is injected with **learnt weights** onto the modelled neurons.
 
-The student simulates the **recurrent units in S**. At S = everything the learnt bucket is empty and this reduces exactly to **Figure 1** — the endpoint of the curve and a consistency check on the pipeline.
+The student simulates the **recurrent units in S**. At S = everything the learnt bucket is
+empty, which is the no-learnt-weights consistency check on the pipeline and the endpoint of
+the curve. It is **not** Figure 1: with a 50% recorded pool, S = everything observes 2500
+neurons (Figure 3's 50% point), and it is trained with this figure's recipe rather than
+Figure 1's.
 
 **Learnt weights reach every modelled neuron, observed and unobserved alike.** The block landing on *unobserved* neurons is constrained by no data directly — only indirectly, through those neurons' recurrent influence on observed ones. **That loosely tethered block is the mechanism of the degeneracy**, and the talk should state it as a mechanism rather than describe the failure phenomenologically.
 
@@ -39,13 +43,13 @@ State it on the slide in those terms: *at 10% reconstruction only a tenth of our
 
 **Evaluation group:** held-out-pool neurons that lie inside S, so they are simulated but never in the loss. That is ~f × 2500 neurons, ~250 at the endpoint.
 
-**Optional control, one run.** At full reconstruction, artificially restrict the loss to the number of neurons the 10% level affords. If performance stays high, the damage at low reconstruction comes from missing connectivity rather than from having fewer constraints. This is the only question the design leaves open, and it closes it.
+**Restricted-loss control: not implemented.** The design's one remaining open question was whether, at full reconstruction, artificially restricting the loss to the number of neurons the 10% level affords would also cost prediction — which would separate missing connectivity from merely having fewer constraints. That run was never made.
 
-**Also worth one run: fully observed at 10% reconstruction.** Every neuron in S enters the loss and the only test left is generalisation to held-out stimuli. If prediction is still poor there, observation demonstrably cannot substitute for reconstruction — the claim that most cleanly separates this work from Beiran & Litwin-Kumar. Plot as a single annotated point.
+**Fully observed at 10% reconstruction, one run.** Every neuron in S enters the loss, so the only test left is generalisation to held-out stimuli. Prediction being poor there would show that observation demonstrably cannot substitute for reconstruction — the claim that most cleanly separates this work from Beiran & Litwin-Kumar. It is plotted as a single cross on panel (a).
 
 ## Axes
 
-Report against both the **fraction of units reconstructed** and **κ**, the fraction of each modelled neuron's input volume that is known. For a random S these coincide in expectation, but κ is the invariant that lets this figure be compared with anything else.
+Report against both the **fraction of units reconstructed** and **κ**, the fraction of each modelled neuron's input volume that is known. For a random S these coincide in expectation, but κ is the invariant that lets this figure be compared with anything else. Both are columns of `fig06_summary.csv`; panel (a) plots the reconstructed fraction.
 
 ## Panels
 
@@ -78,12 +82,6 @@ fig06-learnt-feedforward/
   fig06-c-delta-fluctuation.svg
 ```
 
-## Status
-
-**Needs running.** The archived `ff-learnt__obs-45__recur-81__wn-30__scatter.svg` (observed 0.953, unobserved 0.243) shows the phenomenon and is the best visual currently available, but varies four factors at once, so it cannot attribute the failure to unreconstructed input. See `../PRIORITY.md` for how it can and cannot be used as a fallback.
-
-Its numbers are a good prior for what to expect mid-sweep.
-
 ---
 
 ## Implementation (recorded settings)
@@ -93,14 +91,19 @@ Its numbers are a good prior for what to expect mid-sweep.
 ### How to run
 
 ```bash
-./run --grid fig06-learnt-feedforward/experiment.toml   # 6 levels x 3 seeds + 1 fully observed = 19 runs
+./run --grid fig06-learnt-feedforward/experiment.toml   # 10 levels x 3 seeds + 1 fully observed = 31 runs
 uv run python fig06-learnt-feedforward/analysis.py       # fig06_summary.csv, fig06_rates.csv, fig06_spikes.csv
-uv run python fig06-learnt-feedforward/figures.py        # fig06.svg (--scatter-fractions for panel a)
+uv run python fig06-learnt-feedforward/figures.py        # panel SVGs, from this figure's CSVs
 ```
 
-Levels: reconstructed fraction ∈ {1.0, 0.7, 0.5, 0.3, 0.2, 0.1}, ordered from 0.1 upward, seed
-by seed. The fully observed control (every modelled neuron in the loss, 10% reconstructed,
-seed 44) follows the first seed's sweep.
+Levels: reconstructed fraction ∈ {0.1, 0.2, ..., 1.0} (`RECONSTRUCTED_FRACTIONS` in
+`run_grid_search.py`), ordered from 0.1 upward, seed by seed. The fully observed control
+(every modelled neuron in the loss, 10% reconstructed, seed 44) follows the first seed's
+sweep. The levels were evened out to steps of 0.1 on 2026-09-21, from
+{0.1, 0.2, 0.3, 0.5, 0.7, 1.0}: the collapse is at the *top* of the sweep — held-out
+Fluctuation R² falls 0.97 → 0.42 between full reconstruction and 70%, then is flat and
+negative below 30% — so it was the range from 0.7 to 1.0 that needed resolving, not the
+bottom end.
 
 ### Construction (`common/structure.py`, `common/model.py`)
 
@@ -125,7 +128,7 @@ seed 44) follows the first seed's sweep.
   S = 40% and the learnt rows replaced by the true teacher weights, 0 mismatches in either
   group over 2 s, and every learnt block's low-rank slicing matches a direct computation.
 
-### Training (archived ff-learnt recipe, `full-inference/hidden-units`, run `surrgrad-10`)
+### Training (the archived ff-learnt recipe of run `surrgrad-10`)
 
 | Setting | Value | Note |
 |---|---|---|
@@ -144,13 +147,6 @@ seed 44) follows the first seed's sweep.
 unreconstructed recurrent units (the dataset only smooths mitral input), and it would stop the
 S = 100% endpoint from being the exactly specified model. Re-enabling it needs a dataset change.
 
-### Corrections to the design text above
-
-- **The 100% endpoint is not Figure 1.** With a 50% recorded pool, S = everything observes 2500
-  neurons (Figure 3's 50% point), and it is trained with this recipe rather than Figure 1's.
-  It is still the no-learnt-weights consistency check, just not at 10% observed.
-- **Optional restricted-loss control:** not implemented.
-
 ### Cost
 
 Measured here (Quadro RTX 5000, fp32, 1 epoch = 150 chunks): **4.2 min/epoch at 100%
@@ -164,12 +160,6 @@ valley long after the loss stops improving. 100 epochs was chosen for cost; if h
 prediction turns out to depend on that late drift, rerun with more epochs. The cosine learning-
 rate decay now completes within the 100 epochs.
 
-At 100 epochs a run is **≈ 7 h at 100% reconstructed and ≈ 4.5 h at 10%**, so the 19-run grid is
-**≈ 100 GPU-h** (≈ 500 GPU-h at the archived 500 epochs).
-
-### Panels as implemented
-
-See **Panels** above: the sweep (a), one rate scatter at 50% reconstructed (b) and the
-perturbation (c). Superseded details from the original spec: no floor line (dropped from
-every figure on 2026-09-17), no free-parameter annotations and no raster (both removed on
-2026-09-21), and the second scatter at the 10% endpoint is gone.
+At 100 epochs a run is **≈ 7 h at 100% reconstructed and ≈ 4.5 h at 10%**. The first
+six-level grid of 19 runs came to **≈ 100 GPU-h** (≈ 500 GPU-h at the archived 500 epochs);
+the resolved ten-level sweep is 31 runs.

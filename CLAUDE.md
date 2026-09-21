@@ -17,13 +17,13 @@ environment; use `uvx ruff`.
 ## Repository Structure
 
 ```
-METHODS.md  PRIORITY.md  TODO.md   # shared methods, run priority, deferred work — read first
-generate-teacher-activity/         # makes the teacher network + spike data (the inputs)
-common/                            # student, training, evaluation, plotting shared by all figures
+METHODS.md  TODO.md  COLORSCHEME.txt  # shared methods, deferred work, colour semantics
+generate-teacher-activity/            # makes the teacher network + spike data (the inputs)
+common/                               # student, training, evaluation, plotting shared by all figures
 fig01-full-reconstruction/  fig02-controls/  fig03-observed-fraction/
 fig04-reconstruction-errors/  fig05-weight-noise/  fig06-learnt-feedforward/
-archive/                           # previous experiments and figures — reference only
-run                                # wrapper over the connectome-snns run framework
+slurm/                                # cluster arrays from code snapshots, probes, run status
+run                                   # wrapper over the connectome-snns run framework
 ```
 
 Each figure folder has `README.md`, `experiment.toml`, `parameters.toml`, `train.py`
@@ -31,29 +31,25 @@ Each figure folder has `README.md`, `experiment.toml`, `parameters.toml`, `train
 `figures.py`. What a figure trains is set entirely by `parameters.toml` — the
 `[student]` table selects the manipulation (see `common/structure.py`).
 
-`archive/` is not runnable as-is: its configs contain absolute paths to where the
-scripts used to live and point at the old `dp-simulations/` tree.
-
 ## Data
 
 **All data lives in `../bernstein`** (`/tachyon/groups/scratch/gzenke/bedfrory/bernstein`),
 never in this repo and with no symlink to it. The teacher is `bernstein/teacher-activity/`
 (its config is `generate-teacher-activity/experiment.toml`); each figure writes to
-`bernstein/<figure-folder>/<run>/`. The old results in `dp-simulations/` belong to the
-archive. W&B project: `bernstein`, one group per figure.
+`bernstein/<figure-folder>/<run>/`. W&B project: `bernstein`, one group per figure.
 
 ## Workflow for a figure
 
 ```bash
 ./run --grid fig01-full-reconstruction/experiment.toml     # train (commit first)
 uv run python fig01-full-reconstruction/analysis.py         # held-out evaluation -> CSVs
-uv run python fig01-full-reconstruction/figures.py          # CSVs -> figNN.svg
+uv run python fig01-full-reconstruction/figures.py          # CSVs -> one SVG per panel
 ```
 
 - Grid searches run from a git worktree snapshot, so code must be committed (`.toml` and
   `run_grid_search.py` changes are allowed dirty).
 - `analysis.py` evaluates every completed run on a held-out teacher trial (cached per
-  run as `evaluation.npz`) and writes only the CSVs the figure needs, next to itself.
+  run as `evaluation.npz`) and on the perturbation (`perturbation.npz`), and writes only the CSVs the figure needs, next to itself.
   Figures 2–5 read Figure 1's runs as their baseline condition.
 - `figures.py` reads only the CSVs. No notebooks.
 
@@ -71,7 +67,7 @@ to the scratchpad (e.g. training on a few chunks of a sliced teacher).
 
 ## Results are read-only
 
-`../bernstein` (and the archived `dp-simulations/`) hold provenance — param snapshot,
+`../bernstein` holds provenance — param snapshot,
 commit hash, symlinked inputs — and are read-only. Never edit files there; patch only
 with explicit user confirmation.
 
@@ -83,8 +79,9 @@ with explicit user confirmation.
   "full inference" or "unreconstructed fraction" in names, titles or labels.
 - **Imports at the top** (module level); capitalised constants right after.
 - **All plotting via `visualization`** (from connectome-snns) — never hardcode
-  colours. Fixed per-condition colours (`FULL_CONNECTOME_COLOR`, `OBSERVED_COLOR`, …)
-  live in `connectome_snns.visualization.colors`.
+  colours. Figures import semantic roles (`TRUTH`, `MODEL`, `OBSERVED`, `UNOBSERVED`,
+  `EXCITATORY`, `INHIBITORY`) from `common/style.py`; the hexes live in
+  `connectome_snns.visualization.colors` and their meanings in `COLORSCHEME.txt`.
 - **No hardcoded data paths in analysis/figure scripts** — read them from
   `load_experiment_config("experiment.toml")`.
 - After editing `.py`: `uvx ruff check --fix <file>` then `uvx ruff format <file>`.

@@ -1,7 +1,7 @@
-"""Figure 4 — two error models x four levels x three seeds (24 runs).
+"""Figure 4 — two error models x five levels x three seeds (30 runs).
 
-Level 0 is Figure 1 and is read from its runs by analysis.py. Synapse dropout (the new
-arm) comes before neuron removal, and runs are ordered seed by seed.
+Level 0 is Figure 1 and is read from its runs by analysis.py. Synapse dropout comes
+before neuron removal, and runs are ordered seed by seed.
 
 Run:
     ./run --grid fig04-reconstruction-errors/experiment.toml

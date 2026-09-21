@@ -1,6 +1,6 @@
 # Figure 5 — Weight precision is not the binding constraint
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
 
 **Claim:** the model tolerates substantial error in synaptic weights. Compared against Figure 4, imprecise weights cost far less than missing connections — so the limiting factor is what you have reconstructed, not how accurately you have measured it.
 
@@ -17,7 +17,34 @@ Identical to Figure 1 except for the swept degradation:
 | observed fraction | **50%** (matches Figures 1–4; 2026-09-18, was 10%) |
 | trained parameters | 6 scaling factors |
 | **weight noise** | **swept**, 0 → 0.5 |
-| seeds | ≥3 per point |
+| seeds | 3 per point |
+
+## What weight noise is
+
+The noisy-weights implementation of the archived runs, unchanged. For each (source type,
+target type) block of the concatenated [mitral; recurrent] weight matrix — mitral→E,
+mitral→I, E→E, E→I, I→E, I→I:
+
+1. multiply each non-zero weight by exp(σ·N(0,1) − σ²/2), σ = weight_noise (mean-1 log-normal);
+2. affinely rescale the non-zero weights back to the block's original mean and SD;
+3. clip at zero.
+
+So the noise is **multiplicative log-normal**, not additive Gaussian, the block's original
+**mean and SD are preserved**, and it reaches the **mitral weights** as well as the recurrent
+ones. No synapses are created or deleted — topology is untouched, only the values move,
+except that clipping sets a weight to exactly zero.
+
+Step 2 can push weights below zero; step 3 clips them, so **no synapse changes sign** and
+Dale's law holds. The fraction clipped is recorded per run as `noise_clipped_fraction` in
+`fig05_summary.csv`.
+
+**Measured clipping (2026-09-21, three seeds):** 3.3% at noise 0.1, 4.4% at noise 0.2, 4.5%
+at noise 0.3, 3.4% at noise 0.4, 1.5% at noise 0.5. These were printed under panel (a)'s
+title until they crowded it out; the panel now carries the title alone.
+
+Put the one-line version in the caption. It matters for interpretation: this is measurement
+error on weights, not a change in connectivity, which is what makes the contrast with
+Figure 4 meaningful.
 
 ## Evaluation
 
@@ -55,27 +82,6 @@ fig05-weight-noise/
   fig05-b-delta-fluctuation.svg
 ```
 
-## Status
-
-**Needs rerunning at obs-10.** The archived `sweep-wn__ff-known__obs-100__recur-100__curve.svg` is clean — one factor varies — but sits at obs-100, so its metric is computed on neurons the student was trained on. Not comparable with the rest of the sequence.
-
-Its shape (Activity R² ≈ 0.99 at wn = 0.05, ≈ 0.83 at wn = 0.5) is a good prior for sweep levels. Expect the obs-10 version to sit lower throughout, since it is measured on unobserved neurons.
-
-## Notes
-
-- Levels of 0, 0.1, 0.2, 0.3, 0.4, 0.5 are enough; the archived curve is smooth and monotone, so density buys little.
-- If the curve is still high at 0.5, extend to 0.75 or 1.0. "Still works at 100% weight noise" would be a stronger and more surprising claim than stopping at half.
-
-## What weight noise is
-
-Gaussian noise **added** to existing synaptic weights, then rescaled so that the **mean and variance of the weight distribution are preserved**. No synapses are created or deleted — topology is untouched, only the values move.
-
-Put this in the caption in one line. It matters for interpretation: this is measurement error on weights, not a change in connectivity, which is what makes the contrast with Figure 4 meaningful.
-
-## Open question
-
-1. Does the added noise ever **flip the sign** of a weight? If so, some synapses change from excitatory to inhibitory and the student violates Dale's law, which is a modelling artefact rather than a realistic measurement error — and an easy thing to be asked about. If signs do flip, worth reporting what fraction, or clipping at zero and saying so.
-
 ---
 
 ## Implementation (recorded settings)
@@ -90,34 +96,5 @@ uv run python fig05-weight-noise/analysis.py       # reads Figure 1's runs as we
 uv run python fig05-weight-noise/figures.py        # panel SVGs, from this figure's CSVs
 ```
 
-Identical to Figure 1 except `[student].weight_noise` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}; 0 is
-Figure 1. To extend to 0.75 / 1.0, append to `NOISE_LEVELS`. `PRIORITY.md` budgets 3 levels ×
-2 seeds.
-
-### What weight noise is, as implemented
-
-The archived noisy-weights implementation (`noisy-weights/varying-noise/train.py`), unchanged.
-For each (source type, target type) block of the concatenated [mitral; recurrent] weight
-matrix — mitral→E, mitral→I, E→E, E→I, I→E, I→I:
-
-1. multiply each non-zero weight by exp(σ·N(0,1) − σ²/2), σ = weight_noise (mean-1 log-normal);
-2. affinely rescale the non-zero weights back to the block's original mean and SD;
-3. clip at zero.
-
-So the noise is multiplicative log-normal, not additive Gaussian as the text above says, and it
-reaches the mitral weights too. Topology is untouched, except that clipping sets a weight to
-exactly zero.
-
-**Measured clipping (2026-09-21, three seeds):** 3.3% at noise 0.1, 4.4% at noise 0.2, 4.5% at noise 0.3, 3.4% at noise 0.4, 1.5% at noise 0.5. These were printed under panel
-(a)'s title until they crowded it out; the panel now carries the title alone.
-
-**Sign flips (open question 1):** step 2 can push weights below zero; step 3 clips them, so no
-synapse changes sign and Dale's law holds. The fraction clipped is recorded per run as
-`noise_clipped_fraction` in `fig05_summary.csv` and printed on panel (a).
-
-### Panels as implemented
-
-See **Panels** above. Superseded details from the original spec: no floor and no clipped
-fraction in the title (the clipping is recorded under **Measured clipping**), individual
-seeds instead of error bars, and the contrast panel against Figure 4 was removed on
-2026-09-21.
+Identical to Figure 1 except `[student].weight_noise` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}
+(`NOISE_LEVELS` in `run_grid_search.py`); noise 0 is Figure 1.

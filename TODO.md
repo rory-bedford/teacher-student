@@ -15,7 +15,7 @@ larger on perturbations than on held-out stimuli. Do not make that claim in the 
 connections (Figure 4's dropout) showed the asymmetry, and the wrong-connectome controls were bad
 at both.
 
-Not implemented: SMOKETEST.md section 3 (free running).
+Not implemented: the free-running variant (perturbation without teacher forcing).
 
 ## Planned
 
@@ -61,12 +61,6 @@ the teacher's. Details to come.
 
 ## Deferred — not for the Bernstein talk
 
-### Tidy the READMEs once everything has run
-
-These READMEs are written as instructions to an agent. Once the runs are done and the figures exist, strip out everything that was scaffolding: the "needs running / reusable" status sections, the pointers to the archive, the minimal-edits instructions, open questions that have been answered, and the rationale for design choices already made.
-
-What should remain is a record of what each experiment *was* — configuration, evaluation protocol, panels, file contents — so the folders read as documentation of the work rather than as a task list.
-
 ### Further perturbations
 
 Other interventions (stimulate one assembly, ablate a cell type) and applying the perturbation
@@ -78,7 +72,7 @@ Optional, only if the talk has room after rehearsal. The 10% endpoint of Figure 
 
 ### Real Dp connectome figure
 
-Dropped from the talk. The material exists in `archive-old-figures/input_cumulative_volume.*`: for each proofread cell, how much of its input volume is captured as presynaptic partners are resolved, split spiny (E) / smooth (I).
+Dropped from the talk. The material was `archive-old-figures/input_cumulative_volume.*`, removed from the repo on 2026-09-21 and recoverable from git history: for each proofread cell, how much of its input volume is captured as presynaptic partners are resolved, split spiny (E) / smooth (I).
 
 Headline numbers, if ever wanted: spiny cells have a median of 700 presynaptic partners and need ~456 of them for 90% of input volume; smooth cells have ~48 and need ~24. At a 10% budget, resolving partners at random captures ~10% of input volume.
 
@@ -89,6 +83,24 @@ Caveat before any use: the smooth-cell partner count may be detection-limited on
 Deferred entirely. Would be the same experiment as Figure 6 with a non-random rule for choosing the reconstructed segment S — a connected subpopulation rather than a random draw — at matched budget.
 
 ## Decisions log
+
+### 2026-09-21
+
+- **Figure 2 plots four conditions:** full connectome, learnt recurrence, shuffled weights
+  (each neuron's input weights permuted within cell type) and shuffled topology (the
+  configuration model). The global weight shuffle is still trained and in the CSVs but not
+  plotted.
+- **Learnt recurrence gets 100 epochs**, like every other learnt-weights model: at 50 its
+  observed score was still descending (-0.0045 per chunk), so 0.726 was incomplete
+  optimisation rather than a limit of the model.
+- **Resume is real:** the library's checkpoints now carry scheduler state as well as model,
+  optimiser, scaler, simulation state and RNG (`connectome-snns` c8c7742).
+- **Colour scheme cut to six data colours plus three neutrals**, each with one meaning across
+  every slide (`COLORSCHEME.txt`). Blue is what you are given, orange what the model infers.
+- **Repo cleaned for publication:** `archive/`, `archive-old-figures/`, `PRIORITY.md` and the
+  Figure 1 smoke-test spec and script were removed (all in git history), the teacher notebook
+  was stripped of its embedded outputs, and the figure READMEs were rewritten as a record of
+  what ran rather than instructions for running it.
 
 ### 2026-09-18
 

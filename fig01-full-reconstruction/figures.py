@@ -102,7 +102,7 @@ def scatters(rates, held_out):
 
 
 def condition_label(factors, condition):
-    """ "Fully observed" / "10% observed", from the runs' own observed fraction."""
+    """ "Fully observed" / "50% observed", from the runs' own observed fraction."""
     rows = factors[factors["observed"] == condition]
     if rows.empty:
         return condition

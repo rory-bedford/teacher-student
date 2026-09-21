@@ -2,7 +2,7 @@ script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig04-reconstr
 output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig04-reconstruction-errors"
 parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig04-reconstruction-errors/parameters.toml"
 log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
-description = "Figure 4: neuron removal vs synapse dropout, 10% of retained neurons observed."
+description = "Figure 4: neuron removal vs synapse dropout, 50% of retained neurons observed."
 
 [data]
 
@@ -20,5 +20,5 @@ project = "bernstein"
 name = ""
 entity = ""
 group = "fig04-reconstruction-errors"
-tags = ["fig04", "reconstruction-errors", "ff-known", "obs-10", "wn-0"]
+tags = ["fig04", "reconstruction-errors", "ff-known", "obs-50", "wn-0"]
 notes = "Neuron removal vs synapse dropout."

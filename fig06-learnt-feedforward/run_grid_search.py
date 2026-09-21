@@ -1,4 +1,4 @@
-"""Figure 6 — six reconstructed fractions x three seeds, plus one fully observed run (19 runs).
+"""Figure 6 — ten reconstructed fractions x three seeds, plus one fully observed run (31 runs).
 
 Runs are ordered seed by seed, from the 10% endpoint up. The fully observed control
 (every modelled neuron in the loss, 10% reconstructed) follows the first seed's sweep.

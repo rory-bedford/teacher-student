@@ -38,10 +38,10 @@ from common.plotting import (
 from common.style import (
     LEGEND_GREY,
     OBSERVED,
-    UNOBSERVED,
     PAIR,
     SINGLE,
     TICK_SIZE,
+    UNOBSERVED,
     apply_style,
     ceiling,
     clear_panels,

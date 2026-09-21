@@ -41,7 +41,7 @@ from common.evaluation import (
 from common.perturbation import collect_perturbation
 
 HERE = Path(__file__).resolve().parent
-#: Panel (d) shows the scaling factors recovered when EVERY modelled neuron is observed:
+#: Panel (e) shows the scaling factors recovered when EVERY modelled neuron is observed:
 #: the check that the six parameters are identifiable at all. Those runs live in Figure
 #: 2's grid (they are no longer part of its figure). Partial observation and the other
 #: degradations compensate instead of recovering, which the other figures report.
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         "--fully-observed",
         type=Path,
         default=Path(load_experiment_config(FULLY_OBSERVED_GRID)["output_dir"]),
-        help="grid holding the fully observed runs for panel (d)",
+        help="grid holding the fully observed runs for panel (e)",
     )
     args = parser.parse_args()
     main(args.runs, args.out, args.fully_observed)

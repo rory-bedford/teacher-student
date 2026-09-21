@@ -2,7 +2,7 @@ script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig01-full-rec
 output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig01-full-reconstruction"
 parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig01-full-reconstruction/parameters.toml"
 log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
-description = "Figure 1: full reconstruction, 10% of neurons observed, 6 scaling factors trained. Baseline for Figures 2-5."
+description = "Figure 1: full reconstruction, 50% of neurons observed, 6 scaling factors trained. Baseline for Figures 2-5."
 
 [data]
 
@@ -20,5 +20,5 @@ project = "bernstein"
 name = ""
 entity = ""
 group = "fig01-full-reconstruction"
-tags = ["fig01", "full-reconstruction", "ff-known", "obs-10", "recur-100", "wn-0"]
-notes = "Full reconstruction, 10% observed."
+tags = ["fig01", "full-reconstruction", "ff-known", "obs-50", "recur-100", "wn-0"]
+notes = "Full reconstruction, 50% observed."

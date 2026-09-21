@@ -1,18 +1,7 @@
-# Shared methods — read before any figure README
+# Shared methods
 
-Conventions common to every figure in this directory. Individual figure READMEs specify only what differs.
-
----
-
-## Implementation: minimal edits to existing code
-
-**The code for all of this already exists.** Every figure below is a small variation on runs that have already been done. Do not rebuild anything.
-
-Start by reading the archived figures in `archive-old-figures/` and the scripts and configs that produced them. They establish the model, the teacher-forcing scheme, the training loop, the metrics and every hyperparameter.
-
-**All hyperparameters are already determined and should be reused unchanged** — regularisation on the learnt feedforward weights, their initialisation, optimiser and schedule, number of epochs, how weight noise is constructed, the stimulus set and the train/test split. Do not re-tune them.
-
-For each figure, **read the relevant values off the existing implementation and record them in that figure's README**, so the settings are documented rather than rediscovered. Where a figure README leaves something unspecified, the existing code is the authority.
+Conventions common to every figure in this directory. Individual figure READMEs specify
+only what differs. Hyperparameters are recorded in each figure's README, as run.
 
 ---
 
@@ -76,11 +65,11 @@ Where part of the network is not reconstructed, units outside the reconstructed 
 
 ---
 
-## Teacher forcing — what "two layer" / "three layer" means in the archive
+## Teacher forcing — what "two layer" / "three layer" means
 
 **Everything in this project is teacher forced.** Wherever a presynaptic neuron's true activity is known, the ground truth is injected instead of the simulated value. This reduces variance and prevents error accumulation through the recurrent loop; it is a training and stability device, not a different model.
 
-Concretely, in the archived ff-learnt run the implementation has three parts:
+Concretely, the implementation has three parts:
 
 1. **Feedforward units** — recorded activity, injected. Never simulated.
 2. **Unobserved recurrent neurons** — genuinely recurrent among themselves, because their activity is unknown and must be simulated. They additionally receive the **recorded** neurons' true activities, injected through the correct connectome weights and scaling factors.
@@ -118,11 +107,11 @@ Gaussian noise **added** to existing weights, then rescaled so the **mean and va
 
 ## Figure conventions
 
-- Fixed colours across all figures for: full connectome, learnt recurrence, shuffle weights, configuration-model rewire, observed, unobserved, floor. Never reassigned.
+- Fixed colours across all figures, never reassigned: see `COLORSCHEME.txt` for what each one means and `common/style.py` for the semantic names figures import.
 - Titles state the finding, not the topic.
 - Vector output at final size; axis fonts legible at 12 cm wide on a projected slide.
 - **One SVG per panel**, `figNN-<letter>-<slug>.svg`, at the size it is inserted into the talk at 100%. A rebuild deletes that figure's existing panels first (`common.style.clear_panels`), so an orphan from an earlier build cannot end up on a slide.
-- Style is the archived paper figures, shared in `common/style.py`; the same panel functions serve `placeholder_figures/`, which only adds a watermark and fake CSVs.
+- Style is the paper-figure style of the earlier work, shared in `common/style.py`; the same panel functions serve `placeholder_figures/`, which only adds a watermark and fake CSVs.
 - **Fluctuation R² only** outside the rate scatters (2026-09-18): Activity R² is still scored and kept in every CSV, but the scatters are where rates are reported.
 - Rate scatters are linear over **0-40 Hz**; cells beyond are counted in the axis label, not plotted.
 - Each figure folder carries its own `README.md`, named CSVs, `analysis.py`, `figures.py`, the panel SVGs, and the run config.

@@ -20,5 +20,5 @@ project = "bernstein"
 name = ""
 entity = ""
 group = "fig02-controls"
-tags = ["fig02", "controls", "ff-known", "obs-10", "recur-100", "wn-0"]
-notes = "Connectivity controls at 10% observed."
+tags = ["fig02", "controls", "ff-known", "obs-50", "recur-100", "wn-0"]
+notes = "Connectivity controls at 50% observed."

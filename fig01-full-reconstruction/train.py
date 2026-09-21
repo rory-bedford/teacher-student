@@ -1,4 +1,4 @@
-"""Figure 1 — train the fully reconstructed student (10% of neurons observed).
+"""Figure 1 — train the fully reconstructed student (50% of neurons observed).
 
 The student and training loop are shared by every figure (``common/``); what this
 figure trains is set entirely by ``parameters.toml``.

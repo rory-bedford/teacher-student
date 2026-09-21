@@ -9,19 +9,21 @@ This repo holds the **experiment code**; it consumes the **connectome-snns** lib
 (simulators, run framework, dataloaders, analysis, visualization) as an editable dependency.
 Data is **not** stored here — it lives in `../bernstein`.
 
-Read `METHODS.md` first, then `PRIORITY.md`.
+Read [`METHODS.md`](METHODS.md) first: it defines the model, the teacher forcing, the
+metrics and the naming used everywhere. [`COLORSCHEME.txt`](COLORSCHEME.txt) defines what
+each colour means across the talk.
 
 | Dir | What it covers |
 |---|---|
 | `generate-teacher-activity/` | The teacher network + spike data → `bernstein/teacher-activity/` |
-| `common/` | Student construction, training, held-out evaluation and plotting shared by all figures |
+| `common/` | Student construction, training, held-out evaluation, perturbation and plotting shared by all figures |
 | `fig01-full-reconstruction/` | Full reconstruction, 50% observed (the baseline for Figs 2–5) |
-| `fig02-controls/` | Learnt recurrence, shuffled weights, configuration-model rewire |
-| `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 0.5% |
+| `fig02-controls/` | Learnt recurrence, shuffled weights, shuffled topology |
+| `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 1% |
 | `fig04-reconstruction-errors/` | Neuron removal vs synapse dropout |
-| `fig05-weight-noise/` | Weight-noise sweep |
+| `fig05-weight-noise/` | Weight-noise sweep, 0 → 0.5 |
 | `fig06-learnt-feedforward/` | Unreconstructed inputs with learnt weights, reconstructed fraction 100% → 10% |
-| `archive/` | Previous experiments and figures (reference only, not runnable as-is) |
+| `slurm/` | Cluster submission: code-snapshot arrays, diagnostic probes, run status |
 
 ## Setup
 
@@ -35,8 +37,13 @@ uv sync --extra cpu     # CPU
 ```bash
 ./run --grid fig01-full-reconstruction/experiment.toml   # train (code must be committed)
 uv run python fig01-full-reconstruction/analysis.py       # held-out evaluation -> CSVs
-uv run python fig01-full-reconstruction/figures.py        # CSVs -> fig01.svg
+uv run python fig01-full-reconstruction/figures.py        # CSVs -> one SVG per panel
 ```
 
-Each figure's `README.md` records its configuration, the archived settings it reuses, and
-where it departs from them.
+`analysis.py` evaluates every completed run on a held-out teacher trial and on the
+perturbation, caching both per run, and writes only the CSVs its figure needs.
+`figures.py` reads those CSVs and nothing else. Figures 2–5 read Figure 1's runs as their
+baseline condition.
+
+Each figure's `README.md` records its claim, its configuration, its evaluation protocol,
+its panels and the training recipe as run.
