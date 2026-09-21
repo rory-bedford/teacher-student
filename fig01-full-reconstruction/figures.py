@@ -12,9 +12,8 @@
 The per-neuron Fluctuation R² histogram was dropped on 2026-09-18: the raster and the
 rate scatters already show how well individual neurons are matched.
 
-Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
-100%. ``placeholder_figures/fig01-full-reconstruction/figures.py`` calls ``main`` here
-with a watermark and fake CSVs, so content edits show up in both.
+Style is the shared slide style (``common/style.py``), sized to drop into the talk at
+100%.
 """
 
 import argparse

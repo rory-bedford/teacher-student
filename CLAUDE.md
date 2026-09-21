@@ -17,25 +17,29 @@ environment; use `uvx ruff`.
 ## Repository Structure
 
 ```
-METHODS.md  TODO.md  COLORSCHEME.txt  # shared methods, deferred work, colour semantics
-generate-teacher-activity/            # makes the teacher network + spike data (the inputs)
+README.md  COLORSCHEME.txt            # how to run, shared methods, decisions, colours
+fig00-teacher-activity/               # makes the teacher network + spike data (the inputs)
 common/                               # student, training, evaluation, plotting shared by all figures
 fig01-full-reconstruction/  fig02-controls/  fig03-observed-fraction/
 fig04-reconstruction-errors/  fig05-weight-noise/  fig06-learnt-feedforward/
-slurm/                                # cluster arrays from code snapshots, probes, run status
 run                                   # wrapper over the connectome-snns run framework
 ```
 
 Each figure folder has `README.md`, `experiment.toml`, `parameters.toml`, `train.py`
 (a thin wrapper around `common.training`), `run_grid_search.py`, `analysis.py` and
 `figures.py`. What a figure trains is set entirely by `parameters.toml` — the
-`[student]` table selects the manipulation (see `common/structure.py`).
+`[student]` table selects the manipulation (see `common/structure.py`). `fig00` is the
+same shape but simulates instead of training, so its run script is `generate.py` and it
+has no grid.
+
+Cluster submission lives in `slurm/`, which is **gitignored** — tooling local to whichever
+machine submits, not provenance. Provenance is per run, inside the run folder.
 
 ## Data
 
 **All data lives in `../bernstein`** (`/tachyon/groups/scratch/gzenke/bedfrory/bernstein`),
 never in this repo and with no symlink to it. The teacher is `bernstein/teacher-activity/`
-(its config is `generate-teacher-activity/experiment.toml`); each figure writes to
+(its config is `fig00-teacher-activity/experiment.toml`); each figure writes to
 `bernstein/<figure-folder>/<run>/`. W&B project: `bernstein`, one group per figure.
 
 ## Workflow for a figure

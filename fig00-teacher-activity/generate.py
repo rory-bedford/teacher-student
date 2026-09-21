@@ -6,29 +6,38 @@ teacher spike train patterns using odour-modulated inputs.
 These patterns serve as targets for student network training.
 """
 
-import numpy as np
-import torch
-import toml
-import zarr
 import matplotlib.pyplot as plt
-from connectome_snns.synthetic_connectome import topology_generators, weight_assigners, cell_types
-from connectome_snns.dataloaders.unsupervised import (
-    InhomogeneousPoissonSpikeDataLoader,
+import numpy as np
+import toml
+import torch
+import zarr
+from connectome_snns.configs import SimulationConfig
+from connectome_snns.configs.conductance_based import (
+    FeedforwardLayerConfig,
+    RecurrentLayerConfig,
 )
-from connectome_snns.dataloaders.rate_processes import OrnsteinUhlenbeckRateProcess
+from connectome_snns.configs.odours import OdourInputConfig
 from connectome_snns.dataloaders.odourants import (
     generate_odour_firing_rates,
 )
-from connectome_snns.network_simulators.conductance_based.simulator import ConductanceLIFNetwork
+from connectome_snns.dataloaders.rate_processes import OrnsteinUhlenbeckRateProcess
+from connectome_snns.dataloaders.unsupervised import (
+    InhomogeneousPoissonSpikeDataLoader,
+)
+from connectome_snns.network_simulators.conductance_based.simulator import (
+    ConductanceLIFNetwork,
+)
 from connectome_snns.network_simulators.projections import make_frozen_projections
 from connectome_snns.snn_runners import SNNInference
-from connectome_snns.configs import SimulationConfig
-from connectome_snns.configs.conductance_based import RecurrentLayerConfig, FeedforwardLayerConfig
-from connectome_snns.configs.odours import OdourInputConfig
+from connectome_snns.synthetic_connectome import (
+    cell_types,
+    topology_generators,
+    weight_assigners,
+)
 from connectome_snns.visualization.dashboards import (
-    create_connectivity_dashboard,
     create_activity_dashboard,
     create_assembly_activity_dashboard,
+    create_connectivity_dashboard,
 )
 
 
@@ -180,8 +189,6 @@ def main(input_dir, output_dir, params_file):
     print(f"✓ Generated {num_odours} odour patterns")
     print(f"  Total patterns: {input_firing_rates_odour.shape[0]}")
 
-    batch_size = batch_size
-
     # Create Ornstein-Uhlenbeck rate process in pattern space
     # This modulates the odour patterns dynamically over time
     rate_process = OrnsteinUhlenbeckRateProcess(
@@ -312,7 +319,7 @@ def main(input_dir, output_dir, params_file):
 
     # Reopen zarr to inspect what was saved
     root = zarr.open_group(zarr_path, mode="r")
-    for key in root.keys():
+    for key in root:
         print(f"  - {key}: {root[key].shape}")
 
     # =========================================================

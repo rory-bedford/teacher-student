@@ -1,7 +1,6 @@
 """Paper-figure style of the earlier Dp work, resized for slides.
 
-Shared by each figure's ``figures.py`` and by the PLACEHOLDER builds in
-``placeholder_figures/``, which call the same panel functions with a watermark.
+Shared by every figure's ``figures.py``.
 
 One file per panel. Sizes are the native size to insert into PowerPoint at 100%:
 its poster fonts (18 / 19.2 / 21.6 pt on 12-inch figures) are scaled down
@@ -111,8 +110,9 @@ def clear_panels(out_dir, figure, suffix=""):
 def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
     """``<out_dir>/<figure>-<letter>-<slug><suffix>.svg``, e.g. fig01-a-raster.svg.
 
-    ``decorate`` is called with the figure just before saving (the placeholder builds
-    pass their watermark), so one panel function serves both the real and fake data.
+    ``decorate`` is called with the figure just before saving and ``suffix`` is appended
+    to the file name, so a caller can emit a marked-up variant of a panel (a draft
+    watermark, say) without touching the panel function.
     """
     if decorate is not None:
         decorate(fig)

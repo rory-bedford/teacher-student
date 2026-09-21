@@ -12,9 +12,8 @@ job for the slide deck rather than a panel.
 Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
 reported by the scatter panels of figures 1 and 3.
 
-Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
-100%. ``placeholder_figures/fig05-weight-noise/figures.py`` calls ``main`` here with a
-watermark and fake CSVs, so content edits show up in both.
+Style is the shared slide style (``common/style.py``), sized to drop into the talk at
+100%.
 
 """
 

@@ -10,9 +10,8 @@ Two panels (2026-09-21). The rate scatters went first -- they were the only pane
 quoting Activity R², which no other panel reports -- and then the raster: the sweep
 carries the result. Both tables are still written by analysis.py.
 
-Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
-100%. ``placeholder_figures/fig06-learnt-feedforward/figures.py`` calls ``main`` here with
-a watermark and fake CSVs, so content edits show up in both.
+Style is the shared slide style (``common/style.py``), sized to drop into the talk at
+100%.
 
 Groups follow analysis.py: "observed" are modelled neurons in the loss, "heldout" are
 modelled neurons that are simulated and never in the loss.

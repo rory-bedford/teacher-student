@@ -12,7 +12,7 @@ The perturbation rows need the teacher's calibrated current
 (``slurm/submit_perturbation.sh``); without it only the held-out rows are written.
 
 The teacher's dimensionality (the band marked on panel a) is not computed here: figures.py
-reads generate-teacher-activity/teacher_dimensionality.csv (generate-teacher-activity/dimensionality.py).
+reads fig00-teacher-activity/fig00_dimensionality.csv (fig00-teacher-activity/analysis.py).
 """
 
 import argparse

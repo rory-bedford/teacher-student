@@ -1,0 +1,3 @@
+pathway,drive,drive_fraction,n_trials,seconds_per_trial
+Feedforward,31953292.705406666,0.2940445113042232,50,15.0
+Recurrent Excitatory,76714924.10190272,0.7059554886957767,50,15.0

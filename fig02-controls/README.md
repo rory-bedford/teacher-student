@@ -1,6 +1,6 @@
 # Figure 2 — The connectome is what's doing the work
 
-> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
 **Claim:** the recovery in Figure 1 comes from the measured connectome, not from the flexibility of the model. Controls that discard or scramble connectivity fail, at the same training budget and on the same held-out stimuli.
 
@@ -103,6 +103,12 @@ fig02-controls/
 - Learnt recurrence is the control people will ask about — it is the standard
   data-constrained RNN. Put its parameter count beside the constrained model's 6 on the
   slide.
+- **There is no graded version of the wrong-connectome controls, and that is a property of
+  shuffling, not an omission.** Untrained damage scans: at equal per-neuron weight
+  correlation (0.99), weight noise costs 0.22 Fluctuation R² while a shuffle costs 0.78.
+  Only shuffling 1–2% of synapses lands anywhere in between, and dynamically that is the
+  same manipulation as mild weight noise — which is Figure 5's sweep. So the controls here
+  are all-or-nothing by construction, and the graded axis is Figure 5's.
 
 ## Implementation (recorded settings)
 

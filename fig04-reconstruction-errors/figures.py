@@ -15,8 +15,6 @@ reported by the scatter panels of figures 1 and 3.
 
 Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
 100%: both metrics per error model, Activity ``o-`` and Fluctuation ``s--``.
-``placeholder_figures/fig04-reconstruction-errors/figures.py`` calls ``main`` here with a
-watermark and fake CSVs, so content edits show up in both.
 """
 
 import argparse

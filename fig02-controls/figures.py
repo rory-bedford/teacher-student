@@ -14,9 +14,8 @@ scored and kept in the CSVs but not plotted (rates are reported by the scatter p
 Figures 1 and 3), and the connectivity schematic was dropped -- it belongs on a slide of
 its own, not in this figure.
 
-Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
-100%. ``placeholder_figures/fig02-controls/figures.py`` calls ``main`` here with a
-watermark and fake CSVs, so content edits show up in both.
+Style is the shared slide style (``common/style.py``), sized to drop into the talk at
+100%.
 
 Plots ``PLOTTED_VARIANTS``, a subset of the variants analysis.py scores: the weight
 shuffle is trained and scored but not shown (see the constant).

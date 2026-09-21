@@ -17,8 +17,6 @@ to half the ceiling (near), and the lowest fraction run (below). Pass
 Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
 100%. Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
 reported by the scatter panel instead.
-``placeholder_figures/fig03-observed-fraction/figures.py`` calls ``main`` here with a
-watermark and fake CSVs, so content edits show up in both.
 """
 
 import argparse
@@ -62,7 +60,7 @@ FIGURE = "fig03"
 #: A figure's own ``fig03_dimensionality.csv`` wins if present (the PLACEHOLDER build
 #: estimates one).
 TEACHER_DIMENSIONALITY = (
-    HERE.parent / "generate-teacher-activity" / "teacher_dimensionality.csv"
+    HERE.parent / "fig00-teacher-activity" / "fig00_dimensionality.csv"
 )
 DIMENSIONALITY_CSV = "fig03_dimensionality.csv"
 N_NEURONS = 5000

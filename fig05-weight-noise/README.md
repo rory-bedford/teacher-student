@@ -1,6 +1,6 @@
 # Figure 5 — Weight precision is not the binding constraint
 
-> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
 **Claim:** the model tolerates substantial error in synaptic weights. Compared against Figure 4, imprecise weights cost far less than missing connections — so the limiting factor is what you have reconstructed, not how accurately you have measured it.
 

@@ -1,6 +1,6 @@
 # Figure 6 — Unreconstructed inputs break prediction of unobserved neurons
 
-> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
 **The climax of the talk.**
 

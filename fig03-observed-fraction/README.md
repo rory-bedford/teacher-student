@@ -1,6 +1,6 @@
 # Figure 3 — How few neurons do you need to observe?
 
-> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
 **Claim:** with the connectome fully reconstructed, unobserved neurons are recovered even when the great majority of the network is never observed — and there is a threshold below which this fails.
 
@@ -110,11 +110,11 @@ here.
 
 ### Dimensionality
 
-Computed once for the teacher by `generate-teacher-activity/dimensionality.py` (not by this
+Computed once for the teacher by `fig00-teacher-activity/analysis.py` (not by this
 figure's analysis): all 5000 neurons, all 50 training trials with the first 2 s of each
 discarded, smoothed with the same 50 ms Gaussian as Fluctuation R², then the participation
 ratio (Σλ)²/Σλ² of the pooled neuron × neuron covariance: **41.4** (90% of variance in 236
-PCs). `figures.py` reads `generate-teacher-activity/teacher_dimensionality.csv` and marks the
+PCs). `figures.py` reads `fig00-teacher-activity/fig00_dimensionality.csv` and marks the
 90%-variance count on panel (a)'s observed-neuron axis rather than in a separate panel.
 
 The pooled training-trial estimate is used in preference to a held-out one (2026-09-17): the

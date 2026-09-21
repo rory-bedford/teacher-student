@@ -1,6 +1,6 @@
 # Figure 4 — Reconstruction errors: does it matter *how* you lose input?
 
-> Model, teacher forcing, metrics, the noise ceiling and naming: see [`../METHODS.md`](../METHODS.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
 **Claim:** prediction degrades with the amount of synaptic input missing from the model — but two error models that remove the same amount of input do not cost the same. Losing a whole presynaptic *source* is worse than losing scattered synapses.
 
