@@ -234,6 +234,9 @@ def perturbation_sweep(
 #: so the axis is cut rather than scaled, as for the rate scatters. 25 Hz keeps the
 #: targeted cells' negative arm on the plot while filling the frame (2026-09-21).
 DELTA_MAX_HZ = 25.0
+#: The delta scatter holds far fewer points than a rate scatter, so markers of the same
+#: nominal area read smaller. Sized up to match them by eye (2026-09-21).
+DELTA_MARKER_SIZE = RATE_MARKER_SIZE * 2.2
 
 
 def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX_HZ):
@@ -269,7 +272,7 @@ def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX
         ax.scatter(
             subset["teacher_delta_rate_hz"],
             subset["student_delta_rate_hz"],
-            s=RATE_MARKER_SIZE,
+            s=DELTA_MARKER_SIZE,
             alpha=0.5,
             color=color,
             marker=marker,
