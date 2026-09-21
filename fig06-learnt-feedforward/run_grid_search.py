@@ -19,7 +19,11 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-RECONSTRUCTED_FRACTIONS = [0.1, 0.2, 0.3, 0.5, 0.7, 1.0]
+#: Even steps of 0.1 (2026-09-21, was [0.1, 0.2, 0.3, 0.5, 0.7, 1.0]): the collapse is at
+#: the TOP of this sweep -- held-out R² falls 0.97 -> 0.42 between full reconstruction and
+#: 70%, then is flat and negative below 30% -- so the range from 0.7 to 1.0 needed
+#: resolving, not the bottom end.
+RECONSTRUCTED_FRACTIONS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 FULLY_OBSERVED = {"reconstructed_fraction": 0.1, "seed": 44}
 
 

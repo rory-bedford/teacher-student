@@ -112,7 +112,7 @@ def r2_title(label, summary, group, seed=None):
     for metric, short in (("fluctuation_r2", "Flu"), ("activity_r2", "Act")):
         m = rows[rows["metric"] == metric]
         lines.append(
-            f"{short} R² {m['value'].mean():.2f} [ceiling {m['ceiling_value'].mean():.2f}]"
+            f"{short} R² {m['value'].mean():.2f} [noise ceiling {m['ceiling_value'].mean():.2f}]"
         )
     return "\n".join(lines)
 

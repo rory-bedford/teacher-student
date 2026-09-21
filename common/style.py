@@ -323,7 +323,7 @@ def sweep_legend(
         ]
     if ceiling_line:
         handles.append(
-            Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling")
+            Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling")
         )
     handles += list(extra)
     inside = bbox_to_anchor is None

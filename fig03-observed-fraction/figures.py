@@ -223,7 +223,7 @@ def delta_sweep(summary, metric, dimensionality):
     ax.legend(
         handles=[
             Line2D([], [], color=UNOBSERVED_COLOR, linewidth=6, label="Unobserved"),
-            Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling"),
+            Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
         ]
         + markers,
         loc="lower left",

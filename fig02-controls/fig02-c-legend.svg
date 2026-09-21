@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-21T14:01:24.179489</dc:date>
+    <dc:date>2026-09-21T14:03:51.129626</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -570,15 +570,72 @@ L 36 68.321719
 " style="fill: none; stroke-dasharray: 1.5,2.475; stroke-dashoffset: 0; stroke: #404040; stroke-width: 1.5"/>
    </g>
    <g id="text_4">
-    <!-- Ceiling -->
+    <!-- Noise Ceiling -->
     <g style="fill: #262626" transform="translate(45.6 72.521719) scale(0.12 -0.12)">
-     <use xlink:href="#ArialMT-26"/>
-     <use xlink:href="#ArialMT-48" transform="translate(72.21875 0)"/>
+     <defs>
+      <path id="ArialMT-31" d="M 488 0 
+L 488 4581 
+L 1109 4581 
+L 3516 984 
+L 3516 4581 
+L 4097 4581 
+L 4097 0 
+L 3475 0 
+L 1069 3600 
+L 1069 0 
+L 488 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="ArialMT-56" d="M 197 991 
+L 753 1078 
+Q 800 744 1014 566 
+Q 1228 388 1613 388 
+Q 2000 388 2187 545 
+Q 2375 703 2375 916 
+Q 2375 1106 2209 1216 
+Q 2094 1291 1634 1406 
+Q 1016 1563 777 1677 
+Q 538 1791 414 1992 
+Q 291 2194 291 2438 
+Q 291 2659 392 2848 
+Q 494 3038 669 3163 
+Q 800 3259 1026 3326 
+Q 1253 3394 1513 3394 
+Q 1903 3394 2198 3281 
+Q 2494 3169 2634 2976 
+Q 2775 2784 2828 2463 
+L 2278 2388 
+Q 2241 2644 2061 2787 
+Q 1881 2931 1553 2931 
+Q 1166 2931 1000 2803 
+Q 834 2675 834 2503 
+Q 834 2394 903 2306 
+Q 972 2216 1119 2156 
+Q 1203 2125 1616 2013 
+Q 2213 1853 2448 1751 
+Q 2684 1650 2818 1456 
+Q 2953 1263 2953 975 
+Q 2953 694 2789 445 
+Q 2625 197 2315 61 
+Q 2006 -75 1616 -75 
+Q 969 -75 630 194 
+Q 291 463 197 991 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#ArialMT-31"/>
+     <use xlink:href="#ArialMT-52" transform="translate(72.21875 0)"/>
      <use xlink:href="#ArialMT-4c" transform="translate(127.828125 0)"/>
-     <use xlink:href="#ArialMT-4f" transform="translate(150.046875 0)"/>
-     <use xlink:href="#ArialMT-4c" transform="translate(172.265625 0)"/>
-     <use xlink:href="#ArialMT-51" transform="translate(194.484375 0)"/>
-     <use xlink:href="#ArialMT-4a" transform="translate(250.09375 0)"/>
+     <use xlink:href="#ArialMT-56" transform="translate(150.046875 0)"/>
+     <use xlink:href="#ArialMT-48" transform="translate(200.046875 0)"/>
+     <use xlink:href="#ArialMT-3" transform="translate(255.65625 0)"/>
+     <use xlink:href="#ArialMT-26" transform="translate(283.4375 0)"/>
+     <use xlink:href="#ArialMT-48" transform="translate(355.65625 0)"/>
+     <use xlink:href="#ArialMT-4c" transform="translate(411.265625 0)"/>
+     <use xlink:href="#ArialMT-4f" transform="translate(433.484375 0)"/>
+     <use xlink:href="#ArialMT-4c" transform="translate(455.703125 0)"/>
+     <use xlink:href="#ArialMT-51" transform="translate(477.921875 0)"/>
+     <use xlink:href="#ArialMT-4a" transform="translate(533.53125 0)"/>
     </g>
    </g>
   </g>

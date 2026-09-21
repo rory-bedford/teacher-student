@@ -176,7 +176,9 @@ def legend(summary):
         for v in PLOTTED_VARIANTS
         if v in present
     ]
-    handles.append(Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling"))
+    handles.append(
+        Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling")
+    )
     fig = plt.figure(figsize=(2.1, 0.42 * len(handles) + 0.2))
     fig.legend(handles=handles, loc="center", ncol=1, frameon=True)
     return fig
