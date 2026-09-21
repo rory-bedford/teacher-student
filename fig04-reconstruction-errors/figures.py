@@ -29,9 +29,13 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from connectome_snns.visualization import (
+    NEURON_REMOVAL_COLOR,
+    SYNAPSE_DROPOUT_COLOR,
+)
+
 from common.plotting import METRIC_LABELS, PERTURBATION_TITLE, pool_populations
 from common.style import (
-    UNOBSERVED,
     SINGLE,
     TICK_SIZE,
     apply_style,
@@ -44,11 +48,10 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig04"
-#: Both series report the unobserved population, so both take its colour and are told
-#: apart by line style: the figure's subject is how much input is lost, not which way.
+#: One fixed accent per error model, as Figure 2 does for its conditions.
 MODELS = {
-    "neuron_removal": ("Neuron Removal", UNOBSERVED, "-"),
-    "synapse_dropout": ("Synapse Dropout", UNOBSERVED, "--"),
+    "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR, "-"),
+    "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR, "-"),
 }
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).

@@ -44,7 +44,7 @@ PERTURBATION_SERIES = (
 #: The series are the unobserved cells that were NOT targeted, E and I pooled; the value
 #: is the change the intervention caused, perturbed minus unperturbed.
 PERTURBATION_TITLE = "Inhibiting 25% of Unobserved I Cells (Δ = On − Off)"
-PERTURBATION_LABEL = "Unobserved, Not Targeted (E + I)"
+PERTURBATION_LABEL = "Unobserved, Not Targeted"
 
 
 def use_talk_style():
