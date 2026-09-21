@@ -101,7 +101,7 @@ RASTER_NEURONS = 10
 #: The rule keeps neurons whose strongest mitral synapse is no larger than the network
 #: median and, among those, takes the one firing closest to its cell type's mean rate --
 #: the same "typical cell" rule the library's activity dashboard uses to pick a neuron.
-TRACE_CELL_TYPE = "inhibitory"
+TRACE_CELL_TYPE = "excitatory"
 CONDUCTANCE_NEURONS = 10
 SAMPLE_SEED = 42
 #: The assembly panels follow the library's assembly dashboard: excitatory neurons only,
@@ -118,10 +118,13 @@ SAMPLE_SEED = 42
 #: averaged away is the recurrent fluctuation. At 500 ms the dominant assembly sits 1.3
 #: times the other assemblies' SD above its own mean; at 50 ms, 0.7 times.
 ASSEMBLY_SMOOTHING_MS = 500.0
-#: The assembly panels use the trial with the most concentrated odourant rather than the
-#: raster's trial, since a trial whose stimulus is an even blend has nothing to show. The
-#: general strength of the effect is the across-trial number quoted above, not this trial.
-ASSEMBLY_TRIAL = None  # chosen in step_assemblies
+#: The assembly panels use the trial with the cleanest SWITCH between two odourants,
+#: rather than the raster's trial: a trial whose stimulus is an even blend has nothing to
+#: show, and one held on a single odourant shows a level rather than a change. The trial
+#: is scored by how long each of its two leading odourants leads and how strongly it is
+#: mixed while leading. The general strength of the effect is the across-trial number
+#: quoted above, not this trial. ``--assembly-trial`` overrides the choice.
+ASSEMBLY_TRIAL = None
 #: Both panels are line plots of a 10 s window, so 1 ms resolution is far finer than the
 #: ink: every fifth sample is stored, which is ten per smoothing kernel.
 ASSEMBLY_STRIDE = 5
@@ -497,6 +500,40 @@ def step_dynamics(teacher, out_dir, device):
     print(f"  dynamics: neuron {traced} traced over {TRACE_SECONDS:.0f} s")
 
 
+def choose_assembly_trial(data, steps):
+    """The trial with the cleanest switch, and its two leading odourants in time order.
+
+    Scored by how long each of the two leading odourants leads the mixture and how
+    strongly it is mixed while leading, so the panels show one odourant giving way to
+    another rather than a single sustained level. See ``ASSEMBLY_TRIAL``.
+    """
+    weights = np.asarray(data["weights"][:, :steps, :])
+    best, chosen, leaders = -1.0, 0, (0, 0)
+    for trial in range(weights.shape[0]):
+        leading = weights[trial].argmax(axis=1)
+        share = np.bincount(leading, minlength=weights.shape[2]) / leading.size
+        first, second = np.argsort(share)[::-1][:2]
+        strength = [weights[trial][leading == k, k].mean() for k in (first, second)]
+        # Strength counts twice: a trial where both odourants are strongly on either
+        # side of the switch reads better than one that splits its time evenly between
+        # two weak mixtures.
+        score = min(share[first], share[second]) * min(strength) ** 2
+        if score > best:
+            order = sorted(
+                (first, second), key=lambda k: np.flatnonzero(leading == k)[0]
+            )
+            best, chosen, leaders = score, trial, tuple(int(k) for k in order)
+    if ASSEMBLY_TRIAL is not None:
+        chosen = ASSEMBLY_TRIAL
+        leading = weights[chosen].argmax(axis=1)
+        share = np.bincount(leading, minlength=weights.shape[2])
+        top = np.argsort(share)[::-1][:2]
+        leaders = tuple(
+            int(k) for k in sorted(top, key=lambda k: np.flatnonzero(leading == k)[0])
+        )
+    return chosen, leaders
+
+
 def step_assemblies(teacher, out_dir, device):
     """The OU mixing trajectories and the assembly rates they produce.
 
@@ -506,10 +543,11 @@ def step_assemblies(teacher, out_dir, device):
     data = teacher.zarr
     steps = teacher.steps(RASTER_SECONDS)
     burn_in = teacher.steps(BURN_IN_SECONDS)
-    mixing = np.asarray(data["weights"][:, burn_in:, :]).mean(axis=1)
-    trial = int(mixing.max(axis=1).argmax())
-    dominant = int(mixing[trial].argmax())
+    trial, leaders = choose_assembly_trial(data, steps)
+    dominant = np.array(leaders, dtype=np.int32)
     weights = np.asarray(data["weights"][trial, :steps, :], dtype=np.float32)
+    mixing = weights.mean(axis=0)
+    mixing = weights.mean(axis=0)
     spikes = np.asarray(data["output_spikes"][trial, :steps, :])
     excitatory = teacher.cell_type_indices == teacher.cell_type_names.index(
         "excitatory"
@@ -549,14 +587,14 @@ def step_assemblies(teacher, out_dir, device):
         baseline_hz=baseline,
         assembly=assemblies.astype(np.int16),
         smoothing_ms=np.float32(ASSEMBLY_SMOOTHING_MS),
-        dominant=np.int32(dominant),
+        dominant=dominant,
         trial=np.int32(trial),
     )
     print(
         f"  assemblies: {assemblies.size} assemblies over {RASTER_SECONDS:.0f} s, "
         f"rates {rates.min():.1f}-{rates.max():.1f} Hz, mixing weight up to "
-        f"{weights.max():.2f}; trial {trial}, whose dominant odourant {dominant} "
-        f"holds a mean mixing weight of {mixing[trial, dominant]:.2f}"
+        f"{weights.max():.2f}; trial {trial}, led by odourants "
+        + " then ".join(f"{k} ({mixing[k]:.2f} mean weight)" for k in leaders)
     )
 
 
@@ -704,6 +742,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("--out", type=Path, default=HERE)
     parser.add_argument(
+        "--assembly-trial",
+        type=int,
+        help="trial for the assembly panels (default: the most concentrated odourant)",
+    )
+    parser.add_argument(
         "--steps",
         nargs="+",
         choices=list(STEPS),
@@ -715,4 +758,6 @@ if __name__ == "__main__":
         "--force", action="store_true", help="recompute even if the outputs exist"
     )
     args = parser.parse_args()
+    if args.assembly_trial is not None:
+        ASSEMBLY_TRIAL = args.assembly_trial
     main(args.teacher, args.out, args.steps, args.device, args.force)

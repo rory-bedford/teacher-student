@@ -64,6 +64,9 @@ from common.style import (
 )
 
 FIGURE = "fig00"
+#: Seconds of the traced neuron to draw. The whole 5 s window packs over a hundred spikes
+#: into the panel, where they read as bands rather than as spikes.
+TRACE_WINDOW_S = 2.0
 #: Each synapse type's colour is its presynaptic population's; AMPA and NMDA of one
 #: population share it and are separated by line style.
 SYNAPSE_STYLES = {
@@ -268,37 +271,61 @@ def neuron_traces(data):
     stored values are g(V - E_syn), which is negative for an excitatory synapse, hence
     the sign flip here.
     """
-    time_s = data["time_s"]
+    window = data["time_s"] <= TRACE_WINDOW_S
+    time_s = data["time_s"][window]
     synapses = list(data["synapse"])
-    current = -data["current_pa"]
-    leak = -data["leak_current_pa"]
+    current = -data["current_pa"][window]
+    leak = -data["leak_current_pa"][window]
     threshold = float(data["threshold_mv"])
     fig, axes = plt.subplots(2, 1, figsize=PAIR, sharex=True)
     # Five thousand samples per line: the traces are rasterized so the SVG stays small,
     # as the dense scatters are elsewhere. Text and axes remain vector.
-    axes[0].plot(time_s, data["voltage_mv"], color=INK, linewidth=0.8, rasterized=True)
-    spike_times = data["spike_time_s"]
+    axes[0].plot(
+        time_s,
+        data["voltage_mv"][window],
+        color=INK,
+        linewidth=0.8,
+        zorder=3,
+        rasterized=True,
+    )
+    spike_times = data["spike_time_s"][data["spike_time_s"] <= TRACE_WINDOW_S]
     if spike_times.size:
+        # Thinner than the trace and behind it: a fast cell fires often enough that
+        # full-weight spike lines read as a black band rather than as spikes.
         axes[0].vlines(
             spike_times,
             threshold,
             0.0,
             color=INK,
-            linewidth=0.8,
+            linewidth=0.6,
+            alpha=0.9,
+            zorder=1,
             rasterized=True,
         )
     axes[0].axhline(
-        threshold, color=REFERENCE_GREY, linestyle="--", linewidth=1, label="Threshold"
+        threshold,
+        color=REFERENCE_GREY,
+        linestyle="--",
+        linewidth=1.4,
+        zorder=2,
+        label=f"Threshold ({threshold:.0f} mV)",
     )
     axes[0].axhline(
         float(data["rest_mv"]),
         color=REFERENCE_GREY,
         linestyle=":",
-        linewidth=1,
-        label="Rest",
+        linewidth=1.4,
+        zorder=2,
+        label=f"Rest ({float(data['rest_mv']):.0f} mV)",
     )
     axes[0].set_ylabel("Membrane Potential (mV)")
-    axes[0].legend(loc="upper right", frameon=True, fontsize=TICK_SIZE)
+    thick_legend(
+        axes[0],
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+        frameon=True,
+        fontsize=TICK_SIZE,
+    )
     axes[0].set_title(
         f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s}): "
         "Membrane Potential and Input Currents"
@@ -403,11 +430,11 @@ def ou_trajectories(data):
         data,
         "mixing_weight",
         "Mixing Weight",
-        "Odourant Mixing Coefficient of One Trial",
+        "Odourant Mixing Coefficient",
     )
 
 
-def assembly_series(data, key, y_label, title):
+def assembly_series(data, key, y_label, title, label="Odourant"):
     """One line per assembly, in the shared assembly colours.
 
     The dominant odourant's own line is drawn heavier in both assembly panels, so the eye
@@ -415,9 +442,9 @@ def assembly_series(data, key, y_label, title):
     """
     fig, ax = plt.subplots(figsize=SINGLE)
     colors = assembly_colors(data["assembly"].size)
-    dominant = int(data["dominant"])
+    dominant = [int(k) for k in np.atleast_1d(data["dominant"])]
     for column in range(data["assembly"].size):
-        leading = column == dominant
+        leading = column in dominant
         ax.plot(
             data["time_s"],
             data[key][:, column],
@@ -425,7 +452,7 @@ def assembly_series(data, key, y_label, title):
             linewidth=1.8 if leading else 0.8,
             alpha=1.0 if leading else 0.65,
             zorder=3 if leading else 2,
-            label=f"Odourant {dominant}" if leading else None,
+            label=f"{label} {column}" if leading else None,
             rasterized=True,
         )
     thick_legend(ax, loc="upper right", frameon=True, fontsize=TICK_SIZE)
@@ -469,7 +496,8 @@ def assembly_rates(data):
         deviation,
         "deviation_hz",
         "Firing Rate − Assembly Mean (Hz)",
-        "Assembly Population Activity Against Each Assembly's Mean Over All Trials",
+        "Assembly Activity, Deviation From Its Mean",
+        label="Assembly",
     )
     fig.axes[0].axhline(0.0, color=REFERENCE_GREY, linewidth=1, zorder=1)
     return fig

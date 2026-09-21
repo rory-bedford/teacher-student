@@ -74,7 +74,7 @@ dynamics look like, and how high-dimensional the result is.
 | **(c)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
 | **(d)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
 | **(e)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
-| **(f)** | `neuron-traces` | one neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents |
+| **(f)** | `neuron-traces` | one excitatory neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents, over 2 s |
 | **(g)** | `conductances` | the same neuron's conductance, split excitatory / inhibitory / feedforward |
 | **(h)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
 | **(i)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
@@ -113,10 +113,13 @@ ordering and leaves the response.
 
 Two further choices make it legible, both of which the panel states:
 
-- **The trial is chosen, not fixed:** the one whose odourant is most concentrated (trial
-  44, mean mixing weight 0.79). A trial whose stimulus is an even blend has nothing to
-  show. The panels are therefore an illustration of the mechanism; its general strength is
-  the across-trial number below.
+- **The trial is chosen, not fixed:** the one with the cleanest **switch** between two
+  odourants, scored by how long each of its two leading odourants leads and how strongly
+  it is mixed while leading. That currently selects **trial 48**, where odourant 18 holds
+  a mixing weight near 1.0 from 2 to 6 s and then hands over to odourant 9. A trial whose
+  stimulus is an even blend has nothing to show, and one held on a single odourant shows a
+  level rather than a change. The panels are an illustration of the mechanism; its general
+  strength is the across-trial number below.
 - **Smoothing is 500 ms**, not the dashboard's 200 ms or Fluctuation R²'s 50 ms. The
   response to an odourant is a sustained offset across the whole trial, because the OU
   process has τ = 700 s against a 15 s trial, so what has to be averaged away is the
@@ -146,11 +149,16 @@ about 14 nS and its currents are dominated by that one synapse, with transients 
 1 nA. It is not a representative cell, and the dashboards never showed this because their
 axes are capped at the 98th percentile.
 
-`analysis.py` now *chooses* the traced neuron: among cells whose strongest mitral synapse
-is no larger than the network median, the one firing closest to its cell type's mean rate
-(the library's own "typical cell" rule). That currently selects **neuron 616**, an
-inhibitory cell at 19.1 Hz against a population mean of 19.1 Hz, whose strongest mitral
-synapse is 0.096 against a median of 0.288.
+`analysis.py` now *chooses* the traced neuron: among cells of `TRACE_CELL_TYPE` whose
+strongest mitral synapse is no larger than the network median, the one firing closest to
+its cell type's mean rate (the library's own "typical cell" rule). That currently selects
+**neuron 2947**, an excitatory cell at 4.2 Hz against a population mean of 4.2 Hz, whose
+strongest mitral synapse is 0.180 against a median of 0.288. Its currents show the
+balanced excitation and inhibition the dashboard shows, ±150 pA against a leak that
+tracks the mean.
+
+The panel draws **2 s** of the 5 s that `analysis.py` stores: spike lines over a longer
+window read as bands rather than as spikes.
 
 ## Feedforward weights are heavy-tailed, by a wider margin than the config implies
 
