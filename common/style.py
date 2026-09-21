@@ -203,6 +203,7 @@ def sweep_series(
     linestyle=None,
     seeds=False,
     errorbars=True,
+    x_group=None,
 ):
     """Seed mean ± SD of one series in the archived marker/line style.
 
@@ -210,9 +211,28 @@ def sweep_series(
     bimodal (Figure 3's low end, where a run either trains or collapses) the mean sits
     between two clusters and describes neither. With the seeds shown, ``errorbars=False``
     keeps the panel readable -- the points already carry the spread.
+
+    ``x_group`` is the column that identifies a condition when ``x_column`` is itself
+    measured per run (Figure 4 plots against the input volume each run actually lost, so
+    grouping by x alone would put every seed in its own group and thread the line through
+    individual runs instead of the means).
     """
     default_marker, default_linestyle, _ = METRIC_STYLES[metric]
-    stats = rows.groupby(x_column)["value"].agg(["mean", "std"]).reset_index()
+    if x_group is None:
+        stats = rows.groupby(x_column)["value"].agg(["mean", "std"]).reset_index()
+    else:
+        stats = (
+            rows.groupby(x_group)
+            .agg(
+                **{
+                    x_column: (x_column, "mean"),
+                    "mean": ("value", "mean"),
+                    "std": ("value", "std"),
+                }
+            )
+            .reset_index()
+            .sort_values(x_column)
+        )
     if seeds:
         ax.scatter(
             rows[x_column],
@@ -236,8 +256,22 @@ def sweep_series(
     )
 
 
-def ceiling(ax, rows, x_column, color):
-    stats = rows.groupby(x_column)["ceiling_value"].mean().reset_index()
+def ceiling(ax, rows, x_column, color, x_group=None):
+    """Dotted ceiling of one series; ``x_group`` as in :func:`sweep_series`."""
+    if x_group is None:
+        stats = rows.groupby(x_column)["ceiling_value"].mean().reset_index()
+    else:
+        stats = (
+            rows.groupby(x_group)
+            .agg(
+                **{
+                    x_column: (x_column, "mean"),
+                    "ceiling_value": ("ceiling_value", "mean"),
+                }
+            )
+            .reset_index()
+            .sort_values(x_column)
+        )
     ax.plot(
         stats[x_column],
         stats["ceiling_value"],

@@ -60,23 +60,34 @@ def curve(summary):
             (unobserved["error_model"] == model)
             & (unobserved["metric"] == "fluctuation_r2")
         ]
-        if not rows.empty:
-            # Plotted against the volume actually lost, not the nominal level: the two
-            # error models reach the same κ at different levels.
-            sweep_series(ax, rows, "mean_kappa_lost", "fluctuation_r2", color)
-        ceiling(
+        if rows.empty:
+            continue
+        # Plotted against the volume actually lost, not the nominal level: the two error
+        # models reach the same κ at different levels. Each run lost its own volume, so
+        # the line and the ceiling are grouped by level and placed at the level's mean κ,
+        # with the seeds scattered at their own (as in Figure 3).
+        sweep_series(
             ax,
-            unobserved[
-                (unobserved["error_model"] == model)
-                & (unobserved["metric"] == "fluctuation_r2")
-            ],
+            rows,
             "mean_kappa_lost",
+            "fluctuation_r2",
             color,
+            seeds=True,
+            errorbars=False,
+            x_group="level",
         )
+        ceiling(ax, rows, "mean_kappa_lost", color, x_group="level")
     ax.set_ylim(min(0.0, unobserved["value"].min() - 0.05), 1.0)
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel("Fluctuation R² (Unobserved)")
-    sweep_legend(ax, {label: color for label, color in MODELS.values()}, metrics=False)
+    sweep_legend(
+        ax,
+        {label: color for label, color in MODELS.values()},
+        metrics=False,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
     ax.set_title("Unobserved Neurons vs Input Volume Lost")
     fig.tight_layout()
     return fig
