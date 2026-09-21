@@ -28,12 +28,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import (
-    CONFIGURATION_MODEL_COLOR,
-    FULL_CONNECTOME_COLOR,
-    LEARNT_RECURRENCE_COLOR,
-    SHUFFLE_WEIGHTS_COLOR,
-)
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import MultipleLocator
@@ -41,7 +35,14 @@ from matplotlib.ticker import MultipleLocator
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import METRIC_LABELS, PERTURBATION_LABEL, pool_populations
-from common.style import LEGEND_GREY, apply_style, clear_panels, save
+from common.style import (
+    CONTROL_GREYS,
+    LEGEND_GREY,
+    MODEL,
+    apply_style,
+    clear_panels,
+    save,
+)
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig02"
@@ -63,12 +64,14 @@ VARIANT_LABELS = {
     "shuffle_weights_global": "Shuffled Weights (Whole Connectome)",
     "configuration_model": "Shuffled Topology",
 }
+#: The connectome is the condition we are arguing for, so it is the only coloured bar;
+#: the controls are greys, darkest first (COLORSCHEME.txt rule 2).
 VARIANT_COLORS = {
-    "full_connectome": FULL_CONNECTOME_COLOR,
-    "learnt_recurrence": LEARNT_RECURRENCE_COLOR,
-    "shuffle_weights": SHUFFLE_WEIGHTS_COLOR,
-    "shuffle_weights_global": SHUFFLE_WEIGHTS_COLOR,
-    "configuration_model": CONFIGURATION_MODEL_COLOR,
+    "full_connectome": MODEL,
+    "learnt_recurrence": CONTROL_GREYS[0],
+    "shuffle_weights": CONTROL_GREYS[1],
+    "shuffle_weights_global": CONTROL_GREYS[1],
+    "configuration_model": CONTROL_GREYS[2],
 }
 #: Two figures, each a row of subpanels, one per scored population (2026-09-21):
 #: (metric, [(group, cell_type, title), ...]).

@@ -28,11 +28,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import (
-    DIMENSIONALITY_COLOR,
-    OBSERVED_COLOR,
-    UNOBSERVED_COLOR,
-)
 from matplotlib.lines import Line2D
 from matplotlib.ticker import NullFormatter
 
@@ -46,9 +41,12 @@ from common.plotting import (
 )
 from common.style import (
     LEGEND_GREY,
+    MODEL,
+    REFERENCE_GREY,
     SINGLE,
     TICK_SIZE,
     TRIPLE,
+    UNOBSERVED,
     apply_style,
     ceiling,
     clear_panels,
@@ -69,8 +67,8 @@ TEACHER_DIMENSIONALITY = (
 DIMENSIONALITY_CSV = "fig03_dimensionality.csv"
 N_NEURONS = 5000
 GROUPS = {
-    "observed": ("Observed", OBSERVED_COLOR),
-    "unobserved": ("Unobserved", UNOBSERVED_COLOR),
+    "observed": ("Observed", MODEL),
+    "unobserved": ("Unobserved", UNOBSERVED),
 }
 
 
@@ -97,11 +95,11 @@ def dimensionality_markers(ax, dimensionality):
     is not marked -- it sits below everything tested and would imply the opposite.
     """
     fraction = dimensionality["n_pcs_90pct_var"] / N_NEURONS
-    ax.axvline(fraction, color=DIMENSIONALITY_COLOR, linewidth=1.6, alpha=0.9)
+    ax.axvline(fraction, color=REFERENCE_GREY, linewidth=1.6, alpha=0.9)
     label = (
         f"90% of Teacher Variance\n({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
     )
-    return [Line2D([], [], color=DIMENSIONALITY_COLOR, linewidth=1.6, label=label)]
+    return [Line2D([], [], color=REFERENCE_GREY, linewidth=1.6, label=label)]
 
 
 def observed_axis(ax, fractions):
@@ -217,11 +215,11 @@ def delta_sweep(summary, metric, dimensionality):
         pooled,
         "obs_fraction",
         metric,
-        UNOBSERVED_COLOR,
+        UNOBSERVED,
         seeds=True,
         errorbars=False,
     )
-    ceiling(ax, pooled, "obs_fraction", UNOBSERVED_COLOR)
+    ceiling(ax, pooled, "obs_fraction", UNOBSERVED)
     markers = dimensionality_markers(ax, dimensionality)
     observed_axis(ax, pooled["obs_fraction"].unique())
     ax.set_ylabel(METRIC_LABELS[metric])
@@ -230,7 +228,7 @@ def delta_sweep(summary, metric, dimensionality):
             Line2D(
                 [],
                 [],
-                color=UNOBSERVED_COLOR,
+                color=UNOBSERVED,
                 linewidth=6,
                 label=PERTURBATION_LABEL,
             ),

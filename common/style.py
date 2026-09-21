@@ -13,10 +13,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from connectome_snns.visualization import (
-    OBSERVED_COLOR,
+    FLOOR_COLOR,
+    NEUTRAL_BAR_COLOR,
     RASTER_BAND_COLOR,
+    SCATTER_NEUTRAL_COLOR,
     SLIDE_BLUE,
+    SLIDE_INK,
     SLIDE_RED,
+    SLIDE_YELLOW,
     use_project_style,
 )
 from matplotlib.lines import Line2D
@@ -28,10 +32,24 @@ from matplotlib.ticker import MultipleLocator
 # which reads as the same quantity from two sources and stays legible at line weight. The
 # dark slate and the yellow accent were tried first and were, respectively, too flat for
 # the teacher and too faint to carry a series.
-EXCITATORY = SLIDE_RED
-INHIBITORY = SLIDE_BLUE
-TEACHER = OBSERVED_COLOR
-STUDENT = SLIDE_BLUE
+# The five colours of COLORSCHEME.txt and nothing else. A colour means the same thing in
+# every figure: red is the truth, blue is the model, yellow is what the model cannot see,
+# slate is ink, and every control is grey -- told apart by shade and line style, never by
+# hue. Cell type is a marker shape (see MARKERS), because colour is already spent.
+TRUTH = SLIDE_RED
+MODEL = SLIDE_BLUE
+UNOBSERVED = SLIDE_YELLOW
+INK = SLIDE_INK
+#: Controls and ablations, darkest first. Three is the most any figure needs.
+CONTROL_GREYS = (SCATTER_NEUTRAL_COLOR, NEUTRAL_BAR_COLOR, FLOOR_COLOR)
+#: Reference lines: noise ceilings, dimensionality markers. Furniture, not data.
+REFERENCE_GREY = FLOOR_COLOR
+#: Cell type, wherever it is distinguished at all.
+MARKERS = {"excitatory": "o", "inhibitory": "^"}
+
+# Kept as aliases so the raster and the delta bars read naturally.
+TEACHER = TRUTH
+STUDENT = MODEL
 LEGEND_GREY = "#404040"
 
 TICK_SIZE = 12
@@ -120,10 +138,8 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     talk depends on. Pass ``clip=None`` to plot every cell.
     """
     limit = max_rate if clip is None else min(clip, max_rate)
-    for cell_type, color, name in (
-        ("inhibitory", INHIBITORY, "Inhibitory"),
-        ("excitatory", EXCITATORY, "Excitatory"),
-    ):
+    for cell_type, name in (("inhibitory", "Inhibitory"), ("excitatory", "Excitatory")):
+        color = INK
         subset = rates[rates["cell_type"] == cell_type]
         teacher = subset["teacher_rate_hz"]
         student = subset["student_rate_hz"]
@@ -134,8 +150,9 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
             teacher,
             student,
             s=RATE_MARKER_SIZE,
-            alpha=0.5,
+            alpha=0.45,
             color=color,
+            marker=MARKERS[cell_type],
             label=name,
             rasterized=True,
         )

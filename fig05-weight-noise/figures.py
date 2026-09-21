@@ -24,10 +24,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from connectome_snns.visualization import (
-    OBSERVED_COLOR,
-    UNOBSERVED_COLOR,
-)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -38,8 +34,10 @@ from common.plotting import (
     pool_populations,
 )
 from common.style import (
+    MODEL,
     SINGLE,
     TICK_SIZE,
+    UNOBSERVED,
     apply_style,
     ceiling,
     clear_panels,
@@ -51,8 +49,8 @@ from common.style import (
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig05"
 GROUPS = {
-    "observed": ("Observed", OBSERVED_COLOR),
-    "unobserved": ("Unobserved", UNOBSERVED_COLOR),
+    "observed": ("Observed", MODEL),
+    "unobserved": ("Unobserved", UNOBSERVED),
 }
 
 
@@ -137,17 +135,17 @@ def perturbation(summary, metric, ylim):
         pooled,
         "weight_noise",
         base_metric,
-        UNOBSERVED_COLOR,
+        UNOBSERVED,
         seeds=True,
         errorbars=False,
     )
-    ceiling(ax, pooled, "weight_noise", UNOBSERVED_COLOR)
+    ceiling(ax, pooled, "weight_noise", UNOBSERVED)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LABEL: UNOBSERVED_COLOR},
+        {PERTURBATION_LABEL: UNOBSERVED},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,

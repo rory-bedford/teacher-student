@@ -25,7 +25,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -38,6 +37,8 @@ from common.plotting import (
 )
 from common.style import (
     LEGEND_GREY,
+    MODEL,
+    UNOBSERVED,
     PAIR,
     SINGLE,
     TICK_SIZE,
@@ -53,8 +54,8 @@ from common.style import (
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig06"
 GROUPS = {
-    "observed": ("Observed", OBSERVED_COLOR),
-    "heldout": ("Unobserved", UNOBSERVED_COLOR),
+    "observed": ("Observed", MODEL),
+    "heldout": ("Unobserved", UNOBSERVED),
 }
 OPERATING_POINT = 0.1
 #: Reconstruction level shown in the rate scatters: where the sweep has separated but the
@@ -219,18 +220,18 @@ def perturbation(sweep, metric, ylim):
         pooled,
         "reconstructed_fraction",
         base_metric,
-        UNOBSERVED_COLOR,
+        UNOBSERVED,
         seeds=True,
         errorbars=False,
     )
-    ceiling(ax, pooled, "reconstructed_fraction", UNOBSERVED_COLOR)
+    ceiling(ax, pooled, "reconstructed_fraction", UNOBSERVED)
     ax.set_xlim(1.05, 0.0)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LABEL: UNOBSERVED_COLOR},
+        {PERTURBATION_LABEL: UNOBSERVED},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,

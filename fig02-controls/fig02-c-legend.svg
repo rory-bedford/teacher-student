@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-21T16:18:38.315936</dc:date>
+    <dc:date>2026-09-21T16:32:25.716039</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -48,7 +48,7 @@ L 36 20.736328
 L 36 12.336328 
 L 12 12.336328 
 z
-" style="fill: #457b9d; stroke: #457b9d; stroke-linejoin: miter"/>
+" style="fill: #5096c0; stroke: #5096c0; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <!-- Full Connectome -->
@@ -290,7 +290,7 @@ L 36 37.998047
 L 36 29.598047 
 L 12 29.598047 
 z
-" style="fill: #e07b2e; stroke: #e07b2e; stroke-linejoin: miter"/>
+" style="fill: #555555; stroke: #555555; stroke-linejoin: miter"/>
    </g>
    <g id="text_2">
     <!-- Learnt Recurrence -->
@@ -421,7 +421,7 @@ L 36 55.259766
 L 36 46.859766 
 L 12 46.859766 
 z
-" style="fill: #2a9d8f; stroke: #2a9d8f; stroke-linejoin: miter"/>
+" style="fill: #888888; stroke: #888888; stroke-linejoin: miter"/>
    </g>
    <g id="text_3">
     <!-- Shuffled Weights -->
@@ -664,7 +664,7 @@ L 36 72.521719
 L 36 64.121719 
 L 12 64.121719 
 z
-" style="fill: #8e6bb3; stroke: #8e6bb3; stroke-linejoin: miter"/>
+" style="fill: #9e9e9e; stroke: #9e9e9e; stroke-linejoin: miter"/>
    </g>
    <g id="text_4">
     <!-- Shuffled Topology -->

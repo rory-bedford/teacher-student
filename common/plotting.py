@@ -7,28 +7,31 @@ All colours come from ``connectome_snns.visualization``.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import (
-    OBSERVED_COLOR,
-    SCATTER_NEUTRAL_COLOR,
-    SLIDE_BLUE,
-    SLIDE_RED,
-    TEACHER_COLOR,
-    UNOBSERVED_COLOR,
-    use_project_style,
-)
+from connectome_snns.visualization import use_project_style
 from matplotlib.ticker import MultipleLocator
 
-from common.style import RATE_MARKER_SIZE, RATE_TICK_HZ
+from common.style import (
+    INK,
+    MODEL,
+    RATE_MARKER_SIZE,
+    RATE_TICK_HZ,
+    REFERENCE_GREY,
+    UNOBSERVED,
+)
 
 CM = 1 / 2.54
 FIGURE_WIDTH = 12 * CM
 
-EXCITATORY_COLOR = SLIDE_RED
-INHIBITORY_COLOR = SLIDE_BLUE
+# Cell type is a marker shape, not a hue (COLORSCHEME.txt rule 3): inside a scatter the
+# colours are already spent on truth vs model.
+EXCITATORY_COLOR = INK
+INHIBITORY_COLOR = INK
 #: Targeted cells are a triangle marker, so their colour stays neutral -- teal belongs to
 #: the shuffled-weights control (2026-09-21).
-TARGETED_COLOR = SCATTER_NEUTRAL_COLOR
-GROUP_COLORS = {"observed": OBSERVED_COLOR, "unobserved": UNOBSERVED_COLOR}
+TARGETED_COLOR = REFERENCE_GREY
+#: Observed neurons are what the model is shown, so they take the model's blue; the
+#: unobserved population takes the yellow reserved for what it cannot see.
+GROUP_COLORS = {"observed": MODEL, "unobserved": UNOBSERVED}
 GROUP_LABELS = {"observed": "Observed", "unobserved": "Unobserved"}
 METRIC_LABELS = {
     "fluctuation_r2": "Fluctuation R²",
@@ -289,46 +292,6 @@ def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX
     ax.set_aspect("equal")
     ax.set_xlabel("Teacher Δrate (Hz)")
     ax.set_ylabel("Student Δrate (Hz)")
-
-
-def delta_mean_inset(ax, deltas, bounds=(0.56, 0.06, 0.42, 0.34)):
-    """Inset bars: mean Δrate per population, teacher beside student."""
-    inset = ax.inset_axes(bounds)
-    populations = (
-        ("tgt I", deltas["targeted"] == 1, TARGETED_COLOR),
-        (
-            "other I",
-            (deltas["targeted"] == 0) & (deltas["cell_type"] == "inhibitory"),
-            INHIBITORY_COLOR,
-        ),
-        (
-            "E",
-            (deltas["targeted"] == 0) & (deltas["cell_type"] == "excitatory"),
-            EXCITATORY_COLOR,
-        ),
-    )
-    width = 0.4
-    for position, (label, mask, color) in enumerate(populations):
-        subset = deltas[mask]
-        inset.bar(
-            position - width / 2,
-            subset["teacher_delta_rate_hz"].mean(),
-            width,
-            color=TEACHER_COLOR,
-        )
-        inset.bar(
-            position + width / 2,
-            subset["student_delta_rate_hz"].mean(),
-            width,
-            color=color,
-        )
-    inset.axhline(0, color="k", linewidth=0.5)
-    inset.set_xticks(range(len(populations)))
-    inset.set_xticklabels([label for label, _, _ in populations], fontsize=5)
-    inset.tick_params(labelsize=5)
-    inset.grid(False)
-    inset.set_title("mean Δ: teacher / student", fontsize=5)
-    return inset
 
 
 def spike_raster(ax, spikes, neurons, duration_s):

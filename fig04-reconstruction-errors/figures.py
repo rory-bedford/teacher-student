@@ -25,13 +25,13 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from connectome_snns.visualization import NEURON_REMOVAL_COLOR, SYNAPSE_DROPOUT_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import METRIC_LABELS, PERTURBATION_TITLE, pool_populations
 from common.style import (
+    MODEL,
     SINGLE,
     TICK_SIZE,
     apply_style,
@@ -44,9 +44,11 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig04"
+#: Both series are the same model under a different ablation, so both take the model's
+#: blue and are told apart by line style (COLORSCHEME.txt rule 1).
 MODELS = {
-    "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR),
-    "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR),
+    "neuron_removal": ("Neuron Removal", MODEL, "-"),
+    "synapse_dropout": ("Synapse Dropout", MODEL, "--"),
 }
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
@@ -65,7 +67,7 @@ def curve(summary, ylim):
     """(a) unobserved Fluctuation R² against input volume lost, per error model."""
     unobserved = summary[summary["group"] == "unobserved"]
     fig, ax = plt.subplots(figsize=SINGLE)
-    for model, (_, color) in MODELS.items():
+    for model, (_, color, linestyle) in MODELS.items():
         rows = unobserved[
             (unobserved["error_model"] == model)
             & (unobserved["metric"] == "fluctuation_r2")
@@ -85,6 +87,7 @@ def curve(summary, ylim):
             "kappa_snapped",
             "fluctuation_r2",
             color,
+            linestyle=linestyle,
             seeds=True,
             errorbars=False,
             x_group="level",
@@ -95,8 +98,12 @@ def curve(summary, ylim):
     ax.set_ylabel("Fluctuation R² (Unobserved)")
     sweep_legend(
         ax,
-        {label: color for label, color in MODELS.values()},
+        {},
         metrics=False,
+        extra=[
+            Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
+            for label, color, linestyle in MODELS.values()
+        ],
         loc="lower left",
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
@@ -121,7 +128,7 @@ def delta_sweep(summary, metric, ylim):
     ]
     fig, ax = plt.subplots(figsize=SINGLE)
     handles = []
-    for model, (label, color) in MODELS.items():
+    for model, (label, color, linestyle) in MODELS.items():
         sub = rows[rows["error_model"] == model]
         if sub.empty:
             continue
@@ -139,12 +146,15 @@ def delta_sweep(summary, metric, ylim):
             "kappa_snapped",
             metric,
             color,
+            linestyle=linestyle,
             seeds=True,
             errorbars=False,
             x_group="level",
         )
         ceiling(ax, pooled, "kappa_snapped", color, x_group="level")
-        handles.append(Line2D([], [], color=color, linewidth=6, label=label))
+        handles.append(
+            Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
+        )
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
