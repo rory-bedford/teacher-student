@@ -38,6 +38,9 @@ WIDE = (11.0, 3.6)
 METRIC_STYLES = {  # archived sweep curves: Activity o-, Fluctuation s--
     "activity_r2": ("o", "-", "Activity"),
     "fluctuation_r2": ("s", "--", "Fluctuation"),
+    # The perturbation's deltas take the same markers as the metric they are a delta of.
+    "delta_activity_r2": ("o", "-", "ΔActivity"),
+    "delta_fluctuation_r2": ("s", "--", "ΔFluctuation"),
 }
 
 
