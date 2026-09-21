@@ -18,9 +18,10 @@ Cell type, in the rate and delta scatters
   Excitatory                       #e87878   accent red        SLIDE_RED
   Inhibitory                       #5096c0   accent blue       SLIDE_BLUE
 
-Source, wherever the two are drawn together (rasters, mean delta rate)
-  Teacher (ground truth)           #263640   dark slate        SLIDE_INK
-  Student (the model)              #e9c46a   accent yellow     SLIDE_YELLOW
+Source, wherever the two are drawn together (rasters, mean delta rate).
+One hue in two shades: the same quantity from two sources, both legible at line weight.
+  Teacher (ground truth)           #1d3557   navy              OBSERVED_COLOR
+  Student (the model)              #5096c0   accent blue       SLIDE_BLUE
 
 Population, in the sweeps
   Observed                         #1d3557   navy              OBSERVED_COLOR
@@ -44,6 +45,10 @@ References and furniture
   Teacher dimensionality marker    #7d8597   slate grey        DIMENSIONALITY_COLOR
   Targeted cells (triangles)       #555555   grey              TARGETED_COLOR
   Raster bands                     #eeeeee   near-white        RASTER_BAND_COLOR
+
+Tried and rejected for teacher/student: the dark slate (#263640) read as flat, and the
+yellow accent (#e9c46a) was too faint to carry a series. The yellow is now unused by the
+figures; the amber unobserved colour is its nearest neighbour.
 
 Resolved on 2026-09-21: #457b9d had meant inhibitory AND student AND full connectome;
 #e76f51 had meant excitatory AND teacher; teal had meant shuffled weights AND the

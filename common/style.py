@@ -13,24 +13,25 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from connectome_snns.visualization import (
+    OBSERVED_COLOR,
     RASTER_BAND_COLOR,
     SLIDE_BLUE,
-    SLIDE_INK,
     SLIDE_RED,
-    SLIDE_YELLOW,
     use_project_style,
 )
 from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 
-# One role, one colour, across every slide (2026-09-21, COLORSCHEME.txt): cell type takes
-# the deck's red/blue accents (the neuroscience convention), and teacher vs student takes
-# ink and the yellow accent, so the two families never share a palette. Before this, blue
-# meant inhibitory AND student AND full connectome.
+# One role, one colour, across every slide (2026-09-21, COLORSCHEME.txt). Cell type takes
+# the deck's red/blue accents (the neuroscience convention). Teacher vs student is one hue
+# in two shades -- dark navy for the ground truth, the deck's accent blue for the model --
+# which reads as the same quantity from two sources and stays legible at line weight. The
+# dark slate and the yellow accent were tried first and were, respectively, too flat for
+# the teacher and too faint to carry a series.
 EXCITATORY = SLIDE_RED
 INHIBITORY = SLIDE_BLUE
-TEACHER = SLIDE_INK
-STUDENT = SLIDE_YELLOW
+TEACHER = OBSERVED_COLOR
+STUDENT = SLIDE_BLUE
 LEGEND_GREY = "#404040"
 
 TICK_SIZE = 12
