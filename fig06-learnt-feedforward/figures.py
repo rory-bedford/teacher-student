@@ -32,7 +32,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
+from common.plotting import METRIC_LABELS, pool_populations
 from common.style import (
     LEGEND_GREY,
     PAIR,
@@ -219,40 +219,39 @@ def raster(spikes, level):
 
 
 def perturbation(sweep, metric, ylim):
-    """The intervention against reconstructed fraction, one population per colour.
+    """(d) The intervention against reconstructed fraction, cell types pooled.
 
     The targets are held-out (unobserved) I cells; the unreconstructed units are
     teacher-forced, so they are never targets. At 10% reconstruction the held-out
-    population is small, so these points are noisy.
+    population is small, so these points are noisy. E and I are pooled (see
+    ``common.plotting.pool_populations``).
     """
-    rows = sweep[sweep["evaluation"] == "perturbation"]
-    # analysis.py renames the perturbation rows' "unobserved" group to "heldout".
-    series = [
-        ("heldout", ct, color, label) for _, ct, color, label in PERTURBATION_SERIES
+    rows = sweep[
+        (sweep["evaluation"] == "perturbation")
+        & (sweep["metric"] == metric)
+        # analysis.py renames the perturbation rows' "unobserved" group to "heldout".
+        & (sweep["group"] == "heldout")
     ]
+    pooled = pool_populations(rows, ["reconstructed_fraction", "seed"])
     base_metric = metric.replace("delta_", "")
     fig, ax = plt.subplots(figsize=SINGLE)
-    labels = {}
-    for group, cell_type, color, label in series:
-        subset = group_rows(rows, group, metric, cell_type)
-        sweep_series(
-            ax,
-            subset,
-            "reconstructed_fraction",
-            base_metric,
-            color,
-            seeds=True,
-            errorbars=False,
-        )
-        ceiling(ax, subset, "reconstructed_fraction", color)
-        labels[label.replace("Unobserved", "Held-Out")] = color
+    sweep_series(
+        ax,
+        pooled,
+        "reconstructed_fraction",
+        base_metric,
+        UNOBSERVED_COLOR,
+        seeds=True,
+        errorbars=False,
+    )
+    ceiling(ax, pooled, "reconstructed_fraction", UNOBSERVED_COLOR)
     ax.set_xlim(1.05, 0.0)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        labels,
+        {"Held-Out": UNOBSERVED_COLOR},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,

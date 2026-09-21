@@ -24,14 +24,13 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from connectome_snns.visualization import NEURON_REMOVAL_COLOR, SYNAPSE_DROPOUT_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS
+from common.plotting import METRIC_LABELS, pool_populations
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -107,32 +106,6 @@ def curve(summary, ylim):
     return fig
 
 
-def pooled_populations(rows):
-    """Non-targeted E and I of one condition as a single number per run.
-
-    Weighted by cell count, so the pooled value is what the two populations' R² would be
-    if they were one group of that size. It is an approximation -- a pooled R² computed
-    from the traces themselves would need the smoothed traces, which the cache does not
-    keep -- and it is close because E and I degrade together here.
-    """
-    return (
-        rows.groupby(["level", "seed"])
-        .apply(
-            lambda group: pd.Series(
-                {
-                    "value": np.average(group["value"], weights=group["n_cells"]),
-                    "ceiling_value": np.average(
-                        group["ceiling_value"], weights=group["n_cells"]
-                    ),
-                    "mean_kappa_lost": group["mean_kappa_lost"].mean(),
-                }
-            ),
-            include_groups=False,
-        )
-        .reset_index()
-    )
-
-
 def delta_sweep(summary, metric, ylim):
     """(b) Δ R² of the intervention against input volume lost, per error model.
 
@@ -152,7 +125,9 @@ def delta_sweep(summary, metric, ylim):
         sub = rows[rows["error_model"] == model]
         if sub.empty:
             continue
-        pooled = pooled_populations(sub)
+        pooled = pool_populations(sub, ["level", "seed"]).merge(
+            sub.groupby("level")["mean_kappa_lost"].mean().reset_index(), on="level"
+        )
         # Snapped to the nominal grid, as in panel (a): the realised fractions sit within
         # 0.7% of it and the two models would otherwise sit side by side.
         pooled = pooled.assign(

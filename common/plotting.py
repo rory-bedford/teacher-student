@@ -6,6 +6,7 @@ All colours come from ``connectome_snns.visualization``.
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from connectome_snns.visualization import (
     FIGURE_BLUE,
     FIGURE_CORAL,
@@ -169,6 +170,33 @@ def ceiling_line(
         color=color,
         linewidth=1.0,
         label=label,
+    )
+
+
+def pool_populations(rows, by):
+    """Pool the perturbation's scored populations into one number per run.
+
+    ``by`` identifies a run (the figure's condition column plus "seed"). Values are
+    weighted by cell count, so the result is what the populations' R² would be as one
+    group of that size. It is an approximation -- a true pooled R² needs the smoothed
+    traces, which the caches do not keep -- and it is close because the populations
+    degrade together: E and I differ by less than 0.02 R² wherever the fit works at all,
+    and diverge only where both are already near zero (see each figure's README).
+    """
+    return (
+        rows.groupby(list(by))
+        .apply(
+            lambda group: pd.Series(
+                {
+                    "value": np.average(group["value"], weights=group["n_cells"]),
+                    "ceiling_value": np.average(
+                        group["ceiling_value"], weights=group["n_cells"]
+                    ),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
     )
 
 

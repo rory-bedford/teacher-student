@@ -38,7 +38,7 @@ from matplotlib.ticker import NullFormatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, PERTURBATION_SERIES, r2_title
+from common.plotting import METRIC_LABELS, pool_populations, r2_title
 from common.style import (
     LEGEND_GREY,
     SINGLE,
@@ -193,41 +193,39 @@ def scatters(summary, rates, fractions, seed):
 
 
 def delta_sweep(summary, metric, dimensionality):
-    """(c) Perturbation Δ R² per population against observed fraction.
+    """(c) Perturbation Δ R² against observed fraction, cell types pooled.
 
     Built like panel (a) -- same reversed percentage axis, individual seeds, no error
-    bars, the same 90%-variance marker and an inside legend -- so the two panels read the
-    same way on the slide.
+    bars, the same 90%-variance marker and an inside legend. The non-targeted unobserved
+    E and I populations are pooled (see ``common.plotting.pool_populations``): they
+    differ only where both are already near zero.
     """
-    rows = summary[summary["evaluation"] == "perturbation"]
+    rows = summary[
+        (summary["evaluation"] == "perturbation")
+        & (summary["metric"] == metric)
+        & (summary["group"] == "unobserved")
+    ]
+    pooled = pool_populations(rows, ["obs_fraction", "seed"])
     fig, ax = plt.subplots(figsize=SINGLE)
-    handles = []
-    for group, cell_type, color, label in PERTURBATION_SERIES:
-        series = rows[
-            (rows["group"] == group)
-            & (rows["cell_type"] == cell_type)
-            & (rows["metric"] == metric)
-        ]
-        if series.empty:
-            continue
-        sweep_series(
-            ax,
-            series,
-            "obs_fraction",
-            metric,
-            color,
-            seeds=True,
-            errorbars=False,
-        )
-        ceiling(ax, series, "obs_fraction", color)
-        handles.append(Line2D([], [], color=color, linewidth=6, label=label))
+    sweep_series(
+        ax,
+        pooled,
+        "obs_fraction",
+        metric,
+        UNOBSERVED_COLOR,
+        seeds=True,
+        errorbars=False,
+    )
+    ceiling(ax, pooled, "obs_fraction", UNOBSERVED_COLOR)
     markers = dimensionality_markers(ax, dimensionality)
-    observed_axis(ax, rows["obs_fraction"].unique())
+    observed_axis(ax, pooled["obs_fraction"].unique())
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.legend(
-        handles=handles
-        + markers
-        + [Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling")],
+        handles=[
+            Line2D([], [], color=UNOBSERVED_COLOR, linewidth=6, label="Unobserved"),
+            Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling"),
+        ]
+        + markers,
         loc="lower left",
         frameon=True,
         framealpha=0.9,

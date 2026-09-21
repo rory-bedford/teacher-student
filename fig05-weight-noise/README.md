@@ -77,7 +77,7 @@ Put this in the caption in one line. It matters for interpretation: this is meas
 ```bash
 ./run --grid fig05-weight-noise/experiment.toml   # 5 levels x 3 seeds = 15 runs
 uv run python fig05-weight-noise/analysis.py       # reads Figure 1's runs as weight noise 0
-uv run python fig05-weight-noise/figures.py        # fig05.svg; panel (b) needs fig04_summary.csv
+uv run python fig05-weight-noise/figures.py        # panel SVGs, from this figure's CSVs
 ```
 
 Identical to Figure 1 except `[student].weight_noise` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}; 0 is

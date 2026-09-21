@@ -2,9 +2,12 @@
 
     uv run python fig05-weight-noise/figures.py
 
-    fig05-a-curve                   R² vs weight noise, observed / unobserved, both metrics
-    fig05-b-contrast                unobserved Fluctuation R²: weight noise | neuron removal
-    fig05-c-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
+    fig05-a-curve                   Fluctuation R² vs weight noise, observed / unobserved
+    fig05-b-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
+
+The contrast panel (weight noise beside Figure 4's neuron removal) was removed on
+2026-09-21: it duplicated Figure 4's own curve, and comparing the two error types is a
+job for the slide deck rather than a panel.
 
 Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
 reported by the scatter panels of figures 1 and 3.
@@ -13,8 +16,6 @@ Style is the archived paper figures (``common/style.py``), sized to drop into th
 100%. ``placeholder_figures/fig05-weight-noise/figures.py`` calls ``main`` here with a
 watermark and fake CSVs, so content edits show up in both.
 
-Panel (b) reads Figure 4's neuron-removal curve from
-../fig04-reconstruction-errors/fig04_summary.csv, so run Figure 4's analysis first.
 """
 
 import argparse
@@ -24,17 +25,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 from connectome_snns.visualization import (
-    NEURON_REMOVAL_COLOR,
     OBSERVED_COLOR,
     UNOBSERVED_COLOR,
-    WEIGHT_NOISE_COLOR,
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
+from common.plotting import METRIC_LABELS, pool_populations
 from common.style import (
-    PAIR,
     SINGLE,
     TICK_SIZE,
     apply_style,
@@ -46,7 +44,6 @@ from common.style import (
 )
 
 HERE = Path(__file__).resolve().parent
-FIG04_SUMMARY = HERE.parent / "fig04-reconstruction-errors" / "fig04_summary.csv"
 FIGURE = "fig05"
 GROUPS = {
     "observed": ("Observed", OBSERVED_COLOR),
@@ -113,84 +110,39 @@ def curve(summary, clipped, ylim):
     return fig
 
 
-def contrast(summary, fig04_summary, ylim):
-    """(b) The contrast panel: imprecise weights beside missing connections, shared y."""
-    rows = group_rows(held_out(summary), "unobserved", "fluctuation_r2")
-    fig, (left, right) = plt.subplots(1, 2, figsize=PAIR, sharey=True)
+def perturbation(summary, metric, ylim):
+    """(b) The intervention's effect against weight noise, cell types pooled.
+
+    The non-targeted unobserved E and I populations are pooled (see
+    ``common.plotting.pool_populations``): across this sweep they differ by less than
+    0.02 R² at every level, so two series were redundant.
+    """
+    rows = summary[
+        (summary["evaluation"] == "perturbation")
+        & (summary["metric"] == metric)
+        & (summary["group"] == "unobserved")
+    ]
+    pooled = pool_populations(rows, ["weight_noise", "seed"])
+    fig, ax = plt.subplots(figsize=SINGLE)
+    # sweep_series looks its marker/linestyle up by the base metric name, so the delta
+    # panels keep the archived Activity o- / Fluctuation s-- convention.
+    base_metric = metric.replace("delta_", "")
     sweep_series(
-        left,
-        rows,
+        ax,
+        pooled,
         "weight_noise",
-        "fluctuation_r2",
-        WEIGHT_NOISE_COLOR,
+        base_metric,
+        UNOBSERVED_COLOR,
         seeds=True,
         errorbars=False,
     )
-    left.set_xlabel("Weight Noise Fraction")
-    left.set_ylabel("Fluctuation R² (Unobserved)")
-    left.set_title("Imprecise Weights (Figure 5)")
-    if Path(fig04_summary).exists():
-        fig04 = held_out(pd.read_csv(fig04_summary))
-        removal = fig04[
-            (fig04["error_model"] == "neuron_removal")
-            & (fig04["group"] == "unobserved")
-            & (fig04["metric"] == "fluctuation_r2")
-        ]
-        if "cell_type" in removal:
-            removal = removal[removal["cell_type"] == "all"]
-        # Snapped to the nominal grid and grouped by level, as Figure 4 does.
-        removal = removal.assign(
-            kappa_snapped=(removal["mean_kappa_lost"] * 10).round() / 10
-        )
-        sweep_series(
-            right,
-            removal,
-            "kappa_snapped",
-            "fluctuation_r2",
-            NEURON_REMOVAL_COLOR,
-            seeds=True,
-            errorbars=False,
-            x_group="level",
-        )
-    else:
-        right.text(
-            0.5, 0.5, "run fig04 analysis.py", transform=right.transAxes, ha="center"
-        )
-    right.set_xlabel("Fraction of Recurrent Input Lost")
-    right.set_title("Missing Connections (Figure 4)")
-    left.set_ylim(*ylim)
-    fig.suptitle("Unobserved Neurons vs Input Volume Lost, Both Error Models")
-    fig.tight_layout()
-    return fig
-
-
-def perturbation(summary, metric, ylim):
-    """The intervention's effect against weight noise, one population per colour."""
-    rows = summary[summary["evaluation"] == "perturbation"]
-    fig, ax = plt.subplots(figsize=SINGLE)
-    series = {}
-    for group, cell_type, color, label in PERTURBATION_SERIES:
-        subset = group_rows(rows, group, metric, cell_type)
-        # sweep_series looks its marker/linestyle up by the base metric name, so the
-        # delta panels keep the archived Activity o- / Fluctuation s-- convention.
-        base_metric = metric.replace("delta_", "")
-        sweep_series(
-            ax,
-            subset,
-            "weight_noise",
-            base_metric,
-            color,
-            seeds=True,
-            errorbars=False,
-        )
-        ceiling(ax, subset, "weight_noise", color)
-        series[label] = color
+    ceiling(ax, pooled, "weight_noise", UNOBSERVED_COLOR)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        series,
+        {"Unobserved": UNOBSERVED_COLOR},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,
@@ -201,7 +153,7 @@ def perturbation(summary, metric, ylim):
     return fig
 
 
-def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
+def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig05_summary.csv")
@@ -212,14 +164,13 @@ def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
 
     ylim = limits(summary)
     output(curve(summary, clipped, ylim), "a", "curve")
-    output(contrast(summary, fig04_summary, ylim), "b", "contrast")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
             perturbation(summary, "delta_fluctuation_r2", ylim),
-            "c",
+            "b",
             "delta-fluctuation",
         )
 
@@ -227,7 +178,6 @@ def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
-    parser.add_argument("--fig04-summary", type=Path, default=FIG04_SUMMARY)
     parser.add_argument("--out-dir", type=Path, default=HERE)
     args = parser.parse_args()
-    main(args.data, args.fig04_summary, args.out_dir)
+    main(args.data, args.out_dir)
