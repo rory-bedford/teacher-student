@@ -31,11 +31,17 @@ HERE = Path(__file__).resolve().parent
 #: Both figures run at 50% observed (2026-09-18); figures.py plots one observed fraction
 #: at a time, so a baseline at a different fraction would silently drop every control.
 BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
+#: ``recurrent_model`` in a run's parameters.toml -> the name used in the CSVs and the
+#: figure. The per-neuron shuffle is the weight control (2026-09-21): it keeps every
+#: neuron's partners and its total input, permuting only which partner holds which
+#: strength, within cell type. The superseded whole-connectome shuffle (permuted within
+#: type-pair blocks across the matrix, one seed) is kept under a distinct name so the two
+#: can never be confused; the keys on the left are what the finished runs already record.
 VARIANT_NAMES = {
     "connectome": "full_connectome",
     "learnt": "learnt_recurrence",
-    "shuffle_weights": "shuffle_weights",
-    "shuffle_inputs": "shuffle_inputs",
+    "shuffle_inputs": "shuffle_weights",
+    "shuffle_weights": "shuffle_weights_global",
     "configuration_model": "configuration_model",
 }
 

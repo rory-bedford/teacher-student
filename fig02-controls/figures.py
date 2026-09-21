@@ -40,15 +40,11 @@ from matplotlib.ticker import MultipleLocator
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS
+from common.plotting import METRIC_LABELS, pool_populations
 from common.style import LEGEND_GREY, apply_style, clear_panels, save
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig02"
-#: Plotted bars — a SUBSET of what analysis.py scores. "shuffle_inputs" (shuffled weights
-#: within neuron) is trained on every seed and stays in fig02_summary.csv / fig02_rates.csv,
-#: but is not plotted (2026-09-18): it overlaps with Figure 5's weight noise, which makes
-#: the same point as a graded curve. Add it back to this list to restore the bar.
 #: Epoch budget plotted for the learnt-recurrence bars (2026-09-21). The 50-epoch runs
 #: and the 100-epoch reruns coexist in the grid, so this switches the figure between them:
 #: set it to 100 once ``learnt-100ep__seed-*`` have finished. Variants with a single
@@ -62,13 +58,15 @@ PLOTTED_VARIANTS = [
 VARIANT_LABELS = {
     "full_connectome": "Full Connectome",
     "learnt_recurrence": "Learnt Recurrence",
-    "shuffle_inputs": "Shuffled Weights",
-    "configuration_model": "Configuration Model",
+    "shuffle_weights": "Shuffled Weights",
+    "shuffle_weights_global": "Shuffled Weights (Whole Connectome)",
+    "configuration_model": "Shuffled Topology",
 }
 VARIANT_COLORS = {
     "full_connectome": FULL_CONNECTOME_COLOR,
     "learnt_recurrence": LEARNT_RECURRENCE_COLOR,
-    "shuffle_inputs": SHUFFLE_WEIGHTS_COLOR,
+    "shuffle_weights": SHUFFLE_WEIGHTS_COLOR,
+    "shuffle_weights_global": SHUFFLE_WEIGHTS_COLOR,
     "configuration_model": CONFIGURATION_MODEL_COLOR,
 }
 #: Two figures, each a row of subpanels, one per scored population (2026-09-21):
@@ -79,11 +77,13 @@ FIGURES = (
         (("observed", "all", "Observed"), ("unobserved", "all", "Unobserved")),
     ),
     (
+        # E and I pooled, as in every other perturbation panel (2026-09-21): they differ
+        # by less than 0.03 R² here, so separate bars said the same thing twice. The
+        # targeted cells keep their own subpanel -- the current was applied to them.
         "delta_fluctuation_r2",
         (
-            ("unobserved", "excitatory", "Non-targeted E"),
-            ("unobserved", "inhibitory", "Non-targeted I"),
-            ("targeted", "inhibitory", "Targeted I"),
+            ("unobserved", "pooled", "Not Targeted"),
+            ("targeted", "pooled", "Targeted"),
         ),
     ),
 )
@@ -100,11 +100,20 @@ def plotted_epochs(summary):
 
 
 def panel_rows(summary, metric, group, cell_type):
-    rows = summary[
-        (summary["metric"] == metric)
-        & (summary["group"] == group)
-        & (summary["cell_type"] == cell_type)
-    ]
+    """Rows per variant for one population; ``cell_type="pooled"`` pools E and I."""
+    rows = summary[(summary["metric"] == metric) & (summary["group"] == group)]
+    if cell_type == "pooled":
+        rows = pd.concat(
+            [
+                pool_populations(
+                    rows[rows["variant"] == variant], ["variant", "seed"]
+                ).assign(variant=variant)
+                for variant in PLOTTED_VARIANTS
+                if not rows[rows["variant"] == variant].empty
+            ]
+        )
+    else:
+        rows = rows[rows["cell_type"] == cell_type]
     return [(v, rows[rows["variant"] == v]) for v in PLOTTED_VARIANTS]
 
 
