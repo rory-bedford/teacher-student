@@ -190,14 +190,40 @@ def spike_raster(ax, spikes, neurons, duration_s, labels):
     )
 
 
-def sweep_series(ax, rows, x_column, metric, color, marker=None, linestyle=None):
-    """Seed mean ± SD of one series in the archived marker/line style."""
+def sweep_series(
+    ax,
+    rows,
+    x_column,
+    metric,
+    color,
+    marker=None,
+    linestyle=None,
+    seeds=False,
+    errorbars=True,
+):
+    """Seed mean ± SD of one series in the archived marker/line style.
+
+    ``seeds=True`` also scatters the individual seeds behind the line: where a sweep is
+    bimodal (Figure 3's low end, where a run either trains or collapses) the mean sits
+    between two clusters and describes neither. With the seeds shown, ``errorbars=False``
+    keeps the panel readable -- the points already carry the spread.
+    """
     default_marker, default_linestyle, _ = METRIC_STYLES[metric]
     stats = rows.groupby(x_column)["value"].agg(["mean", "std"]).reset_index()
+    if seeds:
+        ax.scatter(
+            rows[x_column],
+            rows["value"],
+            s=RATE_MARKER_SIZE * 2,
+            color=color,
+            alpha=0.45,
+            linewidths=0,
+            zorder=2,
+        )
     ax.errorbar(
         stats[x_column],
         stats["mean"],
-        yerr=stats["std"].fillna(0.0),
+        yerr=stats["std"].fillna(0.0) if errorbars else None,
         color=color,
         marker=marker or default_marker,
         linestyle=linestyle or default_linestyle,
@@ -219,8 +245,21 @@ def ceiling(ax, rows, x_column, color):
     )
 
 
-def sweep_legend(ax, series, metrics=True, ceiling_line=True, extra=()):
-    """Legend outside the axes: series colours plus the archived grey metric handles."""
+def sweep_legend(
+    ax,
+    series,
+    metrics=True,
+    ceiling_line=True,
+    extra=(),
+    loc="upper left",
+    bbox_to_anchor=(1.01, 1.0),
+    fontsize=None,
+):
+    """Series colours plus the archived grey metric handles.
+
+    Outside the axes on the right by default; pass ``bbox_to_anchor=None`` with a corner
+    ``loc`` to put it inside, which keeps a wide panel from being half legend.
+    """
     handles = [
         Line2D([], [], color=color, linewidth=6, label=label)
         for label, color in series.items()
@@ -244,6 +283,15 @@ def sweep_legend(ax, series, metrics=True, ceiling_line=True, extra=()):
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling")
         )
     handles += list(extra)
+    inside = bbox_to_anchor is None
     ax.legend(
-        handles=handles, loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False
+        handles=handles,
+        loc=loc,
+        bbox_to_anchor=bbox_to_anchor,
+        frameon=inside,
+        framealpha=0.9 if inside else 1.0,
+        fontsize=fontsize,
+        handlelength=1.6,
+        labelspacing=0.35,
+        borderpad=0.5,
     )

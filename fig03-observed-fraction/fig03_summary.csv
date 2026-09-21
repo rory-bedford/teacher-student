@@ -11,6 +11,10 @@ obs_fraction,n_observed,seed,evaluation,group,cell_type,n_cells,metric,value,cei
 0.5,2500,46,held_out,observed,all,2500,fluctuation_r2,0.9870942831039429,0.9970271587371826
 0.5,2500,46,held_out,unobserved,all,2500,activity_r2,0.9954389793081494,0.9999255618465349
 0.5,2500,46,held_out,unobserved,all,2500,fluctuation_r2,0.9854671359062195,0.9972353577613831
+0.01,50,44,held_out,observed,all,50,activity_r2,-0.05674487680404905,0.9670938700675336
+0.01,50,44,held_out,observed,all,50,fluctuation_r2,-0.24760091304779053,0.46803444623947144
+0.01,50,44,held_out,unobserved,all,4950,activity_r2,0.015448252024938602,0.9790623374178132
+0.01,50,44,held_out,unobserved,all,4950,fluctuation_r2,-0.067496657371521,0.7936995029449463
 0.02,100,44,held_out,observed,all,100,activity_r2,0.06330457998957995,0.964679892700867
 0.02,100,44,held_out,observed,all,100,fluctuation_r2,-0.1234278678894043,0.5134122967720032
 0.02,100,44,held_out,unobserved,all,4900,activity_r2,0.05167770311136466,0.9729974806183171
@@ -35,6 +39,10 @@ obs_fraction,n_observed,seed,evaluation,group,cell_type,n_cells,metric,value,cei
 0.05,250,46,held_out,observed,all,250,fluctuation_r2,0.7775202393531799,0.890730082988739
 0.05,250,46,held_out,unobserved,all,4750,activity_r2,0.9294449255598987,0.9903438921532711
 0.05,250,46,held_out,unobserved,all,4750,fluctuation_r2,0.7635468244552612,0.8660229444503784
+0.1,500,44,held_out,observed,all,500,activity_r2,0.9162696444979976,0.9978092621110016
+0.1,500,44,held_out,observed,all,500,fluctuation_r2,0.7978185415267944,0.9200692772865295
+0.1,500,44,held_out,unobserved,all,4500,activity_r2,0.9504197502521352,0.9981828095145624
+0.1,500,44,held_out,unobserved,all,4500,fluctuation_r2,0.8442010283470154,0.9395956993103027
 0.25,1250,44,held_out,observed,all,1250,activity_r2,0.9763767592338257,0.9993849263560309
 0.25,1250,44,held_out,observed,all,1250,fluctuation_r2,0.9384522438049316,0.9798092246055603
 0.25,1250,44,held_out,unobserved,all,3750,activity_r2,0.9774352667086286,0.9993853326886886
@@ -65,6 +73,12 @@ obs_fraction,n_observed,seed,evaluation,group,cell_type,n_cells,metric,value,cei
 0.5,2500,46,perturbation,unobserved,inhibitory,370,delta_fluctuation_r2,0.9660775661468506,0.9933810234069824
 0.5,2500,46,perturbation,targeted,inhibitory,124,delta_activity_r2,0.9940667289068827,0.9998688229674126
 0.5,2500,46,perturbation,targeted,inhibitory,124,delta_fluctuation_r2,0.9823170900344849,0.9962241053581238
+0.01,50,44,perturbation,unobserved,excitatory,3961,delta_activity_r2,-0.017532070448322612,0.8226804142227729
+0.01,50,44,perturbation,unobserved,excitatory,3961,delta_fluctuation_r2,-0.00010097026824951172,0.2851911783218384
+0.01,50,44,perturbation,unobserved,inhibitory,742,delta_activity_r2,-0.3558260688036494,0.8386669688157775
+0.01,50,44,perturbation,unobserved,inhibitory,742,delta_fluctuation_r2,-0.43335139751434326,0.30607593059539795
+0.01,50,44,perturbation,targeted,inhibitory,247,delta_activity_r2,-0.33482026288950806,0.927639374842242
+0.01,50,44,perturbation,targeted,inhibitory,247,delta_fluctuation_r2,-0.38400983810424805,0.49611973762512207
 0.02,100,44,perturbation,unobserved,excitatory,3918,delta_activity_r2,-0.017590234801212246,0.8733594334566317
 0.02,100,44,perturbation,unobserved,excitatory,3918,delta_fluctuation_r2,-0.005619168281555176,0.2850732207298279
 0.02,100,44,perturbation,unobserved,inhibitory,736,delta_activity_r2,-0.03922162047582822,0.8557428816532642
@@ -101,6 +115,12 @@ obs_fraction,n_observed,seed,evaluation,group,cell_type,n_cells,metric,value,cei
 0.05,250,46,perturbation,unobserved,inhibitory,712,delta_fluctuation_r2,0.12097811698913574,0.49264228343963623
 0.05,250,46,perturbation,targeted,inhibitory,237,delta_activity_r2,0.6314809387803191,0.956284986989758
 0.05,250,46,perturbation,targeted,inhibitory,237,delta_fluctuation_r2,0.20355045795440674,0.5611952543258667
+0.1,500,44,perturbation,unobserved,excitatory,3602,delta_activity_r2,0.8578291008709742,0.9606201220657703
+0.1,500,44,perturbation,unobserved,excitatory,3602,delta_fluctuation_r2,0.48483026027679443,0.7626428604125977
+0.1,500,44,perturbation,unobserved,inhibitory,674,delta_activity_r2,0.8459277680618823,0.9573615737885288
+0.1,500,44,perturbation,unobserved,inhibitory,674,delta_fluctuation_r2,0.5025458931922913,0.7626772522926331
+0.1,500,44,perturbation,targeted,inhibitory,224,delta_activity_r2,0.8954624325997009,0.9905794043602559
+0.1,500,44,perturbation,targeted,inhibitory,224,delta_fluctuation_r2,0.6123110055923462,0.8338922262191772
 0.25,1250,44,perturbation,unobserved,excitatory,3004,delta_activity_r2,0.9669339296824264,0.9952653953971076
 0.25,1250,44,perturbation,unobserved,excitatory,3004,delta_fluctuation_r2,0.8663671016693115,0.9343271851539612
 0.25,1250,44,perturbation,unobserved,inhibitory,560,delta_activity_r2,0.9356019361296428,0.9921093042529524

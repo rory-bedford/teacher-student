@@ -28,13 +28,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
+from connectome_snns.visualization import (
+    FIGURE_TEAL,
+    OBSERVED_COLOR,
+    UNOBSERVED_COLOR,
+)
+from matplotlib.lines import Line2D
+from matplotlib.ticker import NullFormatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import METRIC_LABELS, perturbation_sweep, r2_title
 from common.style import (
-    LEGEND_GREY,
     SINGLE,
     TICK_SIZE,
     TRIPLE,
@@ -77,41 +82,20 @@ def default_scatter_fractions(summary):
     return [above, near, below]
 
 
-def dimensionality_band(ax, dimensionality):
-    """The teacher's dominant subspace, as a fraction of the population.
+def dimensionality_markers(ax, dimensionality):
+    """Mark the teacher's dimensionality, and return the legend handle.
 
-    The band the observed sample stops spanning is where the fit fails. The
-    participation ratio (41 neurons, 0.8%) sits well inside the collapsed region and is
-    not marked. An estimated CSV may carry only the 90% count, in which case the band
-    collapses to that one line.
+    The PCs carrying 90% of the variance, as a fraction of the 5000 neurons: it lands
+    where the fit breaks down, which is the point of the panel, so it is named in the
+    legend rather than annotated in the plot. The participation ratio (41 neurons, 0.8%)
+    is not marked -- it sits below everything tested and would imply the opposite.
     """
-    high = dimensionality["n_pcs_90pct_var"] / N_NEURONS
-    low = (
-        dimensionality["n_pcs_80pct_var"] / N_NEURONS
-        if "n_pcs_80pct_var" in dimensionality
-        else high
+    fraction = dimensionality["n_pcs_90pct_var"] / N_NEURONS
+    ax.axvline(fraction, color=FIGURE_TEAL, linewidth=1.6, alpha=0.9)
+    label = (
+        f"90% of Teacher Variance\n({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
     )
-    if low < high:
-        ax.axvspan(low, high, color=LEGEND_GREY, alpha=0.12, linewidth=0)
-        label = (
-            f"Teacher PCs for 80-90% of Variance\n"
-            f"({dimensionality['n_pcs_80pct_var']:.0f}-"
-            f"{dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
-        )
-    else:
-        label = (
-            f"Teacher PCs for 90% of Variance\n"
-            f"({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
-        )
-    ax.axvline(high, color=LEGEND_GREY, linewidth=1, alpha=0.6)
-    ax.text(
-        high * 1.08,
-        0.03,
-        label,
-        transform=ax.get_xaxis_transform(),
-        fontsize=TICK_SIZE - 1,
-        color=LEGEND_GREY,
-    )
+    return [Line2D([], [], color=FIGURE_TEAL, linewidth=1.6, label=label)]
 
 
 def neuron_axis(ax):
@@ -124,12 +108,20 @@ def neuron_axis(ax):
 
 def curve(summary, dimensionality):
     """(a) Fluctuation R² against observed fraction, observed and unobserved."""
-    fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.25, SINGLE[1] * 1.1))
+    fig, ax = plt.subplots(figsize=SINGLE)
     for group, (_, color) in GROUPS.items():
         rows = summary[
             (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
         ]
-        sweep_series(ax, rows, "obs_fraction", "fluctuation_r2", color)
+        sweep_series(
+            ax,
+            rows,
+            "obs_fraction",
+            "fluctuation_r2",
+            color,
+            seeds=True,
+            errorbars=False,
+        )
         ceiling(
             ax,
             summary[
@@ -138,14 +130,30 @@ def curve(summary, dimensionality):
             "obs_fraction",
             color,
         )
-    dimensionality_band(ax, dimensionality)
+    markers = dimensionality_markers(ax, dimensionality)
     ax.set_xscale("log")
+    # Decreasing left to right (2026-09-21): the slide reads as neurons being taken away,
+    # ending at the hard end of the sweep. Ticks are the fractions actually run, written
+    # as percentages; the log scale's minor labels would otherwise clutter them.
+    fractions = sorted(summary["obs_fraction"].unique())
+    ax.set_xticks(fractions)
+    ax.set_xticklabels([f"{fraction * 100:g}%" for fraction in fractions])
+    ax.get_xaxis().set_minor_formatter(NullFormatter())
+    ax.invert_xaxis()
     ax.set_ylim(min(0.0, summary["value"].min() - 0.05), 1.0)
     ax.set_xlabel("Observed Fraction")
     ax.set_ylabel("Fluctuation R²")
     neuron_axis(ax)
-    sweep_legend(ax, {label: color for label, color in GROUPS.values()}, metrics=False)
-    ax.set_title("How Few Neurons Need to Be Observed?", pad=12)
+    sweep_legend(
+        ax,
+        {label: color for label, color in GROUPS.values()},
+        metrics=False,
+        extra=markers,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
+    # No title (2026-09-21): the slide carries the claim.
     fig.tight_layout()
     return fig
 
