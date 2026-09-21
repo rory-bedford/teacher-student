@@ -230,9 +230,10 @@ def perturbation_sweep(
     return rows
 
 
-#: Delta scatters are linear over +-this many Hz (2026-09-21): most neurons change by far
-#: less than 20 Hz, so the axis is cut rather than scaled, as for the rate scatters.
-DELTA_MAX_HZ = 40.0
+#: Delta scatters are linear over +-this many Hz: most neurons change by far less than 20,
+#: so the axis is cut rather than scaled, as for the rate scatters. 25 Hz keeps the
+#: targeted cells' negative arm on the plot while filling the frame (2026-09-21).
+DELTA_MAX_HZ = 25.0
 
 
 def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX_HZ):

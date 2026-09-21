@@ -211,7 +211,7 @@ def delta_scores(summary):
 
 def delta_scatter(summary, deltas):
     """(c) the intervention's effect: teacher vs student Δrate, one point per neuron."""
-    fig, ax = plt.subplots(figsize=(SINGLE[0], SINGLE[0]))
+    fig, ax = plt.subplots(figsize=(PAIR[0] / 2, PAIR[1]))
     delta_rate_scatter(ax, deltas)
     ax.legend(loc="upper left", markerscale=4, frameon=True)
     ax.set_title(
