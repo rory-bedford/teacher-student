@@ -3,7 +3,8 @@
     uv run python fig06-learnt-feedforward/figures.py
 
     fig06-a-curve               Fluctuation R² vs reconstructed fraction, observed / unobserved
-    fig06-b-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
+    fig06-b-scatter-50pct       firing rates at 50% reconstructed, observed | unobserved
+    fig06-c-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
 
 Two panels (2026-09-21). The rate scatters went first -- they were the only panels
 quoting Activity R², which no other panel reports -- and then the raster: the sweep
@@ -22,6 +23,7 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
 from matplotlib.lines import Line2D
@@ -36,11 +38,13 @@ from common.plotting import (
 )
 from common.style import (
     LEGEND_GREY,
+    PAIR,
     SINGLE,
     TICK_SIZE,
     apply_style,
     ceiling,
     clear_panels,
+    rate_scatter,
     save,
     sweep_legend,
     sweep_series,
@@ -50,9 +54,12 @@ HERE = Path(__file__).resolve().parent
 FIGURE = "fig06"
 GROUPS = {
     "observed": ("Observed", OBSERVED_COLOR),
-    "heldout": ("Held-Out", UNOBSERVED_COLOR),
+    "heldout": ("Unobserved", UNOBSERVED_COLOR),
 }
 OPERATING_POINT = 0.1
+#: Reconstruction level shown in the rate scatters: where the sweep has separated but the
+#: student still tracks the stimulus (observed 0.68, unobserved 0.14 on Fluctuation R²).
+SCATTER_LEVEL = 0.5
 
 
 def format_count(n):
@@ -73,6 +80,36 @@ def group_rows(summary, group, metric, cell_type="all"):
     if "cell_type" in rows:
         rows = rows[rows["cell_type"] == cell_type]
     return rows
+
+
+def scatters(sweep, rates, fraction, seed):
+    """(b) Teacher-vs-student rates, observed beside unobserved, at one level.
+
+    Reinstated on 2026-09-21 at 50% reconstructed: the sweep has separated there
+    (observed 0.68, unobserved 0.14 on Fluctuation R²) while the student still tracks the
+    stimulus, so the two panels show what that separation looks like per neuron. The R²
+    quoted is Activity, the metric a rate scatter reports.
+    """
+    level = rates[
+        np.isclose(rates["reconstructed_fraction"], fraction)
+        & (rates["recorded_pool_fraction"] < 1.0)
+        & (rates["seed"] == seed)
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=PAIR)
+    for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
+        r2 = group_rows(
+            sweep[np.isclose(sweep["reconstructed_fraction"], fraction)],
+            group,
+            "activity_r2",
+        )["value"].mean()
+        rate_scatter(
+            ax, level[level["group"] == group], f"{label} (Activity R² = {r2:.2f})"
+        )
+    fig.suptitle(
+        f"Firing Rates, Student vs Teacher, {fraction:.0%} of the Network Reconstructed"
+    )
+    fig.tight_layout()
+    return fig
 
 
 def limits(sweep):
@@ -153,21 +190,9 @@ def curve(sweep, fully_observed, ylim):
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    # The free-parameter count is the mechanism: it pre-empts the objection that the
-    # learnt bucket can fit anything.
-    params = rows.groupby("reconstructed_fraction")["n_free_params"].mean()
-    for fraction, count in params.items():
-        ax.annotate(
-            format_count(int(count)),
-            (fraction, 0),
-            xycoords=("data", "axes fraction"),
-            xytext=(0, 4),
-            textcoords="offset points",
-            ha="center",
-            fontsize=TICK_SIZE - 2,
-            color=LEGEND_GREY,
-        )
-    ax.set_title("Held-Out and Unobserved Neurons vs Reconstructed Fraction", pad=18)
+    # The free-parameter counts used to be annotated along the axis (2026-09-21): they
+    # hardly vary across the sweep, so they were clutter. They are in fig06_summary.csv.
+    ax.set_title("Observed and Unobserved Neurons vs Reconstructed Fraction", pad=18)
     fig.tight_layout()
     return fig
 
@@ -220,6 +245,7 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig06_summary.csv")
+    rates = pd.read_csv(data_dir / "fig06_rates.csv")
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
     fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
 
@@ -228,12 +254,17 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
 
     ylim = limits(sweep)
     output(curve(sweep, fully_observed, ylim), "a", "curve")
+    output(
+        scatters(sweep, rates, SCATTER_LEVEL, int(rates["seed"].min())),
+        "b",
+        f"scatter-{SCATTER_LEVEL * 100:.0f}pct",
+    )
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if "evaluation" in sweep and (sweep["metric"] == "delta_fluctuation_r2").any():
         output(
-            perturbation(sweep, "delta_fluctuation_r2", ylim), "b", "delta-fluctuation"
+            perturbation(sweep, "delta_fluctuation_r2", ylim), "c", "delta-fluctuation"
         )
 
 
