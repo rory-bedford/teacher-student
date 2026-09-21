@@ -24,13 +24,14 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from connectome_snns.visualization import NEURON_REMOVAL_COLOR, SYNAPSE_DROPOUT_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
+from common.plotting import METRIC_LABELS
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -50,8 +51,6 @@ MODELS = {
 }
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
-#: The two error models as line styles in panel (b), where colour carries the population.
-MODEL_LINESTYLES = ("-", "--")
 
 
 def limits(summary):
@@ -108,58 +107,69 @@ def curve(summary, ylim):
     return fig
 
 
-def delta_sweep(summary, metric, ylim):
-    """(b) Δ R² of the intervention against input volume lost.
+def pooled_populations(rows):
+    """Non-targeted E and I of one condition as a single number per run.
 
-    Coloured by population as in every other perturbation panel (E coral, I blue, from
-    ``common.plotting.PERTURBATION_SERIES``), with the two error models as solid and
-    dashed lines -- panel (a) colours by error model, but the perturbation panels are
-    consistent with Figures 3, 5 and 6 instead. Seeds as points, no error bars, and the
-    same y range as panel (a), as in Figure 3.
+    Weighted by cell count, so the pooled value is what the two populations' R² would be
+    if they were one group of that size. It is an approximation -- a pooled R² computed
+    from the traces themselves would need the smoothed traces, which the cache does not
+    keep -- and it is close because E and I degrade together here.
     """
-    rows = summary[summary["evaluation"] == "perturbation"]
+    return (
+        rows.groupby(["level", "seed"])
+        .apply(
+            lambda group: pd.Series(
+                {
+                    "value": np.average(group["value"], weights=group["n_cells"]),
+                    "ceiling_value": np.average(
+                        group["ceiling_value"], weights=group["n_cells"]
+                    ),
+                    "mean_kappa_lost": group["mean_kappa_lost"].mean(),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
+
+
+def delta_sweep(summary, metric, ylim):
+    """(b) Δ R² of the intervention against input volume lost, per error model.
+
+    The non-targeted unobserved E and I populations are pooled (see
+    :func:`pooled_populations`), so the series are the two error models in panel (a)'s
+    colours: four series of E and I per model was clutter, and the populations degrade
+    together. Seeds as points, no error bars, panel (a)'s y range.
+    """
+    rows = summary[
+        (summary["evaluation"] == "perturbation")
+        & (summary["metric"] == metric)
+        & (summary["group"] == "unobserved")
+    ]
     fig, ax = plt.subplots(figsize=SINGLE)
     handles = []
-    for _, cell_type, color, label in PERTURBATION_SERIES:
-        for model, (model_label, _), linestyle in zip(
-            MODELS, MODELS.values(), MODEL_LINESTYLES
-        ):
-            sub = rows[
-                (rows["error_model"] == model)
-                & (rows["metric"] == metric)
-                & (rows["group"] == "unobserved")
-                & (rows["cell_type"] == cell_type)
-            ]
-            if sub.empty:
-                continue
-            # Snapped to the nominal grid, as in panel (a): the realised fractions sit
-            # within 0.7% of it and the two models would otherwise sit side by side.
-            sub = sub.assign(kappa_snapped=(sub["mean_kappa_lost"] * 10).round() / 10)
-            sweep_series(
-                ax,
-                sub,
-                "kappa_snapped",
-                metric,
-                color,
-                marker="o",
-                linestyle=linestyle,
-                seeds=True,
-                errorbars=False,
-                x_group="level",
-            )
-            ceiling(ax, sub, "kappa_snapped", color, x_group="level")
-            handles.append(
-                Line2D(
-                    [],
-                    [],
-                    color=color,
-                    marker="o",
-                    markersize=5,
-                    linestyle=linestyle,
-                    linewidth=1.5,
-                    label=f"{label}, {model_label}",
-                )
-            )
+    for model, (label, color) in MODELS.items():
+        sub = rows[rows["error_model"] == model]
+        if sub.empty:
+            continue
+        pooled = pooled_populations(sub)
+        # Snapped to the nominal grid, as in panel (a): the realised fractions sit within
+        # 0.7% of it and the two models would otherwise sit side by side.
+        pooled = pooled.assign(
+            kappa_snapped=(pooled["mean_kappa_lost"] * 10).round() / 10
+        )
+        sweep_series(
+            ax,
+            pooled,
+            "kappa_snapped",
+            metric,
+            color,
+            seeds=True,
+            errorbars=False,
+            x_group="level",
+        )
+        ceiling(ax, pooled, "kappa_snapped", color, x_group="level")
+        handles.append(Line2D([], [], color=color, linewidth=6, label=label))
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_ylim(*ylim)
