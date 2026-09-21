@@ -1,6 +1,6 @@
 # Figure 5 — Weight precision is not the binding constraint
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **Claim:** the model tolerates substantial error in synaptic weights. Compared against Figure 4, imprecise weights cost far less than missing connections — so the limiting factor is what you have reconstructed, not how accurately you have measured it.
 
@@ -24,25 +24,35 @@ Identical to Figure 1 except for the swept degradation:
 - Held-out test set of new stimuli.
 - **Fluctuation R²** primary, Activity R² secondary.
 - Evaluated on **unobserved** neurons — the discriminative group, comparable with Figures 1–4.
-- Shuffled-identity floor.
+- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted -- the shuffled-identity floor was dropped on 2026-09-17.
 
 ## Panels
 
-- **(a)** Fluctuation R² vs weight noise fraction, error bars over seeds, floor dashed.
-- **(b)** **The contrast panel.** Side by side with Figure 4's neuron-removal curve, sharing a y-axis: weight noise on the left, input volume lost on the right. The two x-axes are different quantities and should not be forced onto one axis, but the shared y makes the comparison immediate.
+As built (2026-09-21), one SVG each:
 
-The sentence this figure earns: *at 50% weight noise the model still works; at 50% of input missing it does not.*
+- **(a)** `fig05-a-curve` — Fluctuation R² vs weight noise, observed and unobserved, individual seeds, no error bars.
+- **(b)** `fig05-b-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
+
+The contrast panel (weight noise beside Figure 4's neuron removal) was removed: it
+duplicated Figure 4's own curve, and comparing the two error types is a job for the slide
+deck. The sentence the pair still earns: *at 50% weight noise the model still works; at
+50% of input missing it does not.*
 
 ## Files
 
 ```
 fig05-weight-noise/
+  analysis.py
+  figures.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
   README.md
-  fig05_summary.csv     weight_noise, seed, group{observed,unobserved}, metric, value, floor_value
-  fig05_rates.csv       weight_noise, neuron_id, cell_type, observed{0,1}, seed, teacher_rate_hz, student_rate_hz
-  plot_fig05.py
-  fig05.svg
-  config.yaml
+  fig05_rates.csv
+  fig05_summary.csv
+  fig05-a-curve.svg
+  fig05-b-delta-fluctuation.svg
 ```
 
 ## Status
@@ -107,6 +117,7 @@ synapse changes sign and Dale's law holds. The fraction clipped is recorded per 
 
 ### Panels as implemented
 
-(a) Fluctuation R² vs weight noise, observed and unobserved (mean ± SD, seeds as dots),
-ceilings, unobserved floor, clipped fraction per level. (b) Unobserved Fluctuation R² vs weight
-noise (left) beside Figure 4's neuron-removal curve vs κ_lost (right), shared y axis.
+See **Panels** above. Superseded details from the original spec: no floor and no clipped
+fraction in the title (the clipping is recorded under **Measured clipping**), individual
+seeds instead of error bars, and the contrast panel against Figure 4 was removed on
+2026-09-21.

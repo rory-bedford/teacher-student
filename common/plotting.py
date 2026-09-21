@@ -16,8 +16,9 @@ from connectome_snns.visualization import (
     UNOBSERVED_COLOR,
     use_project_style,
 )
+from matplotlib.ticker import MultipleLocator
 
-from common.style import RATE_MARKER_SIZE
+from common.style import RATE_MARKER_SIZE, RATE_TICK_HZ
 
 CM = 1 / 2.54
 FIGURE_WIDTH = 12 * CM
@@ -280,6 +281,9 @@ def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX
         ax.set_yscale("symlog", linthresh=threshold)
     ax.set_xlim(-limit, limit)
     ax.set_ylim(-limit, limit)
+    # Same tick spacing as the rate scatters, on both axes.
+    ax.xaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
+    ax.yaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
     ax.set_aspect("equal")
     ax.set_xlabel("Teacher Δrate (Hz)")
     ax.set_ylabel("Student Δrate (Hz)")

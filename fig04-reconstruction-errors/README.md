@@ -1,6 +1,6 @@
 # Figure 4 — Reconstruction errors: does it matter *how* you lose input?
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **Claim:** prediction degrades with the amount of synaptic input missing from the model — but two error models that remove the same amount of input do not cost the same. Losing a whole presynaptic *source* is worse than losing scattered synapses.
 
@@ -44,24 +44,34 @@ This is the same quantity as input completeness in the real Dp connectome, so th
 - Held-out test set of new stimuli.
 - **Fluctuation R²** primary, Activity R² secondary.
 - Evaluated on **unobserved retained** neurons (the discriminative group, comparable to Figures 1–3).
-- Shuffled-identity floor.
+- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted -- the shuffled-identity floor was dropped on 2026-09-17.
 
 ## Panels
 
-- **(a)** Fluctuation R² vs **mean input volume lost**, two series (neuron removal, synapse dropout), error bars over seeds, floor dashed. Separation between the series is the result.
-- **(b)** **Per-neuron** Fluctuation R² vs **per-neuron κ_lost**, both models pooled, coloured by model. Do they lie on one curve? Under neuron removal the spread in κ_lost across cells should be much wider, which is itself informative.
-- **(c)** *optional* — same, split E vs I.
+As built (2026-09-21), one SVG each:
+
+- **(a)** `fig04-a-curve` — unobserved Fluctuation R² vs fraction of recurrent input lost, one series per error model, individual seeds, no error bars.
+- **(b)** `fig04-b-delta-fluctuation` — perturbation ΔFluctuation R², same two series, cell types pooled, shared y range with (a).
+
+Both panels plot against the fraction of input actually lost, snapped to the nominal grid
+(the realised values sit within 0.7% of it). The per-neuron panel of the original spec was
+deleted: its premise was that neuron removal spreads per-neuron loss much wider than
+synapse dropout, and the data says the spreads match (SD 0.173 vs 0.178).
 
 ## Files
 
 ```
 fig04-reconstruction-errors/
+  analysis.py
+  figures.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
   README.md
-  fig04_summary.csv      error_model{neuron_removal,synapse_dropout}, level, mean_kappa_lost, seed, metric, value, floor_value
-  fig04_per_neuron.csv   error_model, level, seed, neuron_id, cell_type, kappa_lost, fluctuation_r2, activity_r2
-  plot_fig04.py
-  fig04.svg
-  config.yaml
+  fig04_summary.csv
+  fig04-a-curve.svg
+  fig04-b-delta-fluctuation.svg
 ```
 
 ## Status
@@ -116,13 +126,13 @@ in `student_structure.npz` and exported to both CSVs.
 
 ### Departure from the README file spec
 
-`fig04_per_neuron.csv` has no `activity_r2`: R² needs many samples, and a single neuron has
-one rate. It carries `teacher_rate_hz` and `student_rate_hz` instead, alongside the per-neuron
-`fluctuation_r2` (over time) and `observed` (the figure uses unobserved neurons).
+`fig04_per_neuron.csv` is no longer written (2026-09-21): it existed for the per-neuron
+panel, which was deleted. `rate_rows` in `common/evaluation.py` still produces that data
+if it is ever wanted, and the deleted panel is in the git history.
 
 ### Panels as implemented
 
 (a) Unobserved Fluctuation R² vs mean κ_lost, both models (mean ± SD, seeds as dots), each
-model's ceiling (dotted) and floor (dashed). (b) Per-neuron Fluctuation R² vs per-neuron κ_lost,
+model's noise ceiling (dotted). (b) Per-neuron Fluctuation R² vs per-neuron κ_lost,
 unobserved neurons at all non-zero levels and seeds pooled (subsampled to 20k points), coloured
 by model, with binned medians. The optional E/I split (c) is not drawn; `cell_type` is in the CSV.

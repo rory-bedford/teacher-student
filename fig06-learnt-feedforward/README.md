@@ -1,6 +1,6 @@
 # Figure 6 — Unreconstructed inputs break prediction of unobserved neurons
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **The climax of the talk.**
 
@@ -49,21 +49,33 @@ Report against both the **fraction of units reconstructed** and **κ**, the frac
 
 ## Panels
 
-- **(a)** **The scatter.** Rate scatter, observed vs unobserved, teacher against student, coloured by E/I, R² in each title, floor annotated. **No extra runs needed** — export per-neuron rates at *every* sweep level and choose the display level when plotting. Likely two: one mid-sweep where the effect is partial, and the 10% endpoint.
-- **(b)** **The sweep.** Fluctuation R² vs reconstructed fraction, observed and held-out series, error bars over seeds, floor dashed, Figure 1's point at 100%. Annotate the free-parameter count at a few levels — it is the mechanism, and it pre-empts the objection that the learnt bucket can fit anything.
-- **(c)** *optional* — raster for one observed and one held-out neuron at the same level.
+As built (2026-09-21), one SVG each:
+
+- **(a)** `fig06-a-curve` — Fluctuation R² vs reconstructed fraction, observed and unobserved, individual seeds, the fully observed control as a cross, the 10% operating point shaded.
+- **(b)** `fig06-b-scatter-50pct` — firing rates at 50% reconstructed, observed beside unobserved, with Activity R² in each title.
+- **(c)** `fig06-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
+
+The free-parameter counts were removed from panel (a) (they hardly vary across the sweep)
+and the raster was dropped. Group naming follows the project convention -- observed and
+unobserved -- although the CSVs still key the unobserved group as `heldout`.
 
 ## Files
 
 ```
 fig06-learnt-feedforward/
+  analysis.py
+  figures.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
   README.md
-  fig06_summary.csv     reconstructed_fraction, kappa, n_free_params, n_in_loss, seed, group{observed,heldout}, metric, value, floor_value
-  fig06_rates.csv       reconstructed_fraction, neuron_id, cell_type, group{observed,heldout}, seed, teacher_rate_hz, student_rate_hz
-  fig06_spikes.csv      reconstructed_fraction, neuron_id, group, seed, source{teacher,student}, time_s
-  plot_fig06.py
-  fig06.svg
-  config.yaml           the resolved config actually used, written by the run
+  fig06_rates.csv
+  fig06_spikes.csv
+  fig06_summary.csv
+  fig06-a-curve.svg
+  fig06-b-scatter-50pct.svg
+  fig06-c-delta-fluctuation.svg
 ```
 
 ## Status
@@ -157,8 +169,7 @@ At 100 epochs a run is **≈ 7 h at 100% reconstructed and ≈ 4.5 h at 10%**, s
 
 ### Panels as implemented
 
-(b) Fluctuation R² vs reconstructed fraction (x decreasing), observed and held-out series
-(mean ± SD, seeds as dots), ceilings dotted, held-out floor dashed, free-parameter count
-annotated at each level, top axis κ (mean known fraction of input volume), 10% operating point
-shaded, fully observed run as ×. (a) Rate scatters, observed and held-out, at the middle level
-and the 10% endpoint. (c) Raster, one observed and one held-out neuron, 10% endpoint.
+See **Panels** above: the sweep (a), one rate scatter at 50% reconstructed (b) and the
+perturbation (c). Superseded details from the original spec: no floor line (dropped from
+every figure on 2026-09-17), no free-parameter annotations and no raster (both removed on
+2026-09-21), and the second scatter at the 10% endpoint is gone.

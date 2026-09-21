@@ -1,6 +1,6 @@
 # Figure 3 — How few neurons do you need to observe?
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **Claim:** with the connectome fully reconstructed, unobserved neurons are recovered even when the great majority of the network is never observed — and there is a threshold below which this fails.
 
@@ -32,27 +32,36 @@ Plot a second x-axis in **number of observed neurons**, since that is the quanti
 - Held-out test set of new stimuli.
 - **Fluctuation R²** primary, Activity R² secondary.
 - Two series: **observed** and **unobserved** neurons.
-- Shuffled-identity floor.
+- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted -- the shuffled-identity floor was dropped on 2026-09-17.
 
 ## Panels
 
-- **(a)** Fluctuation R² vs observed fraction (log x, second axis in neuron count), observed and unobserved series, error bars over seeds, floor as a dashed line. The break point is the result.
-- **(b)** Rate scatters at three points: comfortably above threshold, near it, and below.
-- **(c)** *optional but valuable* — the threshold against the **dimensionality of the teacher's activity** (participation ratio of the activity covariance). If the break point sits near that dimensionality, it is a direct confirmation of the B&LK prediction in a spiking network. Cheap to compute from the teacher alone, as a separate analysis.
+As built (2026-09-21), one SVG each:
 
-**How to compute the participation ratio:** smooth spike trains with the **same 50 ms Gaussian** used for Fluctuation R², on **held-out stimuli**, then take the participation ratio of the activity covariance across neurons. Smoothing first matters — the dimensionality that is relevant is the dimensionality of the signal the loss actually sees, and it keeps the number commensurable with the metric reported everywhere else. Report the smoothing width and the time window alongside the value, since the participation ratio moves with both.
+- **(a)** `fig03-a-curve` — Fluctuation R² vs observed fraction, observed and unobserved, individual seeds, no error bars, 90%-variance marker, x decreasing left to right in percentages.
+- **(b)** `fig03-b-scatter` — unobserved firing rates at three observed fractions, percentages in the titles.
+- **(c)** `fig03-c-delta-fluctuation` — perturbation ΔFluctuation R², same axis treatment as (a), cell types pooled.
+
+Panel (a) carries no title: the slide does. The participation ratio is *not* marked --
+at 41 neurons (0.8%) it sits below everything tested and would imply the opposite of what
+the sweep shows.
 
 ## Files
 
 ```
 fig03-observed-fraction/
+  analysis.py
+  figures.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
   README.md
-  fig03_summary.csv     obs_fraction, n_observed, seed, group{observed,unobserved}, metric, value, floor_value
-  fig03_rates.csv       obs_fraction, neuron_id, cell_type, observed{0,1}, seed, teacher_rate_hz, student_rate_hz
-  fig03_dimensionality.csv   participation_ratio, n_pcs_90pct_var   (teacher activity, held-out stimuli)
-  plot_fig03.py
-  fig03.svg
-  config.yaml
+  fig03_rates.csv
+  fig03_summary.csv
+  fig03-a-curve.svg
+  fig03-b-scatter.svg
+  fig03-c-delta-fluctuation.svg
 ```
 
 ## Status
@@ -110,8 +119,8 @@ pooled training-trial value is used.
 
 ### Panels as implemented
 
-(a) Fluctuation R² vs observed fraction, log x, top axis in observed neurons; observed and
-unobserved series (mean ± SD, seeds as dots), their ceilings (dotted), the unobserved floor
-(dashed), participation ratio marked. (b) Unobserved-neuron rate scatters at three fractions,
-chosen by default as: the lowest fraction still at ≥ 90% of the way from floor to ceiling,
-the fraction closest to halfway, and the lowest fraction. Override once the curve is known.
+See **Panels** above. Superseded details from the original spec: no floor, individual seeds
+instead of error bars, the x axis decreases left to right in percentages, and the marker is
+the 90%-variance count rather than the participation ratio. Panel (b)'s three fractions are
+still chosen automatically (comfortably above the break, near it, and the lowest run) and can
+be overridden with `--scatter-fractions`.

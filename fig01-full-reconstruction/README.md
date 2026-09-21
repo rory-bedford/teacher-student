@@ -1,6 +1,6 @@
 # Figure 1 — Full reconstruction recovers the teacher
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **Claim:** with the feedforward inputs recorded and reconstructed and the recurrent connectome reconstructed, the student reproduces the teacher's activity — including for neurons it never observed — on stimuli it was never trained on.
 
@@ -26,36 +26,55 @@ Exactly one factor departs from the ideal case — 90% of neurons unobserved —
 - **Fluctuation R²** (primary): spikes smoothed with a 50 ms Gaussian, then R². This is a close drop-in for the calcium trace we match against (exponential filter, τ = 100 ms), so it answers "how well would these spike trains agree once seen through calcium". **Say this in the talk** — it makes the metric a property of the real experiment rather than an arbitrary choice.
 - **Activity R²** (secondary): firing rates.
 - Reported separately for **observed** and **unobserved** neurons.
-- **Shuffled-identity floor**: recompute after permuting the teacher↔student neuron mapping, so 0.995 can be read against chance.
+- **Noise ceiling**: the perfectly specified student under the same teacher forcing and the
+  same spike-flip draws, so the score can be read against what is achievable rather than
+  against chance. The shuffled-identity floor of the original spec was dropped on
+  2026-09-17 (it sits near -1, not 0: pooled R² against the identity line punishes
+  mismatched means), and no figure plots a floor.
 
 ## Panels
 
-- **(a)** Spike raster, teacher vs student, ~5 example neurons, held-out stimulus window. **At least one must be an unobserved neuron, labelled as such** — a neuron the model never saw, reproduced spike for spike on a new stimulus, is the single most striking thing in the talk.
-- **(b)** Rate scatter, teacher vs student, coloured by E/I, two panels (observed / unobserved), Fluctuation R² and Activity R² in each title, floor annotated.
-- **(c)** *optional* — per-neuron R² histogram, split E/I, floor marked.
+As built (2026-09-21), one SVG each:
+
+- **(a)** `fig01-a-raster` — teacher and student spikes, 3 observed and 3 unobserved neurons, held-out stimulus.
+- **(b)** `fig01-b-scatter` — firing rates, student vs teacher, observed beside unobserved, linear 0-40 Hz.
+- **(c)** `fig01-c-delta-scatter` — the perturbation's per-neuron Δrate, teacher vs student, linear ±40 Hz, targeted cells marked.
+- **(d)** `fig01-d-delta-means` — mean Δrate per population, teacher beside student.
+- **(e)** `fig01-e-scaling-factors` — the six tied scaling factors, learnt / true, this figure's runs beside Figure 2's fully observed ones.
+
+The per-neuron R² histogram of the original spec was dropped: the raster and the scatters
+show the same thing more directly.
 
 ## Files
 
 ```
 fig01-full-reconstruction/
-  README.md             this file
-  fig01_rates.csv       neuron_id, cell_type, observed{0,1}, seed, teacher_rate_hz, student_rate_hz
-  fig01_spikes.csv      neuron_id, observed{0,1}, seed, source{teacher,student}, time_s
-  fig01_summary.csv     seed, group{observed,unobserved}, metric{activity_r2,fluctuation_r2}, value, floor_value
-  plot_fig01.py         reads the three CSVs, writes the figure
-  fig01.svg             output
-  config.yaml           copy of, or path to, the run config that produced the CSVs
+  analysis.py
+  figures.py
+  perturbation_smoketest.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
+  README.md
+  fig01_perturbation.csv
+  fig01_rates.csv
+  fig01_scaling_factors.csv
+  fig01_spikes.csv
+  fig01_summary.csv
+  fig01-a-raster.svg
+  fig01-b-scatter.svg
+  fig01-c-delta-scatter.svg
+  fig01-d-delta-means.svg
+  fig01-e-scaling-factors.svg
 ```
 
 ## Status
 
 **Reusable — no retraining.** The archived `ff-known__obs-10__recur-100__wn-0__scatter.svg` matches this configuration (observed R² = 0.997, unobserved R² = 0.995) and was evaluated on held-out stimuli.
 
-To do:
-1. Export the three CSVs from the existing run.
-2. Add the shuffled-identity floor.
-3. Add seed spread (≥3) to the summary numbers.
-4. **Redo the raster**, labelling observed vs unobserved neurons. The archived raster's provenance is unclear and an unlabelled raster can't carry the claim.
+Done (2026-09-21): the CSVs are exported, three seeds are in, the raster labels observed
+and unobserved neurons, and the floor was replaced by the noise ceiling.
 
 ## Notes
 
@@ -174,7 +193,6 @@ epoch → **≈ 3.6 h per run, ≈ 11 GPU-h for the 3 seeds**.
 
 ### Panels as implemented
 
-(a) raster: 2 observed + 3 unobserved neurons with teacher rates 2–20 Hz, first 3 s after
-burn-in, labelled. (b) rate scatters with Fluctuation/Activity R², floor and ceiling in each
-title (mean over seeds; points from the first seed). (c) per-neuron Fluctuation R² histograms,
-E vs I, floor and ceiling marked.
+See **Panels** above. Superseded details from the original spec: the raster is 3 observed +
+3 unobserved (was 2 + 3), the scatters quote the noise ceiling rather than a floor, and the
+per-neuron histogram was replaced by the perturbation and scaling-factor panels.

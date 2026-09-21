@@ -1,6 +1,6 @@
 # Figure 2 — The connectome is what's doing the work
 
-> **Read `../METHODS.md` first** — model, teacher forcing, metrics, floor, seeds, naming, and the instruction to make only minimal edits to the existing code.
+> **Read `../METHODS.md` first** — model, teacher forcing, metrics, the noise ceiling, seeds, naming, and the instruction to make only minimal edits to the existing code.
 
 **Claim:** the recovery in Figure 1 comes from the measured connectome, not from the flexibility of the model. Controls that discard or scramble connectivity fail, at the same training budget and on the same held-out stimuli.
 
@@ -56,24 +56,37 @@ The configuration model **replaces** the naive random within-block rewire; it is
 - Held-out test set of new stimuli.
 - **Fluctuation R²** primary (50 ms Gaussian smoothing of spikes; stand-in for the τ = 100 ms calcium filter we match against), Activity R² secondary.
 - Reported separately for **observed** and **unobserved** neurons. Unobserved is the discriminative group — every variant can fit what it is shown.
-- Shuffled-identity floor per variant.
+- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted -- the shuffled-identity floor was dropped on 2026-09-17.
 
 ## Panels
 
-- **(a)** Grouped bars: variant × {observed, unobserved}, **Fluctuation R²**, error bars over seeds, floor as a dashed line.
-- **(b)** Activity R², same layout, smaller or inset. The variants are expected to separate far less here — that contrast is worth showing, since it is *why* Fluctuation R² is primary.
-- **(c)** Schematic of the connectivity variants (archived `perturbations.svg` does this; relabel each panel with its variant name).
+As built (2026-09-21), one SVG each, subpanels the same size in both figures so they tile
+on one slide:
+
+- **(a)** `fig02-a-bars-held-out` — held-out Fluctuation R², observed | unobserved, one bar per variant.
+- **(b)** `fig02-b-bars-perturbation` — perturbation ΔFluctuation R², non-targeted E | non-targeted I | targeted I.
+- **(c)** `fig02-c-legend` — the shared legend, stacked vertically, on its own.
+
+Neither figure carries a legend; both share one y range. The Activity R² panel and the
+connectivity schematic of the original spec were dropped, and the weight-shuffle variant
+is still trained and scored but not plotted (see `PLOTTED_VARIANTS` in figures.py).
 
 ## Files
 
 ```
 fig02-controls/
+  analysis.py
+  figures.py
+  run_grid_search.py
+  train.py
+  experiment.toml
+  parameters.toml
   README.md
-  fig02_summary.csv     variant, seed, group{observed,unobserved}, metric{activity_r2,fluctuation_r2}, value, floor_value
-  fig02_rates.csv       variant, neuron_id, cell_type, observed{0,1}, seed, teacher_rate_hz, student_rate_hz
-  plot_fig02.py
-  fig02.svg
-  config.yaml
+  fig02_rates.csv
+  fig02_summary.csv
+  fig02-a-bars-held-out.svg
+  fig02-b-bars-perturbation.svg
+  fig02-c-legend.svg
 ```
 
 ## Status
@@ -165,7 +178,7 @@ grid. The superseded run is kept at
 ### Panels as implemented
 
 (a) Fluctuation R², bars = variant × {observed (light), unobserved (dark)}, mean ± SD with
-seeds as dots, floor (dashed) and ceiling (dotted) per bar. (b) Activity R², same layout.
+seeds as dots, noise ceiling (dotted) per bar. (b) Activity R², same layout.
 (c) The archived `perturbations.svg` does not exist anywhere in the repo or in
 `dp-simulations/`, so the schematic is generated: a toy 20-neuron E/I connectome passed
 through the real shuffle and configuration-model functions, plus the dense learnt matrix,

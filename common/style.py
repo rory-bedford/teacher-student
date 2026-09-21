@@ -19,6 +19,7 @@ from connectome_snns.visualization import (
     use_project_style,
 )
 from matplotlib.lines import Line2D
+from matplotlib.ticker import MultipleLocator
 
 EXCITATORY = FIGURE_CORAL
 INHIBITORY = FIGURE_BLUE
@@ -92,6 +93,8 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
 #: and they are not what the figure is about. Cells beyond the limit are counted in the
 #: axis label, not plotted.
 RATE_MAX_HZ = 40.0
+#: Tick spacing on both axes of every scatter, rates and deltas alike.
+RATE_TICK_HZ = 10.0
 #: Marker area for the rate scatters; the delta scatter matches it (see common.plotting).
 RATE_MARKER_SIZE = 10
 
@@ -133,6 +136,9 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     ax.plot([0, max_rate], [0, max_rate], "k--", linewidth=1, alpha=0.5)
     ax.set_xlim(0, max_rate)
     ax.set_ylim(0, max_rate)
+    # Ticks every 10 Hz on both axes, in every scatter (2026-09-21).
+    ax.xaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
+    ax.yaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
     ax.set_aspect("equal")
     ax.set_xlabel("Teacher Firing Rate (Hz)")
     ax.set_ylabel("Student Firing Rate (Hz)")
