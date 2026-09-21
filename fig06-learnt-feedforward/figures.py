@@ -101,7 +101,16 @@ def scatters(sweep, rates, fraction, seed):
     return fig
 
 
-def curve(sweep, fully_observed):
+def limits(sweep):
+    """One y range for the sweep and the perturbation panel, as in Figures 3 to 5."""
+    rows = sweep[
+        sweep["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
+        & sweep["group"].isin(["unobserved", "heldout"])
+    ]
+    return min(0.0, float(rows["value"].min()) - 0.05), 1.05
+
+
+def curve(sweep, fully_observed, ylim):
     """(b) The sweep, with the free-parameter count annotated at each level."""
     rows = held_out(sweep)
     fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.35, SINGLE[1] * 1.15))
@@ -112,6 +121,8 @@ def curve(sweep, fully_observed):
             "reconstructed_fraction",
             "fluctuation_r2",
             color,
+            seeds=True,
+            errorbars=False,
         )
         ceiling(
             ax,
@@ -156,11 +167,17 @@ def curve(sweep, fully_observed):
         color=LEGEND_GREY,
     )
     ax.set_xlim(1.05, 0.0)
-    ax.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.05)
+    ax.set_ylim(*ylim)
     ax.set_xlabel("Fraction of Units Reconstructed")
-    ax.set_ylabel("Firing Rate R²")
+    ax.set_ylabel("Fluctuation R²")
     sweep_legend(
-        ax, {label: color for label, color in GROUPS.values()}, extra=handles_extra
+        ax,
+        {label: color for label, color in GROUPS.values()},
+        metrics=False,
+        extra=handles_extra,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
     )
     # The free-parameter count is the mechanism: it pre-empts the objection that the
     # learnt bucket can fit anything.
@@ -201,7 +218,7 @@ def raster(spikes, level):
     return fig
 
 
-def perturbation(sweep, metric):
+def perturbation(sweep, metric, ylim):
     """The intervention against reconstructed fraction, one population per colour.
 
     The targets are held-out (unobserved) I cells; the unreconstructed units are
@@ -218,13 +235,29 @@ def perturbation(sweep, metric):
     labels = {}
     for group, cell_type, color, label in series:
         subset = group_rows(rows, group, metric, cell_type)
-        sweep_series(ax, subset, "reconstructed_fraction", base_metric, color)
+        sweep_series(
+            ax,
+            subset,
+            "reconstructed_fraction",
+            base_metric,
+            color,
+            seeds=True,
+            errorbars=False,
+        )
         ceiling(ax, subset, "reconstructed_fraction", color)
         labels[label.replace("Unobserved", "Held-Out")] = color
     ax.set_xlim(1.05, 0.0)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
-    sweep_legend(ax, labels, metrics=False)
+    ax.set_ylim(*ylim)
+    sweep_legend(
+        ax,
+        labels,
+        metrics=False,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
     ax.set_title(f"{METRIC_LABELS[metric]}\nInhibiting 25% of Held-Out I Cells")
     fig.tight_layout()
     return fig
@@ -252,13 +285,16 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
         fig = scatters(sweep, rates, fraction, seed)
         output(fig, f"a{index}", f"scatter-{fraction * 100:.0f}pct")
 
-    output(curve(sweep, fully_observed), "b", "curve")
+    ylim = limits(sweep)
+    output(curve(sweep, fully_observed, ylim), "b", "curve")
     output(raster(spikes, min(levels)), "c", "raster")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if "evaluation" in sweep and (sweep["metric"] == "delta_fluctuation_r2").any():
-        output(perturbation(sweep, "delta_fluctuation_r2"), "d", "delta-fluctuation")
+        output(
+            perturbation(sweep, "delta_fluctuation_r2", ylim), "d", "delta-fluctuation"
+        )
 
 
 if __name__ == "__main__":

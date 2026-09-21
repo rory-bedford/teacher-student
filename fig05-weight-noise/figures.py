@@ -36,6 +36,7 @@ from common.plotting import METRIC_LABELS, PERTURBATION_SERIES
 from common.style import (
     PAIR,
     SINGLE,
+    TICK_SIZE,
     apply_style,
     ceiling,
     clear_panels,
@@ -67,7 +68,16 @@ def group_rows(summary, group, metric, cell_type="all"):
     return rows
 
 
-def curve(summary, clipped):
+def limits(summary):
+    """One y range for all three panels, as in Figures 3 and 4."""
+    rows = summary[
+        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
+        & (summary["group"] == "unobserved")
+    ]
+    return min(0.0, float(rows["value"].min()) - 0.05), 1.02
+
+
+def curve(summary, clipped, ylim):
     """(a) Fluctuation R² against weight noise, per population, with dotted ceilings."""
     rows = held_out(summary)
     fig, ax = plt.subplots(figsize=SINGLE)
@@ -78,14 +88,23 @@ def curve(summary, clipped):
             "weight_noise",
             "fluctuation_r2",
             color,
+            seeds=True,
+            errorbars=False,
         )
         ceiling(ax, group_rows(rows, group, "fluctuation_r2"), "weight_noise", color)
     ax.set_xlim(-0.025, rows["weight_noise"].max() + 0.025)
     # Limits from the data, not fixed: the real sweep runs lower than the estimates.
-    ax.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
+    ax.set_ylim(*ylim)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel("Fluctuation R²")
-    sweep_legend(ax, {label: color for label, color in GROUPS.values()}, metrics=False)
+    sweep_legend(
+        ax,
+        {label: color for label, color in GROUPS.values()},
+        metrics=False,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
     # The mean/SD-preserving perturbation clips at zero; report how much it clipped.
     ax.set_title(
         "Observed and Unobserved Neurons vs Weight Noise\n"
@@ -97,11 +116,19 @@ def curve(summary, clipped):
     return fig
 
 
-def contrast(summary, fig04_summary):
+def contrast(summary, fig04_summary, ylim):
     """(b) The contrast panel: imprecise weights beside missing connections, shared y."""
     rows = group_rows(held_out(summary), "unobserved", "fluctuation_r2")
     fig, (left, right) = plt.subplots(1, 2, figsize=PAIR, sharey=True)
-    sweep_series(left, rows, "weight_noise", "fluctuation_r2", WEIGHT_NOISE_COLOR)
+    sweep_series(
+        left,
+        rows,
+        "weight_noise",
+        "fluctuation_r2",
+        WEIGHT_NOISE_COLOR,
+        seeds=True,
+        errorbars=False,
+    )
     left.set_xlabel("Weight Noise Fraction")
     left.set_ylabel("Fluctuation R² (Unobserved)")
     left.set_title("Imprecise Weights (Figure 5)")
@@ -114,18 +141,19 @@ def contrast(summary, fig04_summary):
         ]
         if "cell_type" in removal:
             removal = removal[removal["cell_type"] == "all"]
-        stats = removal.groupby("level")[["mean_kappa_lost", "value"]].mean()
-        spread = removal.groupby("level")["value"].std().fillna(0)
-        right.errorbar(
-            stats["mean_kappa_lost"],
-            stats["value"],
-            yerr=spread,
-            color=NEURON_REMOVAL_COLOR,
-            marker="s",
-            linestyle="--",
-            linewidth=1.5,
-            markersize=5,
-            capsize=2.5,
+        # Snapped to the nominal grid and grouped by level, as Figure 4 does.
+        removal = removal.assign(
+            kappa_snapped=(removal["mean_kappa_lost"] * 10).round() / 10
+        )
+        sweep_series(
+            right,
+            removal,
+            "kappa_snapped",
+            "fluctuation_r2",
+            NEURON_REMOVAL_COLOR,
+            seeds=True,
+            errorbars=False,
+            x_group="level",
         )
     else:
         right.text(
@@ -133,13 +161,13 @@ def contrast(summary, fig04_summary):
         )
     right.set_xlabel("Fraction of Recurrent Input Lost")
     right.set_title("Missing Connections (Figure 4)")
-    left.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
+    left.set_ylim(*ylim)
     fig.suptitle("Unobserved Neurons vs Input Volume Lost, Both Error Models")
     fig.tight_layout()
     return fig
 
 
-def perturbation(summary, metric):
+def perturbation(summary, metric, ylim):
     """The intervention's effect against weight noise, one population per colour."""
     rows = summary[summary["evaluation"] == "perturbation"]
     fig, ax = plt.subplots(figsize=SINGLE)
@@ -149,12 +177,28 @@ def perturbation(summary, metric):
         # sweep_series looks its marker/linestyle up by the base metric name, so the
         # delta panels keep the archived Activity o- / Fluctuation s-- convention.
         base_metric = metric.replace("delta_", "")
-        sweep_series(ax, subset, "weight_noise", base_metric, color)
+        sweep_series(
+            ax,
+            subset,
+            "weight_noise",
+            base_metric,
+            color,
+            seeds=True,
+            errorbars=False,
+        )
         ceiling(ax, subset, "weight_noise", color)
         series[label] = color
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
-    sweep_legend(ax, series, metrics=False)
+    ax.set_ylim(*ylim)
+    sweep_legend(
+        ax,
+        series,
+        metrics=False,
+        loc="lower left",
+        bbox_to_anchor=None,
+        fontsize=TICK_SIZE - 2,
+    )
     ax.set_title(f"{METRIC_LABELS[metric]}\nInhibiting 25% of Unobserved I Cells")
     fig.tight_layout()
     return fig
@@ -169,13 +213,18 @@ def main(data_dir, fig04_summary, out_dir, decorate=None, suffix=""):
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
-    output(curve(summary, clipped), "a", "curve")
-    output(contrast(summary, fig04_summary), "b", "contrast")
+    ylim = limits(summary)
+    output(curve(summary, clipped, ylim), "a", "curve")
+    output(contrast(summary, fig04_summary, ylim), "b", "contrast")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
-        output(perturbation(summary, "delta_fluctuation_r2"), "c", "delta-fluctuation")
+        output(
+            perturbation(summary, "delta_fluctuation_r2", ylim),
+            "c",
+            "delta-fluctuation",
+        )
 
 
 if __name__ == "__main__":
