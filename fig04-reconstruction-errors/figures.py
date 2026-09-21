@@ -184,8 +184,8 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     if "evaluation" in summary:
         held_out = summary[summary["evaluation"] == "held_out"]
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     ylim = limits(summary)
     output(curve(held_out, ylim), "a", "curve")

@@ -290,16 +290,16 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
         if deltas.empty:
             deltas = None
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
-    output(raster(spikes), "a", "raster")
-    output(scatters(rates_seed, held_out), "b", "scatter")
+    output(raster(spikes), "a", "raster", raster=True)
+    output(scatters(rates_seed, held_out), "b", "scatter", raster=True)
 
     # The perturbation panel is a separate file, so dropping it from the talk is
     # dropping one SVG.
     if deltas is not None:
-        output(delta_scatter(summary, deltas), "c", "delta-scatter")
+        output(delta_scatter(summary, deltas), "c", "delta-scatter", raster=True)
         output(delta_means(deltas), "d", "delta-means")
     if factors is not None:
         output(scaling_factors(factors), "e", "scaling-factors")

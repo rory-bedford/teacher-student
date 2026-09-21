@@ -64,9 +64,12 @@ from common.style import (
 )
 
 FIGURE = "fig00"
-#: Seconds of the traced neuron to draw. The whole 5 s window packs over a hundred spikes
-#: into the panel, where they read as bands rather than as spikes.
+#: Seconds of the traced neuron to draw, and the sub-bin the window is chosen by. A fast
+#: cell packs a hundred spikes into 5 s, where they read as bands rather than as spikes,
+#: and a cell that fires in bursts leaves most of a fixed window empty -- so the window is
+#: the one whose spikes are spread over the most sub-bins (ties going to the most spikes).
 TRACE_WINDOW_S = 2.0
+TRACE_WINDOW_BIN_S = 0.5
 #: Each synapse type's colour is its presynaptic population's; AMPA and NMDA of one
 #: population share it and are separated by line style.
 SYNAPSE_STYLES = {
@@ -262,6 +265,29 @@ def raster(data):
     return fig
 
 
+def trace_window_start(spike_times, duration_s):
+    """The start of the TRACE_WINDOW_S window whose spikes are the most spread out.
+
+    Scored by how many TRACE_WINDOW_BIN_S sub-bins contain a spike, ties going to the
+    window with more spikes, so a bursting cell is not drawn over a silent stretch.
+    """
+    bins = round(TRACE_WINDOW_S / TRACE_WINDOW_BIN_S)
+    best, chosen = (-1, -1), 0.0
+    for start in np.arange(
+        0.0, max(duration_s - TRACE_WINDOW_S, 0.0) + 1e-9, TRACE_WINDOW_BIN_S
+    ):
+        inside = spike_times[
+            (spike_times >= start) & (spike_times < start + TRACE_WINDOW_S)
+        ]
+        counts = np.histogram(inside, bins=bins, range=(start, start + TRACE_WINDOW_S))[
+            0
+        ]
+        score = (int((counts > 0).sum()), int(counts.sum()))
+        if score > best:
+            best, chosen = score, float(start)
+    return chosen
+
+
 def neuron_traces(data):
     """(f) One neuron's membrane potential, its spikes, and the currents that move it.
 
@@ -271,7 +297,8 @@ def neuron_traces(data):
     stored values are g(V - E_syn), which is negative for an excitatory synapse, hence
     the sign flip here.
     """
-    window = data["time_s"] <= TRACE_WINDOW_S
+    start = trace_window_start(data["spike_time_s"], float(data["time_s"][-1]))
+    window = (data["time_s"] >= start) & (data["time_s"] <= start + TRACE_WINDOW_S)
     time_s = data["time_s"][window]
     synapses = list(data["synapse"])
     current = -data["current_pa"][window]
@@ -288,7 +315,10 @@ def neuron_traces(data):
         zorder=3,
         rasterized=True,
     )
-    spike_times = data["spike_time_s"][data["spike_time_s"] <= TRACE_WINDOW_S]
+    spike_times = data["spike_time_s"]
+    spike_times = spike_times[
+        (spike_times >= start) & (spike_times <= start + TRACE_WINDOW_S)
+    ]
     if spike_times.size:
         # Thinner than the trace and behind it: a fast cell fires often enough that
         # full-weight spike lines read as a black band rather than as spikes.
@@ -586,8 +616,8 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     output(
         coding_schematic(pd.read_csv(data_dir / "fig00_coding_schematic.csv")),
@@ -595,10 +625,10 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
         "coding-schematic",
     )
     assemblies = np.load(data_dir / "fig00_assemblies.npz")
-    output(ou_trajectories(assemblies), "b", "ou-trajectories")
-    output(assembly_rates(assemblies), "c", "assembly-rates")
+    output(ou_trajectories(assemblies), "b", "ou-trajectories", raster=True)
+    output(assembly_rates(assemblies), "c", "assembly-rates", raster=True)
 
-    output(raster(np.load(data_dir / "fig00_raster.npz")), "d", "raster")
+    output(raster(np.load(data_dir / "fig00_raster.npz")), "d", "raster", raster=True)
     output(
         condition_scatter(
             pd.read_csv(data_dir / "fig00_condition_rates.csv"),
@@ -610,11 +640,12 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
         ),
         "e",
         "rates-odour-repeat",
+        raster=True,
     )
 
     traces = np.load(data_dir / "fig00_traces.npz")
-    output(neuron_traces(traces), "f", "neuron-traces")
-    output(conductances(traces), "g", "conductances")
+    output(neuron_traces(traces), "f", "neuron-traces", raster=True)
+    output(conductances(traces), "g", "conductances", raster=True)
     output(
         synaptic_drive(pd.read_csv(data_dir / "fig00_drive.csv")), "h", "synaptic-drive"
     )

@@ -233,10 +233,14 @@ fraction is recorded per run as `noise_clipped_fraction`.
 
 ## Figure conventions
 
-- **One SVG per panel**, `figNN-<letter>-<slug>.svg`, at the size it is inserted into the
-  talk at 100%. A rebuild deletes that figure's existing panels first
+- **One file per panel**, `figNN-<letter>-<slug>`, at the size it is inserted into the talk
+  at 100%. A rebuild deletes that figure's existing panels first
   (`common.style.clear_panels`), so an orphan from an earlier build cannot end up on a
   slide.
+- **Vector by default, PNG where the ink is dense.** Rate scatters, spike rasters and the
+  membrane/conductance traces are saved as 400 dpi PNG (`save(..., raster=True)`): as SVG
+  each point is its own element, which makes a deck slow to open and to page through.
+  Everything else stays SVG, so axes and labels remain sharp and editable.
 - Panel titles say **what is plotted**, not what it proves — the slide carries the claim.
 - Fixed colours across all figures, never reassigned: `COLORSCHEME.txt` for the meanings,
   `common/style.py` for the semantic names figures import (`TRUTH`, `MODEL`, `OBSERVED`,

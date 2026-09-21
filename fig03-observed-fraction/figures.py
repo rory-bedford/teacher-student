@@ -254,8 +254,8 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
         estimated if estimated.exists() else TEACHER_DIMENSIONALITY
     ).iloc[0]
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     held_out = summary
     if "evaluation" in summary:
@@ -264,7 +264,7 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
 
     fractions = scatter_fractions or default_scatter_fractions(held_out)
     seed = int(rates["seed"].min())
-    output(scatters(held_out, rates, fractions, seed), "b", "scatter")
+    output(scatters(held_out, rates, fractions, seed), "b", "scatter", raster=True)
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.

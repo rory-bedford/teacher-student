@@ -161,8 +161,8 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     summary = pd.read_csv(data_dir / "fig05_summary.csv")
     clipped = summary.groupby("weight_noise")["noise_clipped_fraction"].mean()
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     ylim = limits(summary)
     output(curve(summary, clipped, ylim), "a", "curve")

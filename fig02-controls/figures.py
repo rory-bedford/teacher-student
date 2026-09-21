@@ -231,8 +231,8 @@ def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     if summary.empty:
         raise SystemExit(f"no runs at observed_fraction {observed_fraction}")
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     ylim = limits(summary)
     for letter, (metric, populations), slug in zip(

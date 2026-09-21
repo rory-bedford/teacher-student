@@ -83,6 +83,11 @@ RASTER_TRIAL = 0
 #: shorter stretch, where single spikes are still resolvable.
 RASTER_SECONDS = 10.0
 TRACE_SECONDS = 5.0
+#: The assembly panels get the WHOLE trial: an odourant's response is a sustained offset,
+#: and a 10 s window cut off the second leader's rise (its mean deviation while leading
+#: went from 1.40 Hz over 10 s to 1.81 Hz over the full trial, and its share of the trial
+#: from 0.32 to 0.55).
+ASSEMBLY_SECONDS = 15.0
 #: One condition simulation, of which the first second is discarded before rates are
 #: taken, so the network is not still relaxing from its reset.
 CONDITION_SECONDS = 10.0
@@ -541,7 +546,7 @@ def step_assemblies(teacher, out_dir, device):
     assembly's population rate smoothed with a Gaussian of ``ASSEMBLY_SMOOTHING_MS``.
     """
     data = teacher.zarr
-    steps = teacher.steps(RASTER_SECONDS)
+    steps = teacher.steps(ASSEMBLY_SECONDS)
     burn_in = teacher.steps(BURN_IN_SECONDS)
     trial, leaders = choose_assembly_trial(data, steps)
     dominant = np.array(leaders, dtype=np.int32)
@@ -591,7 +596,7 @@ def step_assemblies(teacher, out_dir, device):
         trial=np.int32(trial),
     )
     print(
-        f"  assemblies: {assemblies.size} assemblies over {RASTER_SECONDS:.0f} s, "
+        f"  assemblies: {assemblies.size} assemblies over {ASSEMBLY_SECONDS:.0f} s, "
         f"rates {rates.min():.1f}-{rates.max():.1f} Hz, mixing weight up to "
         f"{weights.max():.2f}; trial {trial}, led by odourants "
         + " then ".join(f"{k} ({mixing[k]:.2f} mean weight)" for k in leaders)

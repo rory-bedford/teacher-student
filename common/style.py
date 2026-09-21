@@ -97,18 +97,31 @@ def apply_style():
 
 
 def clear_panels(out_dir, figure, suffix=""):
-    """Delete this figure's existing panel SVGs before a rebuild.
+    """Delete this figure's existing panels before a rebuild, SVG and PNG alike.
 
     Panels are named per letter, so re-lettering or dropping a panel otherwise leaves an
-    orphan SVG behind that looks current in the folder and can be pasted into a slide by
+    orphan behind that looks current in the folder and can be pasted into a slide by
     mistake. Every figure's ``main`` calls this first.
     """
-    for path in sorted(Path(out_dir).glob(f"{figure}-*{suffix}.svg")):
-        path.unlink()
+    for extension in ("svg", "png"):
+        for path in sorted(Path(out_dir).glob(f"{figure}-*{suffix}.{extension}")):
+            path.unlink()
 
 
-def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
+#: Dots per inch for panels saved as PNG. At the panel sizes here (~6.5 in wide) this is
+#: ~2600 px across, well past what a projector or a print resolves, so the panel can be
+#: enlarged on a slide without softening.
+RASTER_DPI = 400
+
+
+def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None, raster=False):
     """``<out_dir>/<figure>-<letter>-<slug><suffix>.svg``, e.g. fig01-a-raster.svg.
+
+    ``raster=True`` writes a ``.png`` at :data:`RASTER_DPI` instead. Panels whose ink is
+    thousands of points or a dense trace -- every rate scatter, every spike raster, the
+    membrane and conductance traces -- go out as PNG: as SVG each one carries every point
+    as its own element, which makes a deck slow to open and to page through. Everything
+    else stays vector, so axes and labels stay sharp and editable.
 
     ``decorate`` is called with the figure just before saving and ``suffix`` is appended
     to the file name, so a caller can emit a marked-up variant of a panel (a draft
@@ -116,8 +129,9 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
     """
     if decorate is not None:
         decorate(fig)
-    path = Path(out_dir) / f"{figure}-{letter}-{slug}{suffix}.svg"
-    fig.savefig(path, bbox_inches="tight")
+    extension = "png" if raster else "svg"
+    path = Path(out_dir) / f"{figure}-{letter}-{slug}{suffix}.{extension}"
+    fig.savefig(path, bbox_inches="tight", dpi=RASTER_DPI if raster else None)
     plt.close(fig)
     print(f"Saved {path}")
 

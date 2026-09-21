@@ -249,8 +249,8 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
     fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
 
-    def output(fig, letter, slug):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
+    def output(fig, letter, slug, raster=False):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     ylim = limits(sweep)
     output(curve(sweep, fully_observed, ylim), "a", "curve")
@@ -258,10 +258,11 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
         scatters(sweep, rates, SCATTER_LEVEL, int(rates["seed"].min())),
         "b",
         f"scatter-{SCATTER_LEVEL * 100:.0f}pct",
+        raster=True,
     )
 
     # The perturbation panels are separate files, so dropping them from the talk is
-    # dropping two SVGs.
+    # dropping two panels.
     if "evaluation" in sweep and (sweep["metric"] == "delta_fluctuation_r2").any():
         output(
             perturbation(sweep, "delta_fluctuation_r2", ylim), "c", "delta-fluctuation"
