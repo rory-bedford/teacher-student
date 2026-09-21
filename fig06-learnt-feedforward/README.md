@@ -45,7 +45,19 @@ State it on the slide in those terms: *at 10% reconstruction only a tenth of our
 
 **Restricted-loss control: not implemented.** The design's one remaining open question was whether, at full reconstruction, artificially restricting the loss to the number of neurons the 10% level affords would also cost prediction — which would separate missing connectivity from merely having fewer constraints. That run was never made.
 
-**Fully observed at 10% reconstruction, one run.** Every neuron in S enters the loss, so the only test left is generalisation to held-out stimuli. Prediction being poor there would show that observation demonstrably cannot substitute for reconstruction — the claim that most cleanly separates this work from Beiran & Litwin-Kumar. It is plotted as a single cross on panel (a).
+**Fully observed at 10% reconstruction, one run — trained, scored, not plotted.** Every
+neuron in S enters the loss, so the only test left is generalisation to held-out stimuli.
+It reaches **0.71** on observed neurons, against ~0.97 at full reconstruction, which is the
+answer to "why not just record more neurons instead of reconstructing them?" — observation
+does not substitute for reconstruction.
+
+It was dropped from panel (a) on 2026-09-21: an unlabelled cross needed a sentence of
+setup that the slide cannot spare, and it does not cleanly separate missing connectivity
+from missing constraints — going from 219 to 489 neurons in the loss lifted the observed
+fit from 0.57 to 0.71, so observation helps without closing the gap. The run stays in
+`fig06_summary.csv` (`recorded_pool_fraction` 1.0) as a backup slide or a verbal answer.
+The matched control that would separate the two — restricting the loss to 219 neurons at
+*full* reconstruction — is still not implemented.
 
 ## Axes
 
@@ -55,7 +67,7 @@ Report against both the **fraction of units reconstructed** and **κ**, the frac
 
 As built (2026-09-21), one SVG each:
 
-- **(a)** `fig06-a-curve` — Fluctuation R² vs reconstructed fraction, observed and unobserved, individual seeds, the fully observed control as a cross, the 10% operating point shaded.
+- **(a)** `fig06-a-curve` — Fluctuation R² vs reconstructed fraction, observed and unobserved, individual seeds, the 10% operating point shaded.
 - **(b)** `fig06-b-scatter-50pct` — firing rates at 50% reconstructed, observed beside unobserved, with Activity R² in each title.
 - **(c)** `fig06-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
 

@@ -24,7 +24,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -121,8 +120,17 @@ def limits(sweep):
     return min(0.0, float(rows["value"].min()) - 0.05), 1.05
 
 
-def curve(sweep, fully_observed, ylim):
-    """(b) The sweep, with the free-parameter count annotated at each level."""
+def curve(sweep, ylim):
+    """(a) Observed and unobserved Fluctuation R² against the reconstructed fraction.
+
+    The fully observed control at 10% reconstruction is trained and scored (it is in
+    fig06_summary.csv, ``recorded_pool_fraction`` 1.0) but not drawn: it needed a sentence
+    of setup that a slide cannot spare, and going from 219 to 489 neurons in the loss
+    lifted the observed fit 0.57 -> 0.71, so it shows that observation helps without
+    closing the gap rather than separating missing connectivity from missing constraints.
+    Quote it if someone asks why more recordings cannot substitute for reconstruction:
+    0.71 at 10% reconstructed against ~0.97 at full reconstruction.
+    """
     rows = held_out(sweep)
     fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.35, SINGLE[1] * 1.15))
     for group, (_, color) in GROUPS.items():
@@ -140,29 +148,6 @@ def curve(sweep, fully_observed, ylim):
             group_rows(rows, group, "fluctuation_r2"),
             "reconstructed_fraction",
             color,
-        )
-    handles_extra = []
-    fully_observed = held_out(fully_observed)
-    if not fully_observed.empty:
-        point = group_rows(fully_observed, "observed", "fluctuation_r2")
-        ax.scatter(
-            point["reconstructed_fraction"].mean(),
-            point["value"].mean(),
-            marker="X",
-            s=90,
-            color="k",
-            zorder=4,
-        )
-        handles_extra.append(
-            Line2D(
-                [],
-                [],
-                marker="X",
-                color="k",
-                linestyle="",
-                markersize=9,
-                label="Fully Observed (Fluctuation)",
-            )
         )
     ax.axvspan(
         OPERATING_POINT - 0.02, OPERATING_POINT + 0.02, color="#dddddd", zorder=0
@@ -185,7 +170,6 @@ def curve(sweep, fully_observed, ylim):
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
-        extra=handles_extra,
         loc="lower left",
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
@@ -246,14 +230,15 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig06_summary.csv")
     rates = pd.read_csv(data_dir / "fig06_rates.csv")
+    # The fully observed control (recorded_pool_fraction 1.0) is excluded from the sweep
+    # and no longer drawn; see curve().
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
-    fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
 
     def output(fig, letter, slug, raster=False):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
     ylim = limits(sweep)
-    output(curve(sweep, fully_observed, ylim), "a", "curve")
+    output(curve(sweep, ylim), "a", "curve")
     output(
         scatters(sweep, rates, SCATTER_LEVEL, int(rates["seed"].min())),
         "b",
