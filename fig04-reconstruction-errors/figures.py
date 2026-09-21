@@ -77,7 +77,7 @@ def curve(summary):
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel("Fluctuation R² (Unobserved)")
     sweep_legend(ax, {label: color for label, color in MODELS.values()}, metrics=False)
-    ax.set_title("Robustness to Missing Input")
+    ax.set_title("Unobserved Neurons vs Input Volume Lost")
     fig.tight_layout()
     return fig
 
@@ -122,7 +122,7 @@ def per_neuron_panel(per_neuron):
     ax.set_xlabel("Per-Neuron Input Volume Lost (κ)")
     ax.set_ylabel("Per-Neuron Fluctuation R²")
     ax.legend(handles=handles, loc="lower left", frameon=True)
-    ax.set_title("Per-Neuron Prediction vs Input Lost")
+    ax.set_title("Per-Neuron Prediction vs That Neuron's Input Lost")
     fig.tight_layout()
     return fig
 

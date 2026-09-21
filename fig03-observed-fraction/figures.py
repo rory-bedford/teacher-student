@@ -107,7 +107,7 @@ def observed_axis(ax, fractions):
     ax.set_xticklabels([f"{fraction * 100:g}%" for fraction in fractions])
     ax.get_xaxis().set_minor_formatter(NullFormatter())
     ax.invert_xaxis()
-    ax.set_xlabel("Observed Fraction")
+    ax.set_xlabel("Neurons Observed (% of Network)")
     neuron_axis(ax)
 
 
@@ -115,7 +115,7 @@ def neuron_axis(ax):
     top = ax.secondary_xaxis(
         "top", functions=(lambda f: f * N_NEURONS, lambda n: n / N_NEURONS)
     )
-    top.set_xlabel("Observed Neurons")
+    top.set_xlabel(f"Neurons Observed (of {N_NEURONS:,})")
     return top
 
 

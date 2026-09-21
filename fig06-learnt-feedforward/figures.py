@@ -95,7 +95,7 @@ def scatters(sweep, rates, fraction, seed):
         )["value"].mean()
         rate_scatter(ax, level[level["group"] == group], f"{label} (R² = {r2:.3f})")
     fig.suptitle(
-        f"Degeneracy Under Partial Reconstruction ({fraction:.0%} Reconstructed)"
+        f"Firing Rates, Student vs Teacher, {fraction:.0%} of the Network Reconstructed"
     )
     fig.tight_layout()
     return fig
@@ -176,7 +176,7 @@ def curve(sweep, fully_observed):
             fontsize=TICK_SIZE - 2,
             color=LEGEND_GREY,
         )
-    ax.set_title("Unreconstructed Inputs Break Prediction", pad=18)
+    ax.set_title("Held-Out and Unobserved Neurons vs Reconstructed Fraction", pad=18)
     fig.tight_layout()
     return fig
 
@@ -197,7 +197,7 @@ def raster(spikes, level):
         RASTER_SECONDS,
         [GROUPS[g][0] for g in neurons["group"]],
     )
-    ax.set_title(f"Student vs Teacher Raster ({level:.0%} Reconstructed)")
+    ax.set_title(f"Spikes, Student vs Teacher, {level:.0%} Reconstructed")
     return fig
 
 

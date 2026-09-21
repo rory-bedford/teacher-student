@@ -88,7 +88,7 @@ def curve(summary, clipped):
     sweep_legend(ax, {label: color for label, color in GROUPS.values()}, metrics=False)
     # The mean/SD-preserving perturbation clips at zero; report how much it clipped.
     ax.set_title(
-        "Robustness to Weight Noise\n"
+        "Observed and Unobserved Neurons vs Weight Noise\n"
         + "clipped at zero: "
         + ", ".join(f"{100 * v:.1f}% @ {k:g}" for k, v in clipped.items() if k > 0),
         fontsize=9,
@@ -104,7 +104,7 @@ def contrast(summary, fig04_summary):
     sweep_series(left, rows, "weight_noise", "fluctuation_r2", WEIGHT_NOISE_COLOR)
     left.set_xlabel("Weight Noise Fraction")
     left.set_ylabel("Fluctuation R² (Unobserved)")
-    left.set_title("Imprecise Weights")
+    left.set_title("Imprecise Weights (Figure 5)")
     if Path(fig04_summary).exists():
         fig04 = held_out(pd.read_csv(fig04_summary))
         removal = fig04[
@@ -132,9 +132,9 @@ def contrast(summary, fig04_summary):
             0.5, 0.5, "run fig04 analysis.py", transform=right.transAxes, ha="center"
         )
     right.set_xlabel("Input Volume Lost (κ)")
-    right.set_title("Missing Connections")
+    right.set_title("Missing Connections (Figure 4)")
     left.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
-    fig.suptitle("Imprecise Weights Cost Less Than Missing Connections")
+    fig.suptitle("Unobserved Neurons vs Input Volume Lost, Both Error Models")
     fig.tight_layout()
     return fig
 

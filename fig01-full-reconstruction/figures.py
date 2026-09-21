@@ -80,7 +80,7 @@ def raster(spikes):
             for o in neurons["observed"]
         ],
     )
-    ax.set_title("Student vs Teacher Raster (Held-Out Stimulus)")
+    ax.set_title("Observed and Unobserved Spikes, Held-Out Stimulus")
     fig.tight_layout()
     return fig
 
@@ -92,7 +92,7 @@ def scatters(rates, held_out):
         subset = rates[rates["observed"] == int(group == "observed")]
         rate_scatter(ax, subset, r2_title(label, held_out, group))
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Student vs Teacher Activity")
+    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
     fig.tight_layout()
     return fig
 
@@ -176,7 +176,7 @@ def scaling_factors(factors):
         loc="upper left",
         frameon=True,
     )
-    ax.set_title("The Six Parameters the Student Fits")
+    ax.set_title("Scaling Factors, Learnt vs True")
     fig.tight_layout()
     return fig
 
@@ -256,7 +256,7 @@ def delta_means(deltas):
     ax.set_xticks(range(len(populations)))
     ax.set_xticklabels([label for label, _ in populations])
     ax.set_ylabel("Mean Δrate (Hz)")
-    ax.set_title("Effect of the Intervention, by Population")
+    ax.set_title("Mean Rate Change per Population, Student vs Teacher")
     ax.legend(frameon=True)
     fig.tight_layout()
     return fig
