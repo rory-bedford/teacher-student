@@ -25,6 +25,15 @@ from common.grid import skip_completed
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
 VARIANTS = ["learnt", "shuffle_inputs", "configuration_model"]
+#: Epoch budget per variant, where it differs from parameters.toml's 50 (2026-09-21).
+#: Learnt recurrence fits 25M weights and was still descending at 50 epochs (van Rossum
+#: 145 -> 141 over the final tenth), so it gets the 100 epochs every other learnt-weights
+#: model in this project gets (see fig06-learnt-feedforward/parameters.toml). The
+#: 6-parameter controls stay at 50, where they have long since converged.
+#: The longer runs land in their own directories (``learnt-100ep__seed-N``) so the
+#: 50-epoch runs stay in place until the figure switches over; see figures.py's
+#: LEARNT_EPOCHS.
+VARIANT_EPOCHS = {"learnt": 100}
 #: The fully observed full-connectome run is kept (one per seed) for the backup panel in
 #: backup-figures/: with every neuron teacher-forced there are no unobserved neurons, so
 #: the rate penalties do not exist as loss terms and the six scaling factors are
@@ -38,7 +47,12 @@ def custom_config_generator(base_params):
             params = deepcopy(base_params)
             params["simulation"]["seed"] = seed
             params["student"]["recurrent_model"] = variant
-            yield params, f"{variant}__seed-{seed}"
+            epochs = VARIANT_EPOCHS.get(variant)
+            if epochs is None:
+                yield params, f"{variant}__seed-{seed}"
+                continue
+            params["training"]["total_epochs"] = epochs
+            yield params, f"{variant}-{epochs}ep__seed-{seed}"
         for variant in FULLY_OBSERVED_VARIANTS:
             params = deepcopy(base_params)
             params["simulation"]["seed"] = seed

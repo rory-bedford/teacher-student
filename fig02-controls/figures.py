@@ -49,6 +49,11 @@ FIGURE = "fig02"
 #: within neuron) is trained on every seed and stays in fig02_summary.csv / fig02_rates.csv,
 #: but is not plotted (2026-09-18): it overlaps with Figure 5's weight noise, which makes
 #: the same point as a graded curve. Add it back to this list to restore the bar.
+#: Epoch budget plotted for the learnt-recurrence bars (2026-09-21). The 50-epoch runs
+#: and the 100-epoch reruns coexist in the grid, so this switches the figure between them:
+#: set it to 100 once ``learnt-100ep__seed-*`` have finished. Variants with a single
+#: budget are unaffected.
+LEARNT_EPOCHS = 50
 PLOTTED_VARIANTS = [
     "full_connectome",
     "learnt_recurrence",
@@ -84,6 +89,14 @@ FIGURES = (
 )
 #: Every subpanel is this size in both figures, so they tile on one slide.
 SUBPANEL_SIZE = (3.4, 4.0)
+
+
+def plotted_epochs(summary):
+    """Keep one epoch budget per variant: LEARNT_EPOCHS for learnt recurrence."""
+    if "total_epochs" not in summary:  # CSVs written before 2026-09-21
+        return summary
+    learnt = summary["variant"] == "learnt_recurrence"
+    return summary[~learnt | (summary["total_epochs"] == LEARNT_EPOCHS)]
 
 
 def panel_rows(summary, metric, group, cell_type):
@@ -199,6 +212,7 @@ def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     if np.isnan(observed_fraction):
         summary["observed_fraction"] = observed_fraction = 0.5
     summary = summary[np.isclose(summary["observed_fraction"], observed_fraction)]
+    summary = plotted_epochs(summary)
     if summary.empty:
         raise SystemExit(f"no runs at observed_fraction {observed_fraction}")
 

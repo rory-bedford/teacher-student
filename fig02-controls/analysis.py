@@ -4,7 +4,7 @@ Run after training (Figure 1's runs supply the full-connectome variant):
     uv run python fig02-controls/analysis.py
 
 Writes, next to this script:
-    fig02_summary.csv   variant, n_free_params, observed_fraction, seed,
+    fig02_summary.csv   variant, n_free_params, observed_fraction, total_epochs, seed,
                         evaluation{held_out,perturbation}, group, cell_type, n_cells, metric,
                         value, ceiling_value
     fig02_rates.csv     variant, n_free_params, neuron_id, cell_type, observed, seed, rates, fluctuation_r2
@@ -42,6 +42,7 @@ VARIANT_NAMES = {
 
 def label(params, evaluation):
     return {
+        "total_epochs": int(params["training"]["total_epochs"]),
         "variant": VARIANT_NAMES[
             params["student"].get("recurrent_model", "connectome")
         ],
