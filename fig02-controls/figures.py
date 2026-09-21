@@ -40,7 +40,7 @@ from matplotlib.ticker import MultipleLocator
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, pool_populations
+from common.plotting import METRIC_LABELS, PERTURBATION_LABEL, pool_populations
 from common.style import LEGEND_GREY, apply_style, clear_panels, save
 
 HERE = Path(__file__).resolve().parent
@@ -53,6 +53,7 @@ LEARNT_EPOCHS = 50
 PLOTTED_VARIANTS = [
     "full_connectome",
     "learnt_recurrence",
+    "shuffle_weights",
     "configuration_model",
 ]
 VARIANT_LABELS = {
@@ -77,18 +78,15 @@ FIGURES = (
         (("observed", "all", "Observed"), ("unobserved", "all", "Unobserved")),
     ),
     (
-        # E and I pooled, as in every other perturbation panel (2026-09-21): they differ
-        # by less than 0.03 R² here, so separate bars said the same thing twice. The
-        # targeted cells keep their own subpanel -- the current was applied to them.
+        # One subpanel, E and I pooled, targeted cells excluded -- exactly the population
+        # every other figure's perturbation panel reports (2026-09-21). The targeted cells
+        # and the separate cell types are still scored, in fig02_summary.csv.
         "delta_fluctuation_r2",
-        (
-            ("unobserved", "pooled", "Not Targeted"),
-            ("targeted", "pooled", "Targeted"),
-        ),
+        ((("unobserved"), "pooled", PERTURBATION_LABEL),),
     ),
 )
 #: Every subpanel is this size in both figures, so they tile on one slide.
-SUBPANEL_SIZE = (3.4, 4.0)
+SUBPANEL_SIZE = (4.4, 4.0)
 
 
 def plotted_epochs(summary):
