@@ -2,11 +2,13 @@
 
     uv run python fig02-controls/figures.py
 
-    fig02-a-bars-fluctuation        Fluctuation R², observed / unobserved, per variant
-    fig02-b-bars-delta-fluctuation  perturbation: ΔFluctuation R² per population
+    fig02-a-bars-held-out      held-out Fluctuation R²: observed | unobserved
+    fig02-b-bars-perturbation  perturbation ΔFluctuation R²: non-targeted E | I | targeted I
+    fig02-c-legend             the shared legend, stacked vertically, on its own
 
-Two panels only (2026-09-18): held-out Fluctuation R² and the perturbation's
-ΔFluctuation R², both with every plotted variant side by side. Activity R² is still
+Two figures (2026-09-21), each a row of subpanels one population wide. Every subpanel is
+``SUBPANEL_SIZE`` in both figures and they share one y range, so the two tile on a single
+slide with matching subpanel sizes; neither carries a legend. Activity R² is still
 scored and kept in the CSVs but not plotted (rates are reported by the scatter panels of
 Figures 1 and 3), and the connectivity schematic was dropped -- it belongs on a slide of
 its own, not in this figure.
@@ -64,78 +66,119 @@ VARIANT_COLORS = {
     "shuffle_inputs": SHUFFLE_WEIGHTS_COLOR,
     "configuration_model": CONFIGURATION_MODEL_COLOR,
 }
-#: (group, cell_type, x label) per group of bars, held-out and perturbation.
-HELD_OUT_GROUPS = (
-    ("observed", "all", "Observed"),
-    ("unobserved", "all", "Unobserved"),
+#: Two figures, each a row of subpanels, one per scored population (2026-09-21):
+#: (metric, [(group, cell_type, title), ...]).
+FIGURES = (
+    (
+        "fluctuation_r2",
+        (("observed", "all", "Observed"), ("unobserved", "all", "Unobserved")),
+    ),
+    (
+        "delta_fluctuation_r2",
+        (
+            ("unobserved", "excitatory", "Non-targeted E"),
+            ("unobserved", "inhibitory", "Non-targeted I"),
+            ("targeted", "inhibitory", "Targeted I"),
+        ),
+    ),
 )
-PERTURBATION_GROUPS = (
-    ("unobserved", "excitatory", "Non-targeted E"),
-    ("unobserved", "inhibitory", "Non-targeted I"),
-    ("targeted", "inhibitory", "Targeted I"),
-)
+#: Every subpanel is this size in both figures, so they tile on one slide.
+SUBPANEL_SIZE = (3.4, 4.0)
 
 
-def bars(summary, metric, groups=HELD_OUT_GROUPS):
-    """Archived controls bar chart: populations on x, one bar per variant, legend above."""
-    rows = summary[summary["metric"] == metric]
-    variants = [v for v in PLOTTED_VARIANTS if v in set(rows["variant"])]
-    width = 0.8 / max(len(variants), 1)
-    fig, ax = plt.subplots(figsize=(8.0, 4.8))
-    for g, (group, cell_type, _) in enumerate(groups):
-        for i, variant in enumerate(variants):
-            sub = rows[
-                (rows["variant"] == variant)
-                & (rows["group"] == group)
-                & (rows["cell_type"] == cell_type)
-            ]
-            if sub.empty:
-                continue
-            x = g + (i - (len(variants) - 1) / 2) * width
-            ax.bar(
-                x,
-                sub["value"].mean(),
-                width,
-                color=VARIANT_COLORS[variant],
-                edgecolor="white",
-                linewidth=0.5,
-            )
-            ax.errorbar(
-                x,
-                sub["value"].mean(),
-                yerr=sub["value"].std() if len(sub) > 1 else 0,
-                color="k",
-                capsize=3,
-                linewidth=1,
-            )
-            ax.scatter(np.full(len(sub), x), sub["value"], s=8, color="k", zorder=3)
-            ax.hlines(
-                sub["ceiling_value"].mean(),
-                x - width / 2,
-                x + width / 2,
-                colors="k",
-                linestyles=":",
-                linewidth=1.2,
-            )
-    ax.set_xticks(range(len(groups)))
-    ax.set_xticklabels([label for _, _, label in groups])
-    ax.set_ylabel(METRIC_LABELS[metric])
-    ymin = min(0.0, rows["value"].min()) - 0.05 if not rows.empty else -0.05
-    ax.set_ylim(ymin, 1.05)
+def panel_rows(summary, metric, group, cell_type):
+    rows = summary[
+        (summary["metric"] == metric)
+        & (summary["group"] == group)
+        & (summary["cell_type"] == cell_type)
+    ]
+    return [(v, rows[rows["variant"] == v]) for v in PLOTTED_VARIANTS]
+
+
+def limits(summary):
+    """One y range for both figures, so every subpanel is directly comparable."""
+    metrics = [metric for metric, _ in FIGURES]
+    rows = summary[
+        summary["metric"].isin(metrics) & summary["variant"].isin(PLOTTED_VARIANTS)
+    ]
+    low = min(0.0, float(rows["value"].min()))
+    return low - 0.08, 1.08
+
+
+def subpanel(ax, summary, metric, group, cell_type, title):
+    """One population: a bar per variant, per-seed dots, dotted ceiling, no legend."""
+    for position, (variant, rows) in enumerate(
+        panel_rows(summary, metric, group, cell_type)
+    ):
+        if rows.empty:
+            continue
+        ax.bar(
+            position,
+            rows["value"].mean(),
+            0.7,
+            color=VARIANT_COLORS[variant],
+            edgecolor="white",
+            linewidth=0.5,
+        )
+        ax.errorbar(
+            position,
+            rows["value"].mean(),
+            yerr=rows["value"].std() if len(rows) > 1 else 0,
+            color="k",
+            capsize=3,
+            linewidth=1,
+        )
+        ax.scatter(
+            np.full(len(rows), position), rows["value"], s=8, color="k", zorder=3
+        )
+        ax.hlines(
+            rows["ceiling_value"].mean(),
+            position - 0.35,
+            position + 0.35,
+            colors="k",
+            linestyles=":",
+            linewidth=1.2,
+        )
+    ax.set_xticks(range(len(PLOTTED_VARIANTS)))
+    ax.set_xticklabels([])
+    ax.set_xlim(-0.6, len(PLOTTED_VARIANTS) - 0.4)
     ax.yaxis.set_major_locator(MultipleLocator(0.2))
     ax.axhline(0, color="k", linewidth=0.5)
+    ax.set_title(title)
+
+
+def bars(summary, metric, populations, ylim):
+    """One figure, one subpanel per population.
+
+    Subpanels are ``SUBPANEL_SIZE`` in both figures and share one y axis, so the held-out
+    figure (two populations) and the perturbation figure (three) tile on a slide with
+    every subpanel the same size. The legend is a separate file.
+    """
+    fig, axes = plt.subplots(
+        1,
+        len(populations),
+        figsize=(SUBPANEL_SIZE[0] * len(populations), SUBPANEL_SIZE[1]),
+        sharey=True,
+    )
+    for ax, (group, cell_type, title) in zip(np.atleast_1d(axes), populations):
+        subpanel(ax, summary, metric, group, cell_type, title)
+    np.atleast_1d(axes)[0].set_ylim(*ylim)
+    fig.supylabel(METRIC_LABELS[metric])
+    fig.tight_layout()
+    return fig
+
+
+def legend(summary):
+    """The shared legend as its own file, stacked vertically."""
+    present = set(summary["variant"])
     handles = [
-        Patch(color=VARIANT_COLORS[v], label=VARIANT_LABELS[v]) for v in variants
+        Patch(color=VARIANT_COLORS[v], label=VARIANT_LABELS[v])
+        for v in PLOTTED_VARIANTS
+        if v in present
     ]
     handles.append(Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling"))
-    ax.legend(
-        handles=handles,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.0),
-        ncol=3,
-        frameon=True,
-    )
-    fig.tight_layout()
+    fig = plt.figure(figsize=(2.1, 0.42 * len(handles) + 0.2))
+    fig.legend(handles=handles, loc="center", ncol=1, frameon=True)
     return fig
 
 
@@ -160,13 +203,15 @@ def main(data_dir, out_dir, observed_fraction=None, decorate=None, suffix=""):
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
-    output(bars(summary, "fluctuation_r2"), "a", "bars-fluctuation")
-
-    # The perturbation panel is a separate file, so dropping it from the talk is
-    # dropping one SVG.
-    if (summary["metric"] == "delta_fluctuation_r2").any():
-        fig = bars(summary, "delta_fluctuation_r2", PERTURBATION_GROUPS)
-        output(fig, "b", "bars-delta-fluctuation")
+    ylim = limits(summary)
+    for letter, (metric, populations), slug in zip(
+        "ab", FIGURES, ("bars-held-out", "bars-perturbation")
+    ):
+        if not (summary["metric"] == metric).any():
+            print(f"  no {metric} rows yet: skipping ({letter})")
+            continue
+        output(bars(summary, metric, populations, ylim), letter, slug)
+    output(legend(summary), "c", "legend")
 
 
 if __name__ == "__main__":

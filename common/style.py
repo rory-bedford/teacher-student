@@ -89,6 +89,8 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None):
 #: and they are not what the figure is about. Cells beyond the limit are counted in the
 #: axis label, not plotted.
 RATE_MAX_HZ = 40.0
+#: Marker area for the rate scatters; the delta scatter matches it (see common.plotting).
+RATE_MARKER_SIZE = 10
 
 
 def nice_max(values, step=10):
@@ -99,12 +101,12 @@ def nice_max(values, step=10):
 def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     """Archived teacher-vs-student firing-rate scatter, coloured by cell type.
 
-    Linear axes over 0 to ``clip`` Hz. Cells beyond it are left off and counted in the
-    axis label, rather than stretching the axis (or piling up on its edge) over a tail
-    nothing in the talk depends on. Pass ``clip=None`` to plot every cell.
+    Linear axes over 0 to ``clip`` Hz. Cells beyond it are simply left off -- not counted
+    on the axis, not piled on its edge (2026-09-21: the count looked messy, and the clip
+    belongs in the caption) -- rather than stretching the axis over a tail nothing in the
+    talk depends on. Pass ``clip=None`` to plot every cell.
     """
     limit = max_rate if clip is None else min(clip, max_rate)
-    beyond = 0
     for cell_type, color, name in (
         ("inhibitory", INHIBITORY, "Inhibitory"),
         ("excitatory", EXCITATORY, "Excitatory"),
@@ -114,12 +116,11 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
         student = subset["student_rate_hz"]
         if clip is not None:
             outside = (teacher > limit) | (student > limit)
-            beyond += int(outside.sum())
             teacher, student = teacher[~outside], student[~outside]
         ax.scatter(
             teacher,
             student,
-            s=4,
+            s=RATE_MARKER_SIZE,
             alpha=0.5,
             color=color,
             label=name,
@@ -130,10 +131,7 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     ax.set_xlim(0, max_rate)
     ax.set_ylim(0, max_rate)
     ax.set_aspect("equal")
-    label = "Teacher Firing Rate (Hz)"
-    if beyond:
-        label += f"  ({beyond} cells above {limit:g} Hz not shown)"
-    ax.set_xlabel(label)
+    ax.set_xlabel("Teacher Firing Rate (Hz)")
     ax.set_ylabel("Student Firing Rate (Hz)")
     ax.set_title(title)
     legend = ax.legend(loc="upper left", markerscale=4, scatterpoints=1)

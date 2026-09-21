@@ -1,4 +1,4 @@
-"""Figure 3 — three observed fractions x three seeds (9 runs).
+"""Figure 3 — five observed fractions x three seeds (15 runs).
 
 The 50% point of the sweep is Figure 1 itself (analysis.py reads its runs), so it is not
 run again here.
@@ -23,11 +23,11 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-#: 2% is the first unreliable point: below ~25% observed a run either trains or collapses (the
+#: 1% and 2% are the unreliable end: below ~25% observed a run either trains or collapses (the
 #: unobserved AND observed excitatory populations fall silent, whatever the rate-penalty
-#: targets or learning rate -- see probes on 2026-09-18), so 0.5% and 1% are not reported.
-#: The 2% point is kept deliberately, to show where the fit stops being reliable.
-OBSERVED_FRACTIONS = [0.02, 0.05, 0.25]
+#: targets or learning rate -- see probes on 2026-09-18). They are kept deliberately, to
+#: show where the fit stops being reliable; 0.5% has one seed and is not reported.
+OBSERVED_FRACTIONS = [0.01, 0.02, 0.05, 0.1, 0.25]
 
 
 def custom_config_generator(base_params):

@@ -16,6 +16,8 @@ from connectome_snns.visualization import (
     use_project_style,
 )
 
+from common.style import RATE_MARKER_SIZE
+
 CM = 1 / 2.54
 FIGURE_WIDTH = 12 * CM
 
@@ -194,11 +196,18 @@ def perturbation_sweep(
     return rows
 
 
-def delta_rate_scatter(ax, deltas, symlog=True, threshold=10.0):
+#: Delta scatters are linear over +-this many Hz (2026-09-21): most neurons change by far
+#: less than 20 Hz, so the axis is cut rather than scaled, as for the rate scatters.
+DELTA_MAX_HZ = 40.0
+
+
+def delta_rate_scatter(ax, deltas, symlog=False, threshold=10.0, limit=DELTA_MAX_HZ):
     """Teacher vs student Δrate per neuron; targeted cells marked.
 
-    A few neurons change by more than 100 Hz while most change by less than 20, so the
-    axes are symlog outside ``threshold`` Hz and linear within it.
+    Linear over +-``limit`` Hz by default: a few neurons change by more than 100 Hz while
+    most change by less than 20, and the tail is not what the panel is about. Pass
+    ``symlog=True`` to scale the axes instead of cutting them, or ``limit=None`` to fit
+    every neuron.
     """
     populations = (
         (deltas["targeted"] == 0) & (deltas["cell_type"] == "excitatory"),
@@ -210,20 +219,22 @@ def delta_rate_scatter(ax, deltas, symlog=True, threshold=10.0):
         (INHIBITORY_COLOR, "o", "Unobserved I"),
         (TARGETED_COLOR, "^", "Targeted I"),
     )
-    limit = (
-        float(
-            np.nanpercentile(
-                deltas[["teacher_delta_rate_hz", "student_delta_rate_hz"]].abs(), 99.9
+    if limit is None:
+        limit = (
+            float(
+                np.nanpercentile(
+                    deltas[["teacher_delta_rate_hz", "student_delta_rate_hz"]].abs(),
+                    99.9,
+                )
             )
+            * 1.1
         )
-        * 1.1
-    )
     for mask, (color, marker, label) in zip(populations, styles):
         subset = deltas[mask]
         ax.scatter(
             subset["teacher_delta_rate_hz"],
             subset["student_delta_rate_hz"],
-            s=6,
+            s=RATE_MARKER_SIZE,
             alpha=0.5,
             color=color,
             marker=marker,
