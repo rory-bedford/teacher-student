@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from connectome_snns.visualization import (
-    FIGURE_TEAL,
+    DIMENSIONALITY_COLOR,
     OBSERVED_COLOR,
     UNOBSERVED_COLOR,
 )
@@ -97,11 +97,11 @@ def dimensionality_markers(ax, dimensionality):
     is not marked -- it sits below everything tested and would imply the opposite.
     """
     fraction = dimensionality["n_pcs_90pct_var"] / N_NEURONS
-    ax.axvline(fraction, color=FIGURE_TEAL, linewidth=1.6, alpha=0.9)
+    ax.axvline(fraction, color=DIMENSIONALITY_COLOR, linewidth=1.6, alpha=0.9)
     label = (
         f"90% of Teacher Variance\n({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
     )
-    return [Line2D([], [], color=FIGURE_TEAL, linewidth=1.6, label=label)]
+    return [Line2D([], [], color=DIMENSIONALITY_COLOR, linewidth=1.6, label=label)]
 
 
 def observed_axis(ax, fractions):

@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from connectome_snns.visualization import (
-    FIGURE_BLUE,
-    FIGURE_CORAL,
-    FIGURE_TEAL,
     OBSERVED_COLOR,
+    SCATTER_NEUTRAL_COLOR,
+    SLIDE_BLUE,
+    SLIDE_RED,
     TEACHER_COLOR,
     UNOBSERVED_COLOR,
     use_project_style,
@@ -23,9 +23,11 @@ from common.style import RATE_MARKER_SIZE, RATE_TICK_HZ
 CM = 1 / 2.54
 FIGURE_WIDTH = 12 * CM
 
-EXCITATORY_COLOR = FIGURE_CORAL
-INHIBITORY_COLOR = FIGURE_BLUE
-TARGETED_COLOR = FIGURE_TEAL
+EXCITATORY_COLOR = SLIDE_RED
+INHIBITORY_COLOR = SLIDE_BLUE
+#: Targeted cells are a triangle marker, so their colour stays neutral -- teal belongs to
+#: the shuffled-weights control (2026-09-21).
+TARGETED_COLOR = SCATTER_NEUTRAL_COLOR
 GROUP_COLORS = {"observed": OBSERVED_COLOR, "unobserved": UNOBSERVED_COLOR}
 GROUP_LABELS = {"observed": "Observed", "unobserved": "Unobserved"}
 METRIC_LABELS = {

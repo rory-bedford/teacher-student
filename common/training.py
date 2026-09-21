@@ -17,6 +17,7 @@ from connectome_snns.configs import DATALOADER_KWARGS
 from connectome_snns.dataloaders.supervised import CyclicSampler, ExactFFDataset
 from connectome_snns.snn_runners import SNNTrainer
 from connectome_snns.training_utils import AsyncLogger
+from connectome_snns.training_utils.checkpointing import load_checkpoint
 from connectome_snns.training_utils.losses import VanRossumLoss
 from torch import nn
 from torch.amp import GradScaler
@@ -31,7 +32,12 @@ from common.model import (
     physiology,
     scaling_factors_relative_to_target,
 )
-from common.structure import build_student_structure, load_teacher, save_structure
+from common.structure import (
+    build_student_structure,
+    load_structure,
+    load_teacher,
+    save_structure,
+)
 
 FINAL_STATE = "final_model_state.pt"
 
@@ -138,8 +144,6 @@ def train_student(
     the network), the trainer's checkpoints and ``training_metrics.csv``, and
     ``final_model_state.pt`` (the trained parameters evaluation loads).
     """
-    if resume_from is not None:
-        raise NotImplementedError("resuming is not supported; rerun from scratch")
 
     input_dir, output_dir = Path(input_dir), Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -164,7 +168,12 @@ def train_student(
     structure = build_student_structure(
         teacher, params["student"], seed, training["weight_perturbation_variance"]
     )
-    save_structure(structure, output_dir)
+    if resume_from is None:
+        save_structure(structure, output_dir)
+    else:
+        # Rebuilding is deterministic given the seed, but the run's own file is the
+        # authority: a resumed run must use the structure its checkpoint was trained on.
+        structure = load_structure(output_dir)
     sets = neuron_sets(structure)
     print(
         f"\nStudent: {sets['observed'].size} observed, {sets['unobserved'].size} "
@@ -411,6 +420,17 @@ def train_student(
     trainer.metrics_logger = AsyncLogger(log_dir=output_dir, max_queue_size=10)
     if wandb_logger:
         trainer.wandb_logger = wandb_logger
+
+    if resume_from is not None:
+        # The library's checkpoints carry the model, optimiser, GradScaler, simulation
+        # state, both RNG states and (since 2026-09-21) the LR scheduler, so a resumed
+        # run continues its schedule rather than restarting it. AsyncLogger appends to an
+        # existing training_metrics.csv, so the history is kept.
+        epoch, best = load_checkpoint(
+            Path(resume_from), model, optimiser, scaler, device, scheduler=scheduler
+        )
+        trainer.set_checkpoint_state(epoch, best)
+        print(f"Resuming at chunk {epoch}/{total_chunks}, best loss {best:.6f}")
 
     best_loss = trainer.train(output_dir=output_dir)
 
