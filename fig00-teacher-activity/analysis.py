@@ -10,9 +10,6 @@ and ``figures.py`` needs neither the zarr nor a GPU.
 
 Steps, each skipped when its outputs exist unless ``--force`` is given:
 
-    coding          fig00_coding_schematic.csv  odourant, baseline_hz, odour_hz
-                    The construction of an odourant: one input group elevated by
-                    modulation_rate, the rest depressed to hold the baseline mean.
     conditions      fig00_condition_rates.csv   neuron_id, cell_type, assembly, and the
                     per-neuron rate under odourant 1, the same odourant with a different
                     Poisson seed, and the homogeneous baseline. Three re-simulations.
@@ -244,36 +241,6 @@ class Teacher:
 
 # ==========
 # Input coding
-# ==========
-
-
-def step_coding(teacher, out_dir, device):
-    """How one odourant is built: one group up, the rest down, same mean.
-
-    Pure arithmetic from the odour parameters, so the schematic panel states the same
-    numbers the teacher was generated with rather than its own.
-    """
-    config = teacher.odours["mitral"]
-    n_odourants = int(teacher.recurrent.topology.num_assemblies)
-    baseline = float(config.baseline_rate)
-    active = baseline + float(config.modulation_rate)
-    depressed = (n_odourants * baseline - active) / (n_odourants - 1)
-    table = pd.DataFrame(
-        {
-            "odourant": np.arange(1, n_odourants + 1),
-            "baseline_hz": baseline,
-            "odour_hz": [active] + [depressed] * (n_odourants - 1),
-        }
-    )
-    table.to_csv(out_dir / "fig00_coding_schematic.csv", index=False)
-    print(
-        f"  coding: {n_odourants} odourants, {active:.1f} Hz active, "
-        f"{depressed:.3f} Hz depressed, mean {table['odour_hz'].mean():.1f} Hz"
-    )
-
-
-# ==========
-# Network response to three input conditions
 # ==========
 
 
@@ -712,7 +679,6 @@ def step_dimensionality(teacher, out_dir, device):
 
 #: step name -> (function, the files it writes).
 STEPS = {
-    "coding": (step_coding, ["fig00_coding_schematic.csv"]),
     "conditions": (step_conditions, ["fig00_condition_rates.csv"]),
     "dynamics": (step_dynamics, ["fig00_raster.npz", "fig00_traces.npz"]),
     "assemblies": (step_assemblies, ["fig00_assemblies.npz"]),

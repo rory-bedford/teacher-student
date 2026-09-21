@@ -135,44 +135,6 @@ def thick_legend(ax, **kwargs):
     return legend
 
 
-def coding_schematic(schematic):
-    """(a) The arithmetic of one odourant: baseline beside odourant 1."""
-    baseline = float(schematic["baseline_hz"].iloc[0])
-    odourants = schematic["odourant"].to_numpy()
-    fig, axes = plt.subplots(1, 2, figsize=PAIR, sharey=True)
-    for ax, heights, title in (
-        (axes[0], np.full(odourants.size, baseline), "Baseline"),
-        (axes[1], schematic["odour_hz"].to_numpy(), "Odourant 1"),
-    ):
-        colors = [
-            TEACHER if height > baseline else REFERENCE_GREY for height in heights
-        ]
-        ax.bar(odourants, heights, color=colors, width=0.7)
-        ax.axhline(
-            baseline,
-            color=INK,
-            linestyle="--",
-            linewidth=1,
-            label=f"Mean = {baseline:.0f} Hz",
-        )
-        ax.set_xticks(odourants)
-        ax.set_xticklabels(odourants, fontsize=TICK_SIZE - 4)
-        ax.set_xlabel("Odourant")
-        ax.set_title(title)
-        ax.grid(axis="x", visible=False)
-    axes[0].set_ylabel("Input Firing Rate (Hz)")
-    axes[0].set_ylim(0, schematic["odour_hz"].max() * 1.15)
-    axes[1].legend(loc="upper right", frameon=True, fontsize=TICK_SIZE)
-    fig.suptitle("Odourant Input Rates, Constructed at a Fixed Mean")
-    fig.tight_layout()
-    return fig
-
-
-# ==========
-# Response to the input conditions
-# ==========
-
-
 def condition_scatter(rates, x, y, x_label, y_label, title):
     """One rate scatter, linear over 0-RATE_MAX_HZ, coloured by cell type.
 
@@ -289,7 +251,7 @@ def trace_window_start(spike_times, duration_s):
 
 
 def neuron_traces(data):
-    """(f) One neuron's membrane potential, its spikes, and the currents that move it.
+    """(e) One neuron's membrane potential, its spikes, and the currents that move it.
 
     Follows the library's activity dashboard: spikes are drawn as vertical lines from
     threshold to 0 mV (the simulator resets the voltage, so the trace itself has no spike
@@ -393,7 +355,7 @@ def neuron_traces(data):
 
 
 def conductances(data):
-    """(g) The same neuron's conductance, split excitatory / inhibitory / feedforward.
+    """(f) The same neuron's conductance, split excitatory / inhibitory / feedforward.
 
     The three groups and their y limits follow the library's
     ``plot_synaptic_conductances``: excitatory and feedforward share a limit taken from
@@ -455,7 +417,7 @@ def conductances(data):
 
 
 def ou_trajectories(data):
-    """(b) The Ornstein-Uhlenbeck mixing coefficient of each odourant over one trial."""
+    """(a) The Ornstein-Uhlenbeck mixing coefficient of each odourant over one trial."""
     return assembly_series(
         data,
         "mixing_weight",
@@ -506,7 +468,7 @@ def assembly_series(data, key, y_label, title, label="Odourant"):
 
 
 def assembly_rates(data):
-    """(c) Each assembly's rate over the same trial, against its own all-trial mean.
+    """(b) Each assembly's rate over the same trial, against its own all-trial mean.
 
     Assemblies differ in intrinsic rate by much more than a stimulus moves them (spread
     SD 1.13 Hz against a deviation SD of 0.41 Hz), so the raw rates would show which
@@ -589,7 +551,7 @@ def variance_explained(spectrum, summary):
 
 
 def variance_spectrum(spectrum, summary):
-    """(j) Variance fraction per component, the first SPECTRUM_COMPONENTS of them.
+    """(i) Variance fraction per component, the first SPECTRUM_COMPONENTS of them.
 
     A scree plot on linear axes, as scree plots are drawn: the elbow is the point, and it
     is inside the first twenty components.
@@ -619,16 +581,11 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     def output(fig, letter, slug, raster=False):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
-    output(
-        coding_schematic(pd.read_csv(data_dir / "fig00_coding_schematic.csv")),
-        "a",
-        "coding-schematic",
-    )
     assemblies = np.load(data_dir / "fig00_assemblies.npz")
-    output(ou_trajectories(assemblies), "b", "ou-trajectories", raster=True)
-    output(assembly_rates(assemblies), "c", "assembly-rates", raster=True)
+    output(ou_trajectories(assemblies), "a", "ou-trajectories", raster=True)
+    output(assembly_rates(assemblies), "b", "assembly-rates", raster=True)
 
-    output(raster(np.load(data_dir / "fig00_raster.npz")), "d", "raster", raster=True)
+    output(raster(np.load(data_dir / "fig00_raster.npz")), "c", "raster", raster=True)
     output(
         condition_scatter(
             pd.read_csv(data_dir / "fig00_condition_rates.csv"),
@@ -638,22 +595,22 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
             "Odourant 1, Repeated (Hz)",
             "Firing Rate per Neuron, One Odourant and Two Input Noise Seeds",
         ),
-        "e",
+        "d",
         "rates-odour-repeat",
         raster=True,
     )
 
     traces = np.load(data_dir / "fig00_traces.npz")
-    output(neuron_traces(traces), "f", "neuron-traces", raster=True)
-    output(conductances(traces), "g", "conductances", raster=True)
+    output(neuron_traces(traces), "e", "neuron-traces", raster=True)
+    output(conductances(traces), "f", "conductances", raster=True)
     output(
-        synaptic_drive(pd.read_csv(data_dir / "fig00_drive.csv")), "h", "synaptic-drive"
+        synaptic_drive(pd.read_csv(data_dir / "fig00_drive.csv")), "g", "synaptic-drive"
     )
 
     spectrum = pd.read_csv(data_dir / "fig00_pca_spectrum.csv")
     summary = pd.read_csv(data_dir / "fig00_dimensionality.csv").iloc[0]
-    output(variance_explained(spectrum, summary), "i", "variance-explained")
-    output(variance_spectrum(spectrum, summary), "j", "variance-spectrum")
+    output(variance_explained(spectrum, summary), "h", "variance-explained")
+    output(variance_spectrum(spectrum, summary), "i", "variance-spectrum")
 
 
 if __name__ == "__main__":

@@ -69,16 +69,18 @@ dynamics look like, and how high-dimensional the result is.
 
 | | Panel | What it shows |
 |---|---|---|
-| **(a)** | `coding-schematic` | how an odourant is constructed: one assembly's input lifted to 15 Hz, the rest depressed so the 6 Hz mean is unchanged |
-| **(b)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial, the dominant one drawn heavy |
-| **(c)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
-| **(d)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
-| **(e)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
-| **(f)** | `neuron-traces` | one excitatory neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents, over 2 s |
-| **(g)** | `conductances` | the same neuron's conductance, split excitatory / inhibitory / feedforward |
-| **(h)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
-| **(i)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
-| **(j)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
+| **(a)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial, the two leaders drawn heavy |
+| **(b)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
+| **(c)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
+| **(d)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
+| **(e)** | `neuron-traces` | one excitatory neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents |
+| **(f)** | `conductances` | the same neuron's conductance, split excitatory / inhibitory / feedforward |
+| **(g)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
+| **(h)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
+| **(i)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
+
+Panels (a)–(f) are 400 dpi PNG rather than SVG: their ink is thousands of points or dense
+traces, which makes a deck slow to page through in vector form. The rest are SVG.
 
 These follow the library's own dashboards (`create_activity_dashboard`,
 `create_assembly_activity_dashboard`, `plot_synaptic_conductances`,
@@ -99,11 +101,11 @@ These follow the library's own dashboards (`create_activity_dashboard`,
   assembly in both. Smoothing is 50 ms rather than the dashboard's 200 ms, matching
   Fluctuation R²'s kernel.
 
-Four panels were built and cut on 2026-09-21 — the input-rate histogram, the
-odourant-vs-baseline scatter, an integrated-conductance comparison and a per-assembly
-feedforward-drive trace. They are in the git history.
+Five panels were built and cut on 2026-09-21 — the input-coding schematic, the input-rate
+histogram, the odourant-vs-baseline scatter, an integrated-conductance comparison and a
+per-assembly feedforward-drive trace. They are in the git history.
 
-**Reading (b) against (c): the stimulus is decodable from the deviation, not from the
+**Reading (a) against (b): the stimulus is decodable from the deviation, not from the
 rate.** Assemblies differ in intrinsic rate by far more than a stimulus moves them — the
 spread across assemblies has SD 1.13 Hz, a stimulus-driven deviation SD 0.41 Hz — so raw
 rates show which assembly is fastest (always assembly 18, in all 50 trials, profile
@@ -191,8 +193,7 @@ fig00-teacher-activity/
   experiment.toml    paths, W&B
   parameters.toml    network, input and simulation parameters
   README.md
-  fig00_coding_schematic.csv  fig00_condition_rates.csv  fig00_assemblies.npz
-  fig00_raster.npz  fig00_traces.npz  fig00_drive.csv
+  fig00_condition_rates.csv  fig00_assemblies.npz  fig00_raster.npz  fig00_traces.npz  fig00_drive.csv
   fig00_pca_spectrum.csv  fig00_dimensionality.csv
 ```
 
