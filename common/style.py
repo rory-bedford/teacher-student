@@ -134,7 +134,9 @@ RATE_TICK_HZ = 10.0
 RATE_MARKER_SIZE = 10
 #: Every scatter legend draws its swatches at this area, whatever size the plotted points
 #: are, and at full opacity -- so a legend looks identical in every panel (2026-09-21).
-LEGEND_MARKER_AREA = 30
+#: matplotlib scales legend marker AREA by markerscale squared, hence the square root
+#: below: a linear ratio leaves the swatches of a large-marker panel too small.
+LEGEND_MARKER_AREA = 90
 
 
 def nice_max(values, step=10):
@@ -189,7 +191,7 @@ def scatter_legend(ax, marker_size, loc="upper left"):
     """A framed legend whose swatches are LEGEND_MARKER_AREA regardless of point size."""
     legend = ax.legend(
         loc=loc,
-        markerscale=LEGEND_MARKER_AREA / marker_size,
+        markerscale=(LEGEND_MARKER_AREA / marker_size) ** 0.5,
         scatterpoints=1,
         frameon=True,
     )
