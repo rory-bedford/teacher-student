@@ -1,16 +1,14 @@
 """Figure 6 — one SVG per panel from the CSVs written by analysis.py.
 
     uv run python fig06-learnt-feedforward/figures.py
-    uv run python fig06-learnt-feedforward/figures.py --scatter-fractions 0.5 0.1
 
-    fig06-a1-scatter-<pct>      firing rates, observed | held-out, first scatter level
-    fig06-a2-scatter-<pct>      same, second scatter level
-    fig06-b-curve               R² vs reconstructed fraction, observed / held-out
-    fig06-c-raster              observed and held-out neuron at the lowest level
-    fig06-d-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
+    fig06-a-curve               Fluctuation R² vs reconstructed fraction, observed / held-out
+    fig06-b-raster              observed and held-out neuron at the lowest level
+    fig06-c-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
 
-Activity R² is scored and kept in the CSVs but plotted only as the scatter panels' R²
-(2026-09-18): the sweeps report Fluctuation R² alone.
+The two rate scatters were dropped on 2026-09-21: the sweep and the raster carry the
+result, and they were the only panels quoting Activity R², which no other panel reports.
+Activity R² is still scored and kept in the CSVs.
 
 Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
 100%. ``placeholder_figures/fig06-learnt-feedforward/figures.py`` calls ``main`` here with
@@ -35,14 +33,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import METRIC_LABELS, pool_populations
 from common.style import (
     LEGEND_GREY,
-    PAIR,
     SINGLE,
     TICK_SIZE,
     WIDE,
     apply_style,
     ceiling,
     clear_panels,
-    rate_scatter,
     save,
     spike_raster,
     sweep_legend,
@@ -77,28 +73,6 @@ def group_rows(summary, group, metric, cell_type="all"):
     if "cell_type" in rows:
         rows = rows[rows["cell_type"] == cell_type]
     return rows
-
-
-def scatters(sweep, rates, fraction, seed):
-    """(a) Teacher-vs-student rates, observed beside held-out, at one level."""
-    level = rates[
-        np.isclose(rates["reconstructed_fraction"], fraction)
-        & (rates["recorded_pool_fraction"] < 1.0)
-        & (rates["seed"] == seed)
-    ]
-    fig, axes = plt.subplots(1, 2, figsize=PAIR)
-    for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
-        r2 = group_rows(
-            sweep[np.isclose(sweep["reconstructed_fraction"], fraction)],
-            group,
-            "activity_r2",
-        )["value"].mean()
-        rate_scatter(ax, level[level["group"] == group], f"{label} (R² = {r2:.3f})")
-    fig.suptitle(
-        f"Firing Rates, Student vs Teacher, {fraction:.0%} of the Network Reconstructed"
-    )
-    fig.tight_layout()
-    return fig
 
 
 def limits(sweep):
@@ -262,11 +236,10 @@ def perturbation(sweep, metric, ylim):
     return fig
 
 
-def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
+def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig06_summary.csv")
-    rates = pd.read_csv(data_dir / "fig06_rates.csv")
     spikes = pd.read_csv(data_dir / "fig06_spikes.csv")
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
     fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
@@ -275,24 +248,15 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
-    if scatter_fractions is None:
-        scatter_fractions = [levels[len(levels) // 2], min(levels)]
-    # A CSV with a single level (the pilot) would otherwise draw the same panel twice.
-    scatter_fractions = list(dict.fromkeys(scatter_fractions))
-    seed = int(rates["seed"].min())
-    for index, fraction in enumerate(scatter_fractions, start=1):
-        fig = scatters(sweep, rates, fraction, seed)
-        output(fig, f"a{index}", f"scatter-{fraction * 100:.0f}pct")
-
     ylim = limits(sweep)
-    output(curve(sweep, fully_observed, ylim), "b", "curve")
-    output(raster(spikes, min(levels)), "c", "raster")
+    output(curve(sweep, fully_observed, ylim), "a", "curve")
+    output(raster(spikes, min(levels)), "b", "raster")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if "evaluation" in sweep and (sweep["metric"] == "delta_fluctuation_r2").any():
         output(
-            perturbation(sweep, "delta_fluctuation_r2", ylim), "d", "delta-fluctuation"
+            perturbation(sweep, "delta_fluctuation_r2", ylim), "c", "delta-fluctuation"
         )
 
 
@@ -300,6 +264,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
     parser.add_argument("--out-dir", type=Path, default=HERE)
-    parser.add_argument("--scatter-fractions", type=float, nargs=2, default=None)
     args = parser.parse_args()
-    main(args.data, args.out_dir, args.scatter_fractions)
+    main(args.data, args.out_dir)
