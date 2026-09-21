@@ -234,8 +234,14 @@ def sweep_series(
             .sort_values(x_column)
         )
     if seeds:
+        # With x measured per run (``x_group``), the seeds' own x differ by a fraction of
+        # a percent -- invisible information that reads as jitter, so they are drawn at
+        # the condition's mean x.
+        seed_x = rows[x_column]
+        if x_group is not None:
+            seed_x = rows[x_group].map(stats.set_index(x_group)[x_column])
         ax.scatter(
-            rows[x_column],
+            seed_x,
             rows["value"],
             s=RATE_MARKER_SIZE * 2,
             color=color,

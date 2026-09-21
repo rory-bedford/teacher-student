@@ -131,7 +131,7 @@ def contrast(summary, fig04_summary):
         right.text(
             0.5, 0.5, "run fig04 analysis.py", transform=right.transAxes, ha="center"
         )
-    right.set_xlabel("Input Volume Lost (κ)")
+    right.set_xlabel("Fraction of Recurrent Input Lost")
     right.set_title("Missing Connections (Figure 4)")
     left.set_ylim(min(0.0, rows["value"].min() - 0.05), 1.02)
     fig.suptitle("Unobserved Neurons vs Input Volume Lost, Both Error Models")

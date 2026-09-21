@@ -46,7 +46,7 @@ MODELS = {
     "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR),
 }
 MAX_POINTS = 20000
-X_LABEL = "Mean Input Volume Lost (κ)"
+X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
 PERTURBATION_CELL_TYPES = (("excitatory", "E", "-"), ("inhibitory", "I", "--"))
 
@@ -130,7 +130,7 @@ def per_neuron_panel(per_neuron):
         )
     ax.set_xlim(0, 1)
     ax.set_ylim(-1, 1)
-    ax.set_xlabel("Per-Neuron Input Volume Lost (κ)")
+    ax.set_xlabel("Fraction of That Neuron's Recurrent Input Lost")
     ax.set_ylabel("Per-Neuron Fluctuation R²")
     ax.legend(handles=handles, loc="lower left", frameon=True)
     ax.set_title("Per-Neuron Prediction vs That Neuron's Input Lost")
