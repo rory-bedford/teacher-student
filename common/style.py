@@ -132,6 +132,9 @@ RATE_MAX_HZ = 40.0
 RATE_TICK_HZ = 10.0
 #: Marker area for the rate scatters; the delta scatter matches it (see common.plotting).
 RATE_MARKER_SIZE = 10
+#: Every legend is framed and scales its markers by the same factor, so a legend looks the
+#: same whichever panel it sits in (2026-09-21).
+LEGEND_MARKERSCALE = 3
 
 
 def nice_max(values, step=10):
@@ -179,7 +182,9 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     ax.set_xlabel("Teacher Firing Rate (Hz)")
     ax.set_ylabel("Student Firing Rate (Hz)")
     ax.set_title(title)
-    legend = ax.legend(loc="upper left", markerscale=4, scatterpoints=1)
+    legend = ax.legend(
+        loc="upper left", markerscale=LEGEND_MARKERSCALE, scatterpoints=1, frameon=True
+    )
     for handle in legend.legend_handles:
         handle.set_alpha(1.0)
 
@@ -368,13 +373,12 @@ def sweep_legend(
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling")
         )
     handles += list(extra)
-    inside = bbox_to_anchor is None
     ax.legend(
         handles=handles,
         loc=loc,
         bbox_to_anchor=bbox_to_anchor,
-        frameon=inside,
-        framealpha=0.9 if inside else 1.0,
+        frameon=True,
+        framealpha=0.9,
         fontsize=fontsize,
         handlelength=1.6,
         labelspacing=0.35,
