@@ -192,11 +192,12 @@ def scatters(summary, rates, fractions, seed):
     return fig
 
 
-def delta_sweep(summary, metric):
+def delta_sweep(summary, metric, dimensionality):
     """(c) Perturbation Δ R² per population against observed fraction.
 
     Built like panel (a) -- same reversed percentage axis, individual seeds, no error
-    bars, legend inside -- so the two panels read the same way on the slide.
+    bars, the same 90%-variance marker and an inside legend -- so the two panels read the
+    same way on the slide.
     """
     rows = summary[summary["evaluation"] == "perturbation"]
     fig, ax = plt.subplots(figsize=SINGLE)
@@ -220,10 +221,12 @@ def delta_sweep(summary, metric):
         )
         ceiling(ax, series, "obs_fraction", color)
         handles.append(Line2D([], [], color=color, linewidth=6, label=label))
+    markers = dimensionality_markers(ax, dimensionality)
     observed_axis(ax, rows["obs_fraction"].unique())
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.legend(
         handles=handles
+        + markers
         + [Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Ceiling")],
         loc="lower left",
         frameon=True,
@@ -261,7 +264,11 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
-        output(delta_sweep(summary, "delta_fluctuation_r2"), "c", "delta-fluctuation")
+        output(
+            delta_sweep(summary, "delta_fluctuation_r2", dimensionality),
+            "c",
+            "delta-fluctuation",
+        )
 
 
 if __name__ == "__main__":
