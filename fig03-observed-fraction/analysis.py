@@ -35,18 +35,10 @@ from common.perturbation import collect_perturbation
 HERE = Path(__file__).resolve().parent
 BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
 #: Fractions reported by the figure, matching run_grid_search.OBSERVED_FRACTIONS. Runs at
-#: The whole sweep is reported (2026-09-21): below ~25% observed the fit is unreliable
+#: 0.5% observed finished (seed 44 only) but is not reported: below ~25% the fit is unreliable
 #: (see run_grid_search.py), 2% is kept to show the cliff. Their run folders are still on
 #: disk, so add a fraction back here to include it again.
-REPORTED_FRACTIONS = (
-    0.005,
-    0.01,
-    0.02,
-    0.05,
-    0.1,
-    0.25,
-    0.5,
-)  # 0.5 comes from Figure 1
+REPORTED_FRACTIONS = (0.01, 0.02, 0.05, 0.1, 0.25, 0.5)  # 0.5 comes from Figure 1
 
 
 def reported(run_dir):
