@@ -11,8 +11,9 @@ from connectome_snns.visualization import use_project_style
 from matplotlib.ticker import MultipleLocator
 
 from common.style import (
-    INK,
-    MODEL,
+    EXCITATORY,
+    INHIBITORY,
+    OBSERVED,
     RATE_MARKER_SIZE,
     RATE_TICK_HZ,
     REFERENCE_GREY,
@@ -22,16 +23,11 @@ from common.style import (
 CM = 1 / 2.54
 FIGURE_WIDTH = 12 * CM
 
-# Cell type is a marker shape, not a hue (COLORSCHEME.txt rule 3): inside a scatter the
-# colours are already spent on truth vs model.
-EXCITATORY_COLOR = INK
-INHIBITORY_COLOR = INK
-#: Targeted cells are a triangle marker, so their colour stays neutral -- teal belongs to
-#: the shuffled-weights control (2026-09-21).
+EXCITATORY_COLOR = EXCITATORY
+INHIBITORY_COLOR = INHIBITORY
+#: Targeted cells are a triangle marker, so their colour stays neutral.
 TARGETED_COLOR = REFERENCE_GREY
-#: Observed neurons are what the model is shown, so they take the model's blue; the
-#: unobserved population takes the yellow reserved for what it cannot see.
-GROUP_COLORS = {"observed": MODEL, "unobserved": UNOBSERVED}
+GROUP_COLORS = {"observed": OBSERVED, "unobserved": UNOBSERVED}
 GROUP_LABELS = {"observed": "Observed", "unobserved": "Unobserved"}
 METRIC_LABELS = {
     "fluctuation_r2": "Fluctuation R²",

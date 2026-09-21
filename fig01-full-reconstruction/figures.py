@@ -35,7 +35,8 @@ from common.plotting import (
     r2_title,
 )
 from common.style import (
-    INK,
+    EXCITATORY,
+    INHIBITORY,
     LEGEND_GREY,
     PAIR,
     SINGLE,
@@ -124,9 +125,11 @@ def scaling_factors(factors):
             if values.empty:
                 continue
             ratio = values["value"] / values["target"]
-            # One colour: these are all the same six parameters, and the fully observed
-            # condition is told from the partial one by fill, not hue.
-            color = INK
+            # Coloured by the presynaptic population, so the three factors onto
+            # inhibitory cells (all low) are visibly a group.
+            color = {"excitatory": EXCITATORY, "inhibitory": INHIBITORY}.get(
+                name.split("_to_")[0], LEGEND_GREY
+            )
             ax.scatter(
                 np.full(len(ratio), x + offset),
                 ratio,

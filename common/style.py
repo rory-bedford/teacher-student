@@ -14,13 +14,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from connectome_snns.visualization import (
     FLOOR_COLOR,
-    NEUTRAL_BAR_COLOR,
+    FULL_CONNECTOME_COLOR,
+    LEARNT_RECURRENCE_COLOR,
     RASTER_BAND_COLOR,
-    SCATTER_NEUTRAL_COLOR,
     SLIDE_BLUE,
     SLIDE_INK,
     SLIDE_RED,
-    SLIDE_YELLOW,
     use_project_style,
 )
 from matplotlib.lines import Line2D
@@ -32,22 +31,33 @@ from matplotlib.ticker import MultipleLocator
 # which reads as the same quantity from two sources and stays legible at line weight. The
 # dark slate and the yellow accent were tried first and were, respectively, too flat for
 # the teacher and too faint to carry a series.
-# The five colours of COLORSCHEME.txt and nothing else. A colour means the same thing in
-# every figure: red is the truth, blue is the model, yellow is what the model cannot see,
-# slate is ink, and every control is grey -- told apart by shade and line style, never by
-# hue. Cell type is a marker shape (see MARKERS), because colour is already spent.
-TRUTH = SLIDE_RED
-MODEL = SLIDE_BLUE
-UNOBSERVED = SLIDE_YELLOW
+# COLORSCHEME.txt: the deck's three accents carry the roles that appear on every slide,
+# and a small set of fixed accents carries the conditions. A colour means one thing.
+#
+#   red / blue      excitatory / inhibitory, inside the rate scatters
+#   steel blue      the teacher -- and therefore the full connectome, its first bar
+#   raspberry       the student
+#   navy / amber    observed / unobserved populations, in the sweeps
+EXCITATORY = SLIDE_RED
+INHIBITORY = SLIDE_BLUE
+# Two colours from the controls bar chart, complementary and highly differentiable, carry
+# every "given vs inferred" pairing in the talk:
+#
+#   steel blue   the teacher, the full connectome, the observed population -- what is given
+#   orange       the student, the learnt model, the unobserved population -- what is inferred
+#
+# The teacher's colour is deliberately the first bar of Figure 2: that bar IS the
+# teacher's connectivity.
+TRUTH = FULL_CONNECTOME_COLOR
+MODEL = LEARNT_RECURRENCE_COLOR
+OBSERVED = TRUTH
+UNOBSERVED = MODEL
 INK = SLIDE_INK
-#: Controls and ablations, darkest first. Three is the most any figure needs.
-CONTROL_GREYS = (SCATTER_NEUTRAL_COLOR, NEUTRAL_BAR_COLOR, FLOOR_COLOR)
 #: Reference lines: noise ceilings, dimensionality markers. Furniture, not data.
 REFERENCE_GREY = FLOOR_COLOR
-#: Cell type, wherever it is distinguished at all.
-MARKERS = {"excitatory": "o", "inhibitory": "^"}
+#: Cell type is a colour again (red / blue), so markers stay uniform.
+MARKERS = {"excitatory": "o", "inhibitory": "o"}
 
-# Kept as aliases so the raster and the delta bars read naturally.
 TEACHER = TRUTH
 STUDENT = MODEL
 LEGEND_GREY = "#404040"
@@ -138,8 +148,10 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     talk depends on. Pass ``clip=None`` to plot every cell.
     """
     limit = max_rate if clip is None else min(clip, max_rate)
-    for cell_type, name in (("inhibitory", "Inhibitory"), ("excitatory", "Excitatory")):
-        color = INK
+    for cell_type, color, name in (
+        ("inhibitory", INHIBITORY, "Inhibitory"),
+        ("excitatory", EXCITATORY, "Excitatory"),
+    ):
         subset = rates[rates["cell_type"] == cell_type]
         teacher = subset["teacher_rate_hz"]
         student = subset["student_rate_hz"]

@@ -41,7 +41,7 @@ from common.plotting import (
 )
 from common.style import (
     LEGEND_GREY,
-    MODEL,
+    OBSERVED,
     REFERENCE_GREY,
     SINGLE,
     TICK_SIZE,
@@ -67,7 +67,7 @@ TEACHER_DIMENSIONALITY = (
 DIMENSIONALITY_CSV = "fig03_dimensionality.csv"
 N_NEURONS = 5000
 GROUPS = {
-    "observed": ("Observed", MODEL),
+    "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
 

@@ -34,7 +34,7 @@ from common.plotting import (
     pool_populations,
 )
 from common.style import (
-    MODEL,
+    OBSERVED,
     SINGLE,
     TICK_SIZE,
     UNOBSERVED,
@@ -49,7 +49,7 @@ from common.style import (
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig05"
 GROUPS = {
-    "observed": ("Observed", MODEL),
+    "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
 

@@ -37,7 +37,7 @@ from common.plotting import (
 )
 from common.style import (
     LEGEND_GREY,
-    MODEL,
+    OBSERVED,
     UNOBSERVED,
     PAIR,
     SINGLE,
@@ -54,7 +54,7 @@ from common.style import (
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig06"
 GROUPS = {
-    "observed": ("Observed", MODEL),
+    "observed": ("Observed", OBSERVED),
     "heldout": ("Unobserved", UNOBSERVED),
 }
 OPERATING_POINT = 0.1

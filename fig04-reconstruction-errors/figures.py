@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import METRIC_LABELS, PERTURBATION_TITLE, pool_populations
 from common.style import (
-    MODEL,
+    UNOBSERVED,
     SINGLE,
     TICK_SIZE,
     apply_style,
@@ -44,11 +44,11 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig04"
-#: Both series are the same model under a different ablation, so both take the model's
-#: blue and are told apart by line style (COLORSCHEME.txt rule 1).
+#: Both series report the unobserved population, so both take its colour and are told
+#: apart by line style: the figure's subject is how much input is lost, not which way.
 MODELS = {
-    "neuron_removal": ("Neuron Removal", MODEL, "-"),
-    "synapse_dropout": ("Synapse Dropout", MODEL, "--"),
+    "neuron_removal": ("Neuron Removal", UNOBSERVED, "-"),
+    "synapse_dropout": ("Synapse Dropout", UNOBSERVED, "--"),
 }
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
