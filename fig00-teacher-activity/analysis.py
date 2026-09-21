@@ -13,21 +13,20 @@ Steps, each skipped when its outputs exist unless ``--force`` is given:
     coding          fig00_coding_schematic.csv  odourant, baseline_hz, odour_hz
                     The construction of an odourant: one input group elevated by
                     modulation_rate, the rest depressed to hold the baseline mean.
-    inputs          fig00_input_rates.npz       odour_hz (20 patterns x input neurons),
-                                                baseline_hz (input neurons)
     conditions      fig00_condition_rates.csv   neuron_id, cell_type, assembly, and the
                     per-neuron rate under odourant 1, the same odourant with a different
                     Poisson seed, and the homogeneous baseline. Three re-simulations.
-    dynamics        fig00_raster.npz            spike (neuron row, time) pairs for a
-                                                sample of neurons, ordered by assembly
+    dynamics        fig00_raster.npz            spike (row, time) pairs for ten rows --
+                                                feedforward and recurrent, as the library's
+                                                activity dashboard samples them -- and
+                                                each row's id, population and rate
                     fig00_traces.npz            one neuron's voltage, currents and
                                                 conductances over TRACE_SECONDS
-                    fig00_conductance_integral.csv  integrated conductance per synapse
-                                                type for CONDUCTANCE_NEURONS neurons
                     The raster comes from the teacher's own zarr; the traces need a
                     re-simulation of the stored input with ``track_variables=True``.
-    assemblies      fig00_assemblies.npz        per-assembly excitatory population rate
-                                                in BIN_MS bins beside the 20 OU weights
+    assemblies      fig00_assemblies.npz        the OU mixing coefficient of each odourant
+                                                and each assembly's excitatory population
+                                                rate, over the raster's trial
     drive           fig00_drive.csv             feedforward vs recurrent excitatory
                                                 synaptic drive over the whole zarr
     dimensionality  fig00_pca_spectrum.csv      component, eigenvalue, variance_fraction,
@@ -78,13 +77,10 @@ from common.evaluation import smooth
 EVALUATION_PARAMETERS = HERE.parent / "fig01-full-reconstruction" / "parameters.toml"
 VARIANCE_THRESHOLDS = (0.5, 0.8, 0.9, 0.95)
 
-#: The trial every dynamics panel is drawn from, and the one the assembly panel uses.
-#: Trial 2's Ornstein-Uhlenbeck trajectory visits several odourants within the window,
-#: which is what the assembly panel is about (the notebook pinned the same trial).
+#: The trial every dynamics panel is drawn from.
 RASTER_TRIAL = 0
-ASSEMBLY_TRIAL = 2
-#: Plot windows. The raster and the assembly panel cover the teacher's saved plotting
-#: window; the traces are a shorter stretch, where single spikes are still resolvable.
+#: Plot windows. The raster covers the teacher's saved plotting window; the traces are a
+#: shorter stretch, where single spikes are still resolvable.
 RASTER_SECONDS = 10.0
 TRACE_SECONDS = 5.0
 #: One condition simulation, of which the first second is discarded before rates are
@@ -94,17 +90,33 @@ BURN_IN_SECONDS = 1.0
 #: Steps per forward call. Tracking allocates (steps x neurons x synapses) tensors, so
 #: the window is simulated in slices rather than in one call.
 TRACK_CHUNK_STEPS = 1000
-#: Neurons kept, and how the sample is drawn. The raster takes a fixed number of cells of
-#: each type from every assembly, so the rows are ordered by assembly.
-RASTER_EXCITATORY_PER_ASSEMBLY = 12
-RASTER_INHIBITORY_PER_ASSEMBLY = 3
-#: The neuron whose voltage, currents and conductances are plotted (the notebook's pick).
-TRACE_NEURON = 13
+#: Rows in the raster, split between feedforward and recurrent as the library's activity
+#: dashboard splits them (see :func:`raster_sample`).
+RASTER_NEURONS = 10
+#: The traced neuron is CHOSEN, not pinned. The notebook pinned neuron 13, which turns
+#: out to carry a mitral synapse of weight 2.32 -- the 96th percentile of the network --
+#: so a single presynaptic spike injects ~14 nS and its currents are dominated by one
+#: outlier synapse. Feedforward weights are log-normal with median 0.0014 and a maximum
+#: of 65.5 (see the README), so an unlucky pick is unrepresentative rather than rare.
+#: The rule keeps neurons whose strongest mitral synapse is no larger than the network
+#: median and, among those, takes the one firing closest to its cell type's mean rate --
+#: the same "typical cell" rule the library's activity dashboard uses to pick a neuron.
+TRACE_CELL_TYPE = "inhibitory"
 CONDUCTANCE_NEURONS = 10
 SAMPLE_SEED = 42
-#: Population rates and OU weights are written at this resolution, which is what keeps
-#: the assembly file small.
-BIN_MS = 50.0
+#: The assembly panels follow the library's assembly dashboard: excitatory neurons only,
+#: over the raster's window and trial. The dashboard smooths with a 200 ms Gaussian; 50 ms
+#: is used here, matching Fluctuation R²'s kernel, so the rates can be read against the
+#: mixing trajectories side by side without the response being smeared past its cause.
+#: Odourant k drives assembly k (the library generates one input pattern per assembly), so
+#: column k means the same assembly in both arrays and the two panels share colours. Held
+#: static, odourant 1 raises assembly 0 by 2.7 Hz, the largest of the twenty; within one
+#: trial the coefficient moves too slowly (OU tau = 700 s) for the pairing to show up as a
+#: correlation, which is a property of the stimulus, not of the panels.
+ASSEMBLY_SMOOTHING_MS = 50.0
+#: Both panels are line plots of a 10 s window, so 1 ms resolution is far finer than the
+#: ink: every fifth sample is stored, which is ten per smoothing kernel.
+ASSEMBLY_STRIDE = 5
 
 
 def default_device():
@@ -244,27 +256,6 @@ def step_coding(teacher, out_dir, device):
     )
 
 
-def step_inputs(teacher, out_dir, device):
-    """Per-input-neuron rates of every odourant, and of the homogeneous baseline.
-
-    All 20 patterns, not just the one the response panels use: the distribution the
-    histogram panel plots is the input the teacher actually sees, and each pattern draws
-    its own mean (``baseline_variance``), which one pattern would not show.
-    """
-    odour = teacher.odour_firing_rates()
-    baseline = teacher.baseline_firing_rates()
-    np.savez_compressed(
-        out_dir / "fig00_input_rates.npz",
-        odour_hz=odour.astype(np.float32),
-        baseline_hz=baseline[0].astype(np.float32),
-    )
-    print(
-        f"  inputs: {odour.shape[0]} patterns x {odour.shape[1]} neurons, "
-        f"{odour.min():.2f}-{odour.max():.2f} Hz, mean {odour.mean():.2f} Hz, "
-        f"baseline {baseline[0].mean():.2f} Hz"
-    )
-
-
 # ==========
 # Network response to three input conditions
 # ==========
@@ -338,52 +329,97 @@ def step_conditions(teacher, out_dir, device):
 
 
 # ==========
-# Dynamics: raster, one neuron's traces, integrated conductances
+# Dynamics: raster and one neuron's traces
 # ==========
 
 
-def raster_sample(teacher):
-    """Neuron ids for the raster, ordered by assembly then cell type."""
+def trace_neuron(teacher, rates):
+    """A representative neuron of ``TRACE_CELL_TYPE``: no outlier feedforward synapse,
+    and a firing rate close to its cell type's mean. See ``TRACE_CELL_TYPE``."""
+    cell_type = teacher.cell_type_names.index(TRACE_CELL_TYPE)
+    strongest = teacher.feedforward_weights.max(axis=0)
+    typical_input = strongest <= np.median(strongest)
+    candidates = np.flatnonzero(
+        (teacher.cell_type_indices == cell_type) & typical_input
+    )
+    if candidates.size == 0:  # no cell of this type escapes the tail; take them all
+        candidates = np.flatnonzero(teacher.cell_type_indices == cell_type)
+    target = rates[teacher.cell_type_indices == cell_type].mean()
+    chosen = int(candidates[np.argmin(np.abs(rates[candidates] - target))])
+    print(
+        f"  dynamics: tracing {TRACE_CELL_TYPE} neuron {chosen} "
+        f"({rates[chosen]:.1f} Hz against the population's {target:.1f} Hz, "
+        f"strongest mitral weight {strongest[chosen]:.3f} against a median of "
+        f"{np.median(strongest):.3f})"
+    )
+    return chosen
+
+
+def raster_sample(teacher, rates):
+    """The raster's rows, chosen as the library's activity dashboard chooses them.
+
+    ``create_activity_dashboard`` (``visualization/dashboards.py``) plots feedforward and
+    recurrent neurons together, in proportion to the population sizes, and picks the
+    recurrent ones whose rate is closest to their own cell type's mean -- so no row is a
+    silent cell or one of the handful firing at 270 Hz. Feedforward rows are drawn at
+    random, since they all share one Poisson process. Ten rows in total (2026-09-21: the
+    first build drew 300 and was an unreadable point cloud).
+
+    Returns the feedforward and recurrent ids separately, feedforward first, which is the
+    dashboard's row order.
+    """
+    n_feedforward = teacher.feedforward_weights.shape[0]
+    n_recurrent = teacher.cell_type_indices.size
+    n_input_rows = max(
+        1, int(RASTER_NEURONS * n_feedforward / (n_feedforward + n_recurrent))
+    )
+    n_output_rows = RASTER_NEURONS - n_input_rows
     rng = np.random.default_rng(SAMPLE_SEED)
-    chosen = []
-    for assembly in np.unique(teacher.assembly_ids[teacher.assembly_ids >= 0]):
-        in_assembly = teacher.assembly_ids == assembly
-        for cell_type, count in (
-            (0, RASTER_EXCITATORY_PER_ASSEMBLY),
-            (1, RASTER_INHIBITORY_PER_ASSEMBLY),
-        ):
-            candidates = np.flatnonzero(
-                in_assembly & (teacher.cell_type_indices == cell_type)
-            )
-            if candidates.size == 0:
-                continue
-            take = min(count, candidates.size)
-            chosen.append(np.sort(rng.choice(candidates, size=take, replace=False)))
-    return np.concatenate(chosen)
+    inputs = np.sort(rng.choice(n_feedforward, size=n_input_rows, replace=False))
+    recurrent = []
+    for cell_type in np.unique(teacher.cell_type_indices):
+        indices = np.flatnonzero(teacher.cell_type_indices == cell_type)
+        count = max(1, round(n_output_rows * indices.size / n_recurrent))
+        closest = indices[np.argsort(np.abs(rates[indices] - rates[indices].mean()))]
+        recurrent.append(np.sort(closest[:count]))
+    return inputs, np.concatenate(recurrent)[:n_output_rows]
 
 
 def step_dynamics(teacher, out_dir, device):
     """The raster from the teacher's zarr, the traces from a tracked re-simulation."""
     data = teacher.zarr
     raster_steps = teacher.steps(RASTER_SECONDS)
-    neurons = raster_sample(teacher)
-    spikes = data["output_spikes"][RASTER_TRIAL, :raster_steps, :][:, neurons]
+    seconds = raster_steps * teacher.dt * 1e-3
+    output_spikes = data["output_spikes"][RASTER_TRIAL, :raster_steps, :]
+    population_rates = output_spikes.sum(axis=0) / seconds
+    input_rows, output_rows = raster_sample(teacher, population_rates)
+    traced = trace_neuron(teacher, population_rates)
+    spikes = np.concatenate(
+        [
+            data["input_spikes"][RASTER_TRIAL, :raster_steps, :][:, input_rows],
+            output_spikes[:, output_rows],
+        ],
+        axis=1,
+    )
     rows, times = np.nonzero(spikes.T)
+    rates = spikes.sum(axis=0) / seconds
+    populations = ["feedforward"] * input_rows.size + [
+        teacher.cell_type_names[i] for i in teacher.cell_type_indices[output_rows]
+    ]
     np.savez_compressed(
         out_dir / "fig00_raster.npz",
         row=rows.astype(np.int16),
         time_s=(times * teacher.dt * 1e-3).astype(np.float32),
-        neuron_id=neurons.astype(np.int32),
-        assembly=teacher.assembly_ids[neurons].astype(np.int16),
-        cell_type=np.array(
-            [teacher.cell_type_names[i] for i in teacher.cell_type_indices[neurons]]
-        ),
+        neuron_id=np.concatenate([input_rows, output_rows]).astype(np.int32),
+        population=np.array(populations),
+        rate_hz=rates.astype(np.float32),
         duration_s=np.float32(RASTER_SECONDS),
         trial=np.int32(RASTER_TRIAL),
     )
     print(
-        f"  dynamics: raster of {neurons.size} neurons, {rows.size} spikes over "
-        f"{RASTER_SECONDS:.0f} s",
+        f"  dynamics: raster of {len(populations)} rows "
+        f"({input_rows.size} feedforward), {rows.size} spikes over "
+        f"{RASTER_SECONDS:.0f} s, {rates.min():.1f}-{rates.max():.1f} Hz",
         flush=True,
     )
 
@@ -397,8 +433,8 @@ def step_dynamics(teacher, out_dir, device):
             teacher.cell_type_indices.size, size=CONDUCTANCE_NEURONS, replace=False
         )
     )
-    kept = np.unique(np.concatenate([sampled, [TRACE_NEURON]]))
-    trace_row = int(np.flatnonzero(kept == TRACE_NEURON)[0])
+    kept = np.unique(np.concatenate([sampled, [traced]]))
+    trace_row = int(np.flatnonzero(kept == traced)[0])
 
     model = teacher.model(device, track_variables=True)
     model.reset_state(batch_size=1)
@@ -426,6 +462,7 @@ def step_dynamics(teacher, out_dir, device):
                 f"({time.time() - started:.0f} s)",
                 flush=True,
             )
+    physiology_name = teacher.cell_type_names[teacher.cell_type_indices[traced]]
     voltages = np.concatenate(voltages).astype(np.float32)
     currents = np.concatenate(currents).astype(np.float32)
     leak = np.concatenate(leak).astype(np.float32)
@@ -440,61 +477,54 @@ def step_dynamics(teacher, out_dir, device):
         leak_current_pa=leak[:, trace_row],
         conductance_ns=conductances[:, trace_row],
         synapse=np.array(labels),
-        neuron_id=np.int32(TRACE_NEURON),
-        cell_type=np.array(
-            teacher.cell_type_names[teacher.cell_type_indices[TRACE_NEURON]]
-        ),
-        threshold_mv=np.float32(
-            teacher.recurrent.physiology[
-                teacher.cell_type_names[teacher.cell_type_indices[TRACE_NEURON]]
-            ].theta
-        ),
+        spike_time_s=(
+            np.flatnonzero(output_spikes[:trace_steps, traced]) * teacher.dt * 1e-3
+        ).astype(np.float32),
+        neuron_id=np.int32(traced),
+        cell_type=np.array(physiology_name),
+        threshold_mv=np.float32(teacher.recurrent.physiology[physiology_name].theta),
+        rest_mv=np.float32(teacher.recurrent.physiology[physiology_name].E_L),
         trial=np.int32(RASTER_TRIAL),
     )
-
-    # Integrated conductance per synapse type, in nS s, over the same window.
-    integral = conductances.sum(axis=0) * teacher.dt * 1e-3
-    table = pd.DataFrame(integral, columns=labels)
-    table.insert(0, "neuron_id", kept)
-    table.insert(
-        1,
-        "cell_type",
-        [teacher.cell_type_names[i] for i in teacher.cell_type_indices[kept]],
-    )
-    table["seconds"] = TRACE_SECONDS
-    table.to_csv(out_dir / "fig00_conductance_integral.csv", index=False)
-    print(f"  dynamics: integrated conductance for {len(table)} neurons")
+    print(f"  dynamics: neuron {traced} traced over {TRACE_SECONDS:.0f} s")
 
 
 def step_assemblies(teacher, out_dir, device):
-    """Per-assembly excitatory population rate beside the 20 OU mixing weights."""
+    """The OU mixing trajectories and the assembly rates they produce.
+
+    Follows the library's assembly dashboard: one trial, excitatory neurons only, each
+    assembly's population rate smoothed with a Gaussian of ``ASSEMBLY_SMOOTHING_MS``.
+    """
     data = teacher.zarr
-    n_steps = teacher.steps(RASTER_SECONDS)
-    bin_steps = round(BIN_MS / teacher.dt)
-    n_bins = n_steps // bin_steps
-    spikes = data["output_spikes"][ASSEMBLY_TRIAL, : n_bins * bin_steps, :]
-    weights = data["weights"][ASSEMBLY_TRIAL, : n_bins * bin_steps, :]
+    steps = teacher.steps(RASTER_SECONDS)
+    weights = np.asarray(data["weights"][RASTER_TRIAL, :steps, :], dtype=np.float32)
+    spikes = np.asarray(data["output_spikes"][RASTER_TRIAL, :steps, :])
+    excitatory = teacher.cell_type_indices == teacher.cell_type_names.index(
+        "excitatory"
+    )
     assemblies = np.unique(teacher.assembly_ids[teacher.assembly_ids >= 0])
-    excitatory = teacher.cell_type_indices == 0
-    rates = np.zeros((n_bins, assemblies.size), dtype=np.float32)
+    rates = np.zeros((steps, assemblies.size), dtype=np.float32)
     for column, assembly in enumerate(assemblies):
         members = excitatory & (teacher.assembly_ids == assembly)
-        counts = spikes[:, members].reshape(n_bins, bin_steps, -1).sum(axis=(1, 2))
-        rates[:, column] = counts / (members.sum() * bin_steps * teacher.dt * 1e-3)
+        counts = spikes[:, members].mean(axis=1).astype(np.float32)
+        rates[:, column] = smooth(counts[:, None], ASSEMBLY_SMOOTHING_MS, teacher.dt)[
+            :, 0
+        ] * (1000.0 / teacher.dt)
     np.savez_compressed(
         out_dir / "fig00_assemblies.npz",
-        time_s=(np.arange(n_bins) * bin_steps * teacher.dt * 1e-3).astype(np.float32),
-        rate_hz=rates,
-        ou_weight=weights.reshape(n_bins, bin_steps, -1)
-        .mean(axis=1)
-        .astype(np.float32),
+        time_s=(np.arange(0, steps, ASSEMBLY_STRIDE) * teacher.dt * 1e-3).astype(
+            np.float32
+        ),
+        mixing_weight=weights[::ASSEMBLY_STRIDE],
+        rate_hz=rates[::ASSEMBLY_STRIDE],
         assembly=assemblies.astype(np.int16),
-        bin_ms=np.float32(BIN_MS),
-        trial=np.int32(ASSEMBLY_TRIAL),
+        smoothing_ms=np.float32(ASSEMBLY_SMOOTHING_MS),
+        trial=np.int32(RASTER_TRIAL),
     )
     print(
-        f"  assemblies: {assemblies.size} assemblies x {n_bins} bins of "
-        f"{BIN_MS:.0f} ms, trial {ASSEMBLY_TRIAL}"
+        f"  assemblies: {assemblies.size} assemblies over {RASTER_SECONDS:.0f} s, "
+        f"rates {rates.min():.1f}-{rates.max():.1f} Hz, mixing weight up to "
+        f"{weights.max():.2f}"
     )
 
 
@@ -608,12 +638,8 @@ def step_dimensionality(teacher, out_dir, device):
 #: step name -> (function, the files it writes).
 STEPS = {
     "coding": (step_coding, ["fig00_coding_schematic.csv"]),
-    "inputs": (step_inputs, ["fig00_input_rates.npz"]),
     "conditions": (step_conditions, ["fig00_condition_rates.csv"]),
-    "dynamics": (
-        step_dynamics,
-        ["fig00_raster.npz", "fig00_traces.npz", "fig00_conductance_integral.csv"],
-    ),
+    "dynamics": (step_dynamics, ["fig00_raster.npz", "fig00_traces.npz"]),
     "assemblies": (step_assemblies, ["fig00_assemblies.npz"]),
     "drive": (step_drive, ["fig00_drive.csv"]),
     "dimensionality": (

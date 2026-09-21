@@ -70,22 +70,83 @@ dynamics look like, and how high-dimensional the result is.
 | | Panel | What it shows |
 |---|---|---|
 | **(a)** | `coding-schematic` | how an odourant is constructed: one assembly's input lifted to 15 Hz, the rest depressed so the 6 Hz mean is unchanged |
-| **(b)** | `input-rates` | distribution of feedforward input rates, all 1500 neurons across all 20 odourants |
-| **(c)** | `rates-odour-baseline` | per-neuron firing rate, one odourant vs homogeneous-Poisson baseline |
-| **(d)** | `rates-odour-repeat` | the same odourant twice with different Poisson noise — the network's own trial-to-trial variability, the scale against which (c) should be read |
-| **(e)** | `raster` | 300 neurons of one trial over 10 s, ordered by assembly |
-| **(f)** | `assemblies` | the OU mixing weight of each odourant and each assembly's firing rate over one trial |
-| **(g)** | `neuron-traces` | one neuron's membrane potential and its recurrent-E, recurrent-I, feedforward and leak currents |
-| **(h)** | `conductances` | the same neuron's conductance per synapse type |
-| **(i)** | `integrated-conductance` | integrated conductance per synapse type across sampled neurons |
-| **(j)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
-| **(k)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
-| **(l)** | `variance-spectrum` | variance fraction per component, log-log |
+| **(b)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial |
+| **(c)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, Gaussian σ = 50 ms |
+| **(d)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
+| **(e)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
+| **(f)** | `neuron-traces` | one neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents |
+| **(g)** | `conductances` | the same neuron's conductance, split excitatory / inhibitory / feedforward |
+| **(h)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
+| **(i)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
+| **(j)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
 
-Synapse pathways take their presynaptic population's colour — red from excitatory, blue
-from inhibitory, grey from mitral — with AMPA and NMDA separated by line style. The two
-assembly heatmaps use a sequential ramp built from the scheme's own steel blue, since
-20 assemblies cannot be carried by a palette of six colours.
+These follow the library's own dashboards (`create_activity_dashboard`,
+`create_assembly_activity_dashboard`, `plot_synaptic_conductances`,
+`plot_spike_trains`) in layout and convention, in house colours:
+
+- **Currents are inward-positive**, so excitatory input goes up. The simulator stores
+  g(V − E_syn), which is negative for an excitatory synapse, so the panel flips the sign.
+- **Spikes are drawn as vertical lines from threshold to 0 mV.** The simulator resets the
+  voltage at threshold, so the trace itself has no spike peak.
+- **Conductance axes are capped at the 98th percentile** (inhibition at ten times it), the
+  library's rule. Rare transients are therefore clipped rather than allowed to flatten
+  every other trace.
+- The 20 assemblies use the dashboard's own categorical map, since the talk palette has
+  six colours. Everything else uses the semantic names from `common/style.py`.
+- Panels (b) and (c) are the assembly dashboard's pair, from the same trial with the same
+  colour per assembly, so they can be shown side by side. Odourant *k* drives assembly
+  *k*: the library generates one input pattern per assembly, so column *k* means the same
+  assembly in both. Smoothing is 50 ms rather than the dashboard's 200 ms, matching
+  Fluctuation R²'s kernel.
+
+Four panels were built and cut on 2026-09-21 — the input-rate histogram, the
+odourant-vs-baseline scatter, an integrated-conductance comparison and a per-assembly
+feedforward-drive trace. They are in the git history.
+
+**Do not read (b) against (c) as a correlation.** Held static, odourant 1 raises assembly
+0 by 2.7 Hz, the largest response of the twenty, so the drive is real and measurable. But
+within one trial the mixing coefficient barely moves (the OU process has τ = 700 s against
+a 15 s trial), so over 10 s there are only a few independent samples of it while the rates
+fluctuate on the recurrent timescale. Measured in 50 ms bins over this trial: the
+coefficient tracks its own assembly's feedforward drive (+0.26, positive for 18 of 20
+assemblies) and that drive tracks its own assembly's rate (+0.20, 17 of 20), but
+coefficient against rate gives −0.17. The two panels show the stimulus and the response;
+the causal link is established by the static test, not by eye from these traces.
+
+## The traced neuron is chosen, not pinned
+
+The notebook pinned neuron 13 for its traces. That neuron carries a single mitral synapse
+of weight **2.32 — the 96th percentile of the network** — so one presynaptic spike injects
+about 14 nS and its currents are dominated by that one synapse, with transients near
+1 nA. It is not a representative cell, and the dashboards never showed this because their
+axes are capped at the 98th percentile.
+
+`analysis.py` now *chooses* the traced neuron: among cells whose strongest mitral synapse
+is no larger than the network median, the one firing closest to its cell type's mean rate
+(the library's own "typical cell" rule). That currently selects **neuron 616**, an
+inhibitory cell at 19.1 Hz against a population mean of 19.1 Hz, whose strongest mitral
+synapse is 0.096 against a median of 0.288.
+
+## Feedforward weights are heavy-tailed, by a wider margin than the config implies
+
+Worth knowing before quoting any weight statistic. `assign_weights_lognormal` treats
+`w_sigma` as the **variance** of the weight distribution and solves for the log-normal
+matching that mean and variance, while `parameters.toml` calls the field a standard
+deviation. With `w_sigma = 0.05` every block therefore ends up with SD ≈ 0.224 regardless
+of its mean:
+
+| block | mean | `w_sigma` | log-normal σ | median | SD |
+|---|---|---|---|---|---|
+| mitral→E | 0.02 | 0.05 | 2.20 | 0.0018 | 0.224 (11× the mean) |
+| mitral→I | 0.01 | 0.05 | 2.49 | 0.0005 | 0.224 (22× the mean) |
+| E→E | 0.02 | 0.05 | 2.20 | 0.0018 | 0.224 (11× the mean) |
+| I→E | 0.08 | 0.05 | 1.48 | 0.0270 | 0.224 (3× the mean) |
+
+The mitral weights that result have median 0.0014 and a maximum of **65.5**, and 12.7% of
+neurons carry at least one mitral synapse above 1.0. Nothing downstream is invalidated —
+teacher and student share the connectome, so every fit is on equal terms — but do not
+describe these weights as having an SD of 0.05. If SD 0.05 was intended, `w_sigma` should
+be 0.0025.
 
 ## Files
 
@@ -97,9 +158,8 @@ fig00-teacher-activity/
   experiment.toml    paths, W&B
   parameters.toml    network, input and simulation parameters
   README.md
-  fig00_coding_schematic.csv  fig00_input_rates.npz  fig00_condition_rates.csv
-  fig00_raster.npz  fig00_traces.npz  fig00_conductance_integral.csv
-  fig00_assemblies.npz  fig00_drive.csv
+  fig00_coding_schematic.csv  fig00_condition_rates.csv  fig00_assemblies.npz
+  fig00_raster.npz  fig00_traces.npz  fig00_drive.csv
   fig00_pca_spectrum.csv  fig00_dimensionality.csv
 ```
 
