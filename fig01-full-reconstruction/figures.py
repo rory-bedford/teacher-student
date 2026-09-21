@@ -30,6 +30,7 @@ from matplotlib.ticker import NullFormatter, ScalarFormatter
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    DELTA_MARKER_SIZE,
     PERTURBATION_TITLE,
     delta_rate_scatter,
     r2_title,
@@ -38,7 +39,6 @@ from common.style import (
     EXCITATORY,
     INHIBITORY,
     LEGEND_GREY,
-    LEGEND_MARKERSCALE,
     PAIR,
     REFERENCE_GREY,
     SINGLE,
@@ -50,6 +50,7 @@ from common.style import (
     clear_panels,
     rate_scatter,
     save,
+    scatter_legend,
     spike_raster,
 )
 
@@ -214,7 +215,7 @@ def delta_scatter(summary, deltas):
     """(c) the intervention's effect: teacher vs student Δrate, one point per neuron."""
     fig, ax = plt.subplots(figsize=(PAIR[0] / 2, PAIR[1]))
     delta_rate_scatter(ax, deltas)
-    ax.legend(loc="upper left", markerscale=LEGEND_MARKERSCALE, frameon=True)
+    scatter_legend(ax, DELTA_MARKER_SIZE)
     ax.set_title(
         PERTURBATION_TITLE + "\n" + "\n".join(delta_scores(summary)),
         fontsize=TICK_SIZE,

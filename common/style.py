@@ -132,9 +132,9 @@ RATE_MAX_HZ = 40.0
 RATE_TICK_HZ = 10.0
 #: Marker area for the rate scatters; the delta scatter matches it (see common.plotting).
 RATE_MARKER_SIZE = 10
-#: Every legend is framed and scales its markers by the same factor, so a legend looks the
-#: same whichever panel it sits in (2026-09-21).
-LEGEND_MARKERSCALE = 3
+#: Every scatter legend draws its swatches at this area, whatever size the plotted points
+#: are, and at full opacity -- so a legend looks identical in every panel (2026-09-21).
+LEGEND_MARKER_AREA = 30
 
 
 def nice_max(values, step=10):
@@ -182,11 +182,20 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
     ax.set_xlabel("Teacher Firing Rate (Hz)")
     ax.set_ylabel("Student Firing Rate (Hz)")
     ax.set_title(title)
+    scatter_legend(ax, RATE_MARKER_SIZE)
+
+
+def scatter_legend(ax, marker_size, loc="upper left"):
+    """A framed legend whose swatches are LEGEND_MARKER_AREA regardless of point size."""
     legend = ax.legend(
-        loc="upper left", markerscale=LEGEND_MARKERSCALE, scatterpoints=1, frameon=True
+        loc=loc,
+        markerscale=LEGEND_MARKER_AREA / marker_size,
+        scatterpoints=1,
+        frameon=True,
     )
     for handle in legend.legend_handles:
         handle.set_alpha(1.0)
+    return legend
 
 
 def spike_raster(ax, spikes, neurons, duration_s, labels):
