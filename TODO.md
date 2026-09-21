@@ -19,6 +19,41 @@ Not implemented: SMOKETEST.md section 3 (free running).
 
 ## Planned
 
+### Merge and split errors, in connectomics terms (2026-09-21)
+
+Not for this talk; the user decided against it for now.
+
+Figure 4's two arms already cover the *missing*-structure half of the EM error taxonomy:
+synapse dropout is a cell losing a scattered fraction of its inputs, neuron removal is a
+cell never reconstructed (or never matched to activity). Both resemble **split** errors,
+where one cell is reconstructed as two fragments and the fragment matched to activity
+carries only part of its synapses. Relabelling the existing figure in that language is
+free and could be done at any time.
+
+**Merges are the untested error**, and the only one that *adds* structure. Two cells
+reconstructed as one object give a modelled unit with the union of their synapses **and a
+blended activity trace** -- that second consequence is the point, and nothing in the
+current sweep touches it.
+
+How to model it:
+1. Merge a fraction of neuron pairs drawn *within cell type* (and ideally within
+   assembly): EM merges happen between adjacent processes, so random E-I pairs would be a
+   strawman.
+2. The merged unit's incoming weights are the union of the pair's; its outgoing weights
+   are their sum onto each target.
+3. Its forced activity is the **sum of the pair's spike trains**. This is what makes it a
+   merge rather than just extra synapses.
+4. Sweep the fraction of neurons involved, 0 to 0.5, scored on Figure 4's existing
+   "fraction of recurrent input misassigned" axis.
+
+**Cost:** the connectivity side is an hour in `common/structure.py`. The activity side is
+the work -- merged units need their forced traces combined, which touches the
+dataloader/collate path that assumes one modelled unit per teacher neuron. Roughly half a
+day, then 15 runs (5 levels x 3 seeds, ~2 h each) and an analysis pass.
+
+Until it exists, say plainly that merges are untested rather than implying the figure
+covers them.
+
 ### Figure 7 — model mismatch
 
 Test robustness to mismatch in the neuron model: the student's physiological parameters differ from
