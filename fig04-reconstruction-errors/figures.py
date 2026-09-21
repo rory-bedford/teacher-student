@@ -30,7 +30,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, pool_populations
+from common.plotting import METRIC_LABELS, PERTURBATION_TITLE, pool_populations
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -158,7 +158,7 @@ def delta_sweep(summary, metric, ylim):
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(
-        f"{METRIC_LABELS[metric]}: Inhibiting 25% of Unobserved I Cells",
+        f"{METRIC_LABELS[metric]}: {PERTURBATION_TITLE}",
         fontsize=TICK_SIZE + 1,
     )
     fig.tight_layout()

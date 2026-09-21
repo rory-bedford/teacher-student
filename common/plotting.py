@@ -38,7 +38,11 @@ PERTURBATION_SERIES = (
     ("unobserved", "excitatory", EXCITATORY_COLOR, "Unobserved E"),
     ("unobserved", "inhibitory", INHIBITORY_COLOR, "Unobserved I"),
 )
-PERTURBATION_TITLE = "Response to inhibiting 25% of unobserved I cells (Δ = on − off)"
+#: Shared wording for the perturbation panels, so the four figures agree (2026-09-21).
+#: The series are the unobserved cells that were NOT targeted, E and I pooled; the value
+#: is the change the intervention caused, perturbed minus unperturbed.
+PERTURBATION_TITLE = "Inhibiting 25% of Unobserved I Cells (Δ = On − Off)"
+PERTURBATION_LABEL = "Unobserved, Not Targeted (E + I)"
 
 
 def use_talk_style():

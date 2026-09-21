@@ -30,6 +30,7 @@ from matplotlib.ticker import NullFormatter, ScalarFormatter
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    PERTURBATION_TITLE,
     delta_rate_scatter,
     r2_title,
 )
@@ -211,7 +212,7 @@ def delta_scatter(summary, deltas):
     delta_rate_scatter(ax, deltas)
     ax.legend(loc="upper left", markerscale=4, frameon=True)
     ax.set_title(
-        "Inhibiting 25% of Unobserved I Cells\n" + "\n".join(delta_scores(summary)),
+        PERTURBATION_TITLE + "\n" + "\n".join(delta_scores(summary)),
         fontsize=TICK_SIZE,
     )
     fig.tight_layout()

@@ -38,7 +38,12 @@ from matplotlib.ticker import NullFormatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, pool_populations, r2_title
+from common.plotting import (
+    METRIC_LABELS,
+    PERTURBATION_LABEL,
+    pool_populations,
+    r2_title,
+)
 from common.style import (
     LEGEND_GREY,
     SINGLE,
@@ -222,7 +227,13 @@ def delta_sweep(summary, metric, dimensionality):
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.legend(
         handles=[
-            Line2D([], [], color=UNOBSERVED_COLOR, linewidth=6, label="Unobserved"),
+            Line2D(
+                [],
+                [],
+                color=UNOBSERVED_COLOR,
+                linewidth=6,
+                label=PERTURBATION_LABEL,
+            ),
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
         ]
         + markers,

@@ -31,7 +31,12 @@ from connectome_snns.visualization import (
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, pool_populations
+from common.plotting import (
+    METRIC_LABELS,
+    PERTURBATION_LABEL,
+    PERTURBATION_TITLE,
+    pool_populations,
+)
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -142,13 +147,13 @@ def perturbation(summary, metric, ylim):
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        {"Unobserved": UNOBSERVED_COLOR},
+        {PERTURBATION_LABEL: UNOBSERVED_COLOR},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    ax.set_title(f"{METRIC_LABELS[metric]}\nInhibiting 25% of Unobserved I Cells")
+    ax.set_title(f"{METRIC_LABELS[metric]}\n{PERTURBATION_TITLE}")
     fig.tight_layout()
     return fig
 

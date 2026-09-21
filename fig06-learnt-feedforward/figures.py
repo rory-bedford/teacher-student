@@ -2,13 +2,12 @@
 
     uv run python fig06-learnt-feedforward/figures.py
 
-    fig06-a-curve               Fluctuation R² vs reconstructed fraction, observed / held-out
-    fig06-b-raster              observed and held-out neuron at the lowest level
-    fig06-c-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
+    fig06-a-curve               Fluctuation R² vs reconstructed fraction, observed / unobserved
+    fig06-b-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
 
-The two rate scatters were dropped on 2026-09-21: the sweep and the raster carry the
-result, and they were the only panels quoting Activity R², which no other panel reports.
-Activity R² is still scored and kept in the CSVs.
+Two panels (2026-09-21). The rate scatters went first -- they were the only panels
+quoting Activity R², which no other panel reports -- and then the raster: the sweep
+carries the result. Both tables are still written by analysis.py.
 
 Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
 100%. ``placeholder_figures/fig06-learnt-feedforward/figures.py`` calls ``main`` here with
@@ -23,24 +22,26 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from connectome_snns.visualization import OBSERVED_COLOR, UNOBSERVED_COLOR
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from common.plotting import METRIC_LABELS, pool_populations
+from common.plotting import (
+    METRIC_LABELS,
+    PERTURBATION_LABEL,
+    PERTURBATION_TITLE,
+    pool_populations,
+)
 from common.style import (
     LEGEND_GREY,
     SINGLE,
     TICK_SIZE,
-    WIDE,
     apply_style,
     ceiling,
     clear_panels,
     save,
-    spike_raster,
     sweep_legend,
     sweep_series,
 )
@@ -52,7 +53,6 @@ GROUPS = {
     "heldout": ("Held-Out", UNOBSERVED_COLOR),
 }
 OPERATING_POINT = 0.1
-RASTER_SECONDS = 2.0
 
 
 def format_count(n):
@@ -172,26 +172,6 @@ def curve(sweep, fully_observed, ylim):
     return fig
 
 
-def raster(spikes, level):
-    """(c) One observed and one held-out neuron at the lowest level."""
-    level_spikes = spikes[np.isclose(spikes["reconstructed_fraction"], level)]
-    neurons = (
-        level_spikes[["neuron_id", "group"]]
-        .drop_duplicates()
-        .sort_values("group", ascending=False)
-    )
-    fig, ax = plt.subplots(figsize=(WIDE[0], WIDE[1] * 0.7))
-    spike_raster(
-        ax,
-        level_spikes[level_spikes["time_s"] <= RASTER_SECONDS],
-        list(neurons["neuron_id"]),
-        RASTER_SECONDS,
-        [GROUPS[g][0] for g in neurons["group"]],
-    )
-    ax.set_title(f"Spikes, Student vs Teacher, {level:.0%} Reconstructed")
-    return fig
-
-
 def perturbation(sweep, metric, ylim):
     """(d) The intervention against reconstructed fraction, cell types pooled.
 
@@ -225,13 +205,13 @@ def perturbation(sweep, metric, ylim):
     ax.set_ylim(*ylim)
     sweep_legend(
         ax,
-        {"Held-Out": UNOBSERVED_COLOR},
+        {PERTURBATION_LABEL: UNOBSERVED_COLOR},
         metrics=False,
         loc="lower left",
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    ax.set_title(f"{METRIC_LABELS[metric]}\nInhibiting 25% of Held-Out I Cells")
+    ax.set_title(f"{METRIC_LABELS[metric]}\n{PERTURBATION_TITLE}")
     fig.tight_layout()
     return fig
 
@@ -240,23 +220,20 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig06_summary.csv")
-    spikes = pd.read_csv(data_dir / "fig06_spikes.csv")
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]
     fully_observed = summary[summary["recorded_pool_fraction"] >= 1.0]
-    levels = sorted(held_out(sweep)["reconstructed_fraction"].unique())
 
     def output(fig, letter, slug):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
     ylim = limits(sweep)
     output(curve(sweep, fully_observed, ylim), "a", "curve")
-    output(raster(spikes, min(levels)), "b", "raster")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if "evaluation" in sweep and (sweep["metric"] == "delta_fluctuation_r2").any():
         output(
-            perturbation(sweep, "delta_fluctuation_r2", ylim), "c", "delta-fluctuation"
+            perturbation(sweep, "delta_fluctuation_r2", ylim), "b", "delta-fluctuation"
         )
 
 
