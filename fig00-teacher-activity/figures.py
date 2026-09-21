@@ -399,56 +399,80 @@ def conductances(data):
 
 def ou_trajectories(data):
     """(b) The Ornstein-Uhlenbeck mixing coefficient of each odourant over one trial."""
-    fig, ax = plt.subplots(figsize=SINGLE)
-    colors = assembly_colors(data["assembly"].size)
-    for column in range(data["assembly"].size):
-        ax.plot(
-            data["time_s"],
-            data["mixing_weight"][:, column],
-            color=colors[column],
-            linewidth=0.8,
-            alpha=0.85,
-            rasterized=True,
-        )
-    ax.set_xlim(data["time_s"][0], data["time_s"][-1])
-    ax.set_ylim(bottom=0)
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Mixing Weight")
-    ax.set_title("Odourant Mixing Coefficient of One Trial")
-    fig.tight_layout()
-    return fig
+    return assembly_series(
+        data,
+        "mixing_weight",
+        "Mixing Weight",
+        "Odourant Mixing Coefficient of One Trial",
+    )
 
 
 def assembly_series(data, key, y_label, title):
-    """One line per assembly, in the shared assembly colours."""
+    """One line per assembly, in the shared assembly colours.
+
+    The dominant odourant's own line is drawn heavier in both assembly panels, so the eye
+    can follow one colour from the stimulus to the response.
+    """
     fig, ax = plt.subplots(figsize=SINGLE)
     colors = assembly_colors(data["assembly"].size)
+    dominant = int(data["dominant"])
     for column in range(data["assembly"].size):
+        leading = column == dominant
         ax.plot(
             data["time_s"],
             data[key][:, column],
             color=colors[column],
-            linewidth=0.8,
-            alpha=0.85,
+            linewidth=1.8 if leading else 0.8,
+            alpha=1.0 if leading else 0.65,
+            zorder=3 if leading else 2,
+            label=f"Odourant {dominant}" if leading else None,
             rasterized=True,
         )
+    thick_legend(ax, loc="upper right", frameon=True, fontsize=TICK_SIZE)
     ax.set_xlim(data["time_s"][0], data["time_s"][-1])
-    ax.set_ylim(bottom=0)
+    if (
+        data[key].min() >= 0
+    ):  # a rate starts at zero; a deviation must show its negatives
+        ax.set_ylim(bottom=0)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(y_label)
-    ax.set_title(f"{title} (Gaussian σ = {float(data['smoothing_ms']):.0f} ms)")
+    smoothed = (
+        key != "mixing_weight"
+    )  # the coefficient is the stimulus, not a measurement
+    ax.set_title(
+        f"{title} (Gaussian σ = {float(data['smoothing_ms']):.0f} ms)"
+        if smoothed
+        else title
+    )
     fig.tight_layout()
     return fig
 
 
 def assembly_rates(data):
-    """(c) Each assembly's excitatory population rate over the same trial."""
-    return assembly_series(
-        data,
-        "rate_hz",
-        "Firing Rate (Hz)",
-        "Assembly Population Activity, Excitatory Cells",
+    """(c) Each assembly's rate over the same trial, against its own all-trial mean.
+
+    Assemblies differ in intrinsic rate by much more than a stimulus moves them (spread
+    SD 1.13 Hz against a deviation SD of 0.41 Hz), so the raw rates would show which
+    assembly is fastest rather than which odourant is on. Each assembly's mean over all
+    50 trials is subtracted, which leaves the stimulus-driven part: across those trials
+    the mixing coefficient correlates +0.51 with its own assembly's deviation, and the
+    dominant odourant's assembly is the largest deviator in 62% of them.
+    """
+    deviation = {
+        "time_s": data["time_s"],
+        "assembly": data["assembly"],
+        "dominant": data["dominant"],
+        "smoothing_ms": data["smoothing_ms"],
+        "deviation_hz": data["rate_hz"] - data["baseline_hz"][None, :],
+    }
+    fig = assembly_series(
+        deviation,
+        "deviation_hz",
+        "Firing Rate − Assembly Mean (Hz)",
+        "Assembly Population Activity Against Each Assembly's Mean Over All Trials",
     )
+    fig.axes[0].axhline(0.0, color=REFERENCE_GREY, linewidth=1, zorder=1)
+    return fig
 
 
 def synaptic_drive(drive):

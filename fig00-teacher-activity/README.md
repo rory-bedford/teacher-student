@@ -70,8 +70,8 @@ dynamics look like, and how high-dimensional the result is.
 | | Panel | What it shows |
 |---|---|---|
 | **(a)** | `coding-schematic` | how an odourant is constructed: one assembly's input lifted to 15 Hz, the rest depressed so the 6 Hz mean is unchanged |
-| **(b)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial |
-| **(c)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, Gaussian σ = 50 ms |
+| **(b)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial, the dominant one drawn heavy |
+| **(c)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
 | **(d)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
 | **(e)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
 | **(f)** | `neuron-traces` | one neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents |
@@ -103,15 +103,40 @@ Four panels were built and cut on 2026-09-21 — the input-rate histogram, the
 odourant-vs-baseline scatter, an integrated-conductance comparison and a per-assembly
 feedforward-drive trace. They are in the git history.
 
-**Do not read (b) against (c) as a correlation.** Held static, odourant 1 raises assembly
-0 by 2.7 Hz, the largest response of the twenty, so the drive is real and measurable. But
-within one trial the mixing coefficient barely moves (the OU process has τ = 700 s against
-a 15 s trial), so over 10 s there are only a few independent samples of it while the rates
-fluctuate on the recurrent timescale. Measured in 50 ms bins over this trial: the
-coefficient tracks its own assembly's feedforward drive (+0.26, positive for 18 of 20
-assemblies) and that drive tracks its own assembly's rate (+0.20, 17 of 20), but
-coefficient against rate gives −0.17. The two panels show the stimulus and the response;
-the causal link is established by the static test, not by eye from these traces.
+**Reading (b) against (c): the stimulus is decodable from the deviation, not from the
+rate.** Assemblies differ in intrinsic rate by far more than a stimulus moves them — the
+spread across assemblies has SD 1.13 Hz, a stimulus-driven deviation SD 0.41 Hz — so raw
+rates show which assembly is fastest (always assembly 18, in all 50 trials, profile
+correlation 0.93 between them) rather than which odourant is on. Panel (c) therefore plots
+each assembly's rate against **its own mean over all 50 trials**, which removes the
+ordering and leaves the response.
+
+Two further choices make it legible, both of which the panel states:
+
+- **The trial is chosen, not fixed:** the one whose odourant is most concentrated (trial
+  44, mean mixing weight 0.79). A trial whose stimulus is an even blend has nothing to
+  show. The panels are therefore an illustration of the mechanism; its general strength is
+  the across-trial number below.
+- **Smoothing is 500 ms**, not the dashboard's 200 ms or Fluctuation R²'s 50 ms. The
+  response to an odourant is a sustained offset across the whole trial, because the OU
+  process has τ = 700 s against a 15 s trial, so what has to be averaged away is the
+  recurrent fluctuation. At 500 ms the driven assembly sits 1.3 times the other
+  assemblies' SD above its own mean; at 50 ms, 0.7 times.
+
+**Across all 50 trials**, an odourant's mixing coefficient correlates **+0.51** with its
+own assembly's deviation from that assembly's mean, and the dominant odourant's assembly
+is the largest deviator in **62%** of trials and in the top three in **82%**. Held static
+instead of mixed, odourant 1 raises assembly 0 by 2.7 Hz, the largest response of the
+twenty.
+
+**This teacher is recurrence-dominated, and an earlier one was not.** The teacher in
+`dp-simulations/teacher-activity-feedforward` (9 March 2026) shows the same two panels
+with the stimulus unmistakable: assemblies at 1.6-3.6 Hz (SD 0.54) with the driven one at
+6-9 Hz. It differs in that its odourant patterns are perfectly whitened (every pattern
+mean 6.0 Hz, where this teacher's `baseline_variance = 1.5` spreads them 3.5-8.6 Hz), and
+in being more feedforward-driven: mitral `w_mu` 0.03 against 0.02 here, mitral NMDA
+`g_bar` 0.4 against 0.1, recurrent E->E `w_mu` 0.01 against 0.02, E->I connectivity 0.3
+against 0.4. This teacher measures 2.4:1 recurrent-to-feedforward drive (panel (h)).
 
 ## The traced neuron is chosen, not pinned
 

@@ -113,7 +113,15 @@ SAMPLE_SEED = 42
 #: static, odourant 1 raises assembly 0 by 2.7 Hz, the largest of the twenty; within one
 #: trial the coefficient moves too slowly (OU tau = 700 s) for the pairing to show up as a
 #: correlation, which is a property of the stimulus, not of the panels.
-ASSEMBLY_SMOOTHING_MS = 50.0
+#: 500 ms rather than the dashboard's 200 ms: the response to an odourant is a sustained
+#: offset over the whole trial (the OU process barely moves within one), so what has to be
+#: averaged away is the recurrent fluctuation. At 500 ms the dominant assembly sits 1.3
+#: times the other assemblies' SD above its own mean; at 50 ms, 0.7 times.
+ASSEMBLY_SMOOTHING_MS = 500.0
+#: The assembly panels use the trial with the most concentrated odourant rather than the
+#: raster's trial, since a trial whose stimulus is an even blend has nothing to show. The
+#: general strength of the effect is the across-trial number quoted above, not this trial.
+ASSEMBLY_TRIAL = None  # chosen in step_assemblies
 #: Both panels are line plots of a 10 s window, so 1 ms resolution is far finer than the
 #: ink: every fifth sample is stored, which is ten per smoothing kernel.
 ASSEMBLY_STRIDE = 5
@@ -497,8 +505,12 @@ def step_assemblies(teacher, out_dir, device):
     """
     data = teacher.zarr
     steps = teacher.steps(RASTER_SECONDS)
-    weights = np.asarray(data["weights"][RASTER_TRIAL, :steps, :], dtype=np.float32)
-    spikes = np.asarray(data["output_spikes"][RASTER_TRIAL, :steps, :])
+    burn_in = teacher.steps(BURN_IN_SECONDS)
+    mixing = np.asarray(data["weights"][:, burn_in:, :]).mean(axis=1)
+    trial = int(mixing.max(axis=1).argmax())
+    dominant = int(mixing[trial].argmax())
+    weights = np.asarray(data["weights"][trial, :steps, :], dtype=np.float32)
+    spikes = np.asarray(data["output_spikes"][trial, :steps, :])
     excitatory = teacher.cell_type_indices == teacher.cell_type_names.index(
         "excitatory"
     )
@@ -510,6 +522,23 @@ def step_assemblies(teacher, out_dir, device):
         rates[:, column] = smooth(counts[:, None], ASSEMBLY_SMOOTHING_MS, teacher.dt)[
             :, 0
         ] * (1000.0 / teacher.dt)
+    # Each assembly's mean rate over EVERY trial. Assemblies differ in intrinsic rate by
+    # far more than a stimulus moves them (spread SD 1.13 Hz against a deviation SD of
+    # 0.41 Hz), so the raw rates show the ordering of the assemblies rather than the
+    # stimulus. Subtracting this baseline exposes the response: across all 50 trials the
+    # mixing coefficient correlates +0.51 with its own assembly's deviation, and the
+    # dominant odourant's assembly is the largest deviator in 62% of trials, top-3 in 82%.
+    members = [excitatory & (teacher.assembly_ids == a) for a in assemblies]
+    all_trials = data["output_spikes"]
+    burn_in = teacher.steps(BURN_IN_SECONDS)
+    n_trials = all_trials.shape[0]
+    baseline = np.zeros(assemblies.size, dtype=np.float64)
+    for other in range(n_trials):  # one read per trial, all assemblies from it
+        trial_spikes = all_trials[other, burn_in:, :]
+        for column, mask in enumerate(members):
+            baseline[column] += trial_spikes[:, mask].mean()
+        print(f"  assemblies: baseline {other + 1}/{n_trials}", end="\r", flush=True)
+    baseline = (baseline / n_trials * (1000.0 / teacher.dt)).astype(np.float32)
     np.savez_compressed(
         out_dir / "fig00_assemblies.npz",
         time_s=(np.arange(0, steps, ASSEMBLY_STRIDE) * teacher.dt * 1e-3).astype(
@@ -517,14 +546,17 @@ def step_assemblies(teacher, out_dir, device):
         ),
         mixing_weight=weights[::ASSEMBLY_STRIDE],
         rate_hz=rates[::ASSEMBLY_STRIDE],
+        baseline_hz=baseline,
         assembly=assemblies.astype(np.int16),
         smoothing_ms=np.float32(ASSEMBLY_SMOOTHING_MS),
-        trial=np.int32(RASTER_TRIAL),
+        dominant=np.int32(dominant),
+        trial=np.int32(trial),
     )
     print(
         f"  assemblies: {assemblies.size} assemblies over {RASTER_SECONDS:.0f} s, "
         f"rates {rates.min():.1f}-{rates.max():.1f} Hz, mixing weight up to "
-        f"{weights.max():.2f}"
+        f"{weights.max():.2f}; trial {trial}, whose dominant odourant {dominant} "
+        f"holds a mean mixing weight of {mixing[trial, dominant]:.2f}"
     )
 
 
