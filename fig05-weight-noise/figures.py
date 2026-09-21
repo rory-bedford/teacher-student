@@ -105,13 +105,10 @@ def curve(summary, clipped, ylim):
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    # The mean/SD-preserving perturbation clips at zero; report how much it clipped.
-    ax.set_title(
-        "Observed and Unobserved Neurons vs Weight Noise\n"
-        + "clipped at zero: "
-        + ", ".join(f"{100 * v:.1f}% @ {k:g}" for k, v in clipped.items() if k > 0),
-        fontsize=9,
-    )
+    # The mean/SD-preserving perturbation clips a few weights at zero (1.5-4.5% across
+    # the sweep). That was in the title until 2026-09-21: five numbers nobody reads from
+    # the back of a room, and the figure's README carries them instead.
+    ax.set_title("Observed and Unobserved Neurons vs Weight Noise")
     fig.tight_layout()
     return fig
 

@@ -98,6 +98,9 @@ So the noise is multiplicative log-normal, not additive Gaussian as the text abo
 reaches the mitral weights too. Topology is untouched, except that clipping sets a weight to
 exactly zero.
 
+**Measured clipping (2026-09-21, three seeds):** 3.3% at noise 0.1, 4.4% at noise 0.2, 4.5% at noise 0.3, 3.4% at noise 0.4, 1.5% at noise 0.5. These were printed under panel
+(a)'s title until they crowded it out; the panel now carries the title alone.
+
 **Sign flips (open question 1):** step 2 can push weights below zero; step 3 clips them, so no
 synapse changes sign and Dale's law holds. The fraction clipped is recorded per run as
 `noise_clipped_fraction` in `fig05_summary.csv` and printed on panel (a).
