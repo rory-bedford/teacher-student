@@ -57,8 +57,21 @@ Figure 4 meaningful.
 
 As built (2026-09-21), one SVG each:
 
-- **(a)** `fig05-a-curve` — Fluctuation R² vs weight noise, observed and unobserved, individual seeds, no error bars.
-- **(b)** `fig05-b-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
+- **(a)** `fig05-a-weight-perturbation` — what the noise does to a synapse: the perturbed
+  weight against the teacher's, side by side at noise 0.1 and 0.5, with the identity
+  dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries
+  the population mean and SD before and after — **unchanged, 0.0325 and 0.2085 at both
+  levels**, which is the point of the construction — beside R², which falls 0.987 → 0.779.
+  Needs no trained run: `analysis.py` applies the same function training applies.
+- **(b)** `fig05-b-curve` — Fluctuation R² vs weight noise, observed and unobserved,
+  individual seeds, no error bars.
+- **(c)** `fig05-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled,
+  shared y range with (b).
+
+Panel (a)'s axes stop at the 99th percentile of the weights: a handful of synapses run two
+orders of magnitude further out (see the teacher's heavy-tailed weights in
+`../fig00-teacher-activity/README.md`), and plotting the full range puts every point in
+one corner. Its statistics are the whole non-zero population's, not the plotted sample's.
 
 The contrast panel (weight noise beside Figure 4's neuron removal) was removed: it
 duplicated Figure 4's own curve, and comparing the two error types is a job for the slide
@@ -78,8 +91,10 @@ fig05-weight-noise/
   README.md
   fig05_rates.csv
   fig05_summary.csv
-  fig05-a-curve.svg
-  fig05-b-delta-fluctuation.svg
+  fig05_weight_perturbation.csv
+  fig05-a-weight-perturbation.png
+  fig05-b-curve.svg
+  fig05-c-delta-fluctuation.svg
 ```
 
 ---

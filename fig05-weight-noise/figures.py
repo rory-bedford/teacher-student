@@ -2,8 +2,9 @@
 
     uv run python fig05-weight-noise/figures.py
 
-    fig05-a-curve                   Fluctuation R² vs weight noise, observed / unobserved
-    fig05-b-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
+    fig05-a-weight-perturbation     what the noise does to a synapse, at 0.1 and 0.5
+    fig05-b-curve                   Fluctuation R² vs weight noise, observed / unobserved
+    fig05-c-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
 
 The contrast panel (weight noise beside Figure 4's neuron removal) was removed on
 2026-09-21: it duplicated Figure 4's own curve, and comparing the two error types is a
@@ -22,6 +23,7 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -33,7 +35,11 @@ from common.plotting import (
     pool_populations,
 )
 from common.style import (
+    INK,
+    MODEL,
     OBSERVED,
+    PAIR,
+    REFERENCE_GREY,
     SINGLE,
     TICK_SIZE,
     UNOBSERVED,
@@ -51,6 +57,72 @@ GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
+
+
+#: The upper limit of the weight axes, as a percentile of the sampled synapses: the
+#: teacher's weights are log-normal with a long tail (a handful reach 65), so plotting
+#: the full range would put every point in one corner.
+PERTURBATION_PERCENTILE = 99.0
+
+
+def weight_perturbation(table):
+    """(a) Single synapses before and after the noise, one panel per level.
+
+    A recreation of the old repository's ``weight_perturbation.svg``: the perturbed weight
+    against the original, the identity dashed, and the mean and SD before and after --
+    which the noise preserves exactly, by construction -- beside R², which is what
+    actually degrades. All three are over the whole non-zero population, not the plotted
+    sample: a few hundred synapses do not show the SD being preserved, since their own SD
+    moves with whichever outliers the draw contains. The points are a random sample, and
+    the axes stop at the PERTURBATION_PERCENTILE of the weights, since a handful of
+    synapses run two orders of magnitude further out.
+    """
+    levels = sorted(table["weight_noise"].unique())
+    limit = float(
+        np.percentile(table[["original", "noisy"]].to_numpy(), PERTURBATION_PERCENTILE)
+    )
+    fig, axes = plt.subplots(1, len(levels), figsize=PAIR, sharex=True, sharey=True)
+    for ax, noise in zip(np.atleast_1d(axes), levels, strict=True):
+        rows = table[table["weight_noise"] == noise]
+        ax.plot(
+            [0, limit], [0, limit], color=INK, linestyle="--", linewidth=1, zorder=3
+        )
+        ax.scatter(
+            rows["original"],
+            rows["noisy"],
+            s=6,
+            color=MODEL,
+            alpha=0.5,
+            linewidths=0,
+            rasterized=True,
+        )
+        ax.set_xlim(0, limit)
+        ax.set_ylim(0, limit)
+        ax.set_aspect("equal")
+        ax.set_xlabel("Teacher Weight (nS)")
+        ax.set_title(f"Weight Noise {noise:g}")
+        ax.text(
+            0.04,
+            0.96,
+            f"μ {rows['population_mean'].iloc[0]:.4f} → "
+            f"{rows['population_mean_noisy'].iloc[0]:.4f}\n"
+            f"σ {rows['population_sd'].iloc[0]:.4f} → "
+            f"{rows['population_sd_noisy'].iloc[0]:.4f}\n"
+            f"R² = {rows['correlation'].iloc[0] ** 2:.3f}",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=TICK_SIZE - 1,
+            color=INK,
+            bbox={
+                "facecolor": "white",
+                "edgecolor": REFERENCE_GREY,
+                "boxstyle": "round",
+            },
+        )
+    np.atleast_1d(axes)[0].set_ylabel("Student Weight (nS)")
+    fig.tight_layout()
+    return fig
 
 
 def held_out(summary):
@@ -164,15 +236,24 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     def output(fig, letter, slug, raster=False):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
 
+    perturbation_table = data_dir / "fig05_weight_perturbation.csv"
+    if perturbation_table.exists():
+        output(
+            weight_perturbation(pd.read_csv(perturbation_table)),
+            "a",
+            "weight-perturbation",
+            raster=True,
+        )
+
     ylim = limits(summary)
-    output(curve(summary, clipped, ylim), "a", "curve")
+    output(curve(summary, clipped, ylim), "b", "curve")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
             perturbation(summary, "delta_fluctuation_r2", ylim),
-            "b",
+            "c",
             "delta-fluctuation",
         )
 
