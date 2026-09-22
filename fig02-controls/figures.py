@@ -55,7 +55,7 @@ FIGURE = "fig02"
 #: and the 100-epoch reruns coexist in the grid, so this switches the figure between them:
 #: set it to 100 once ``learnt-100ep__seed-*`` have finished. Variants with a single
 #: budget are unaffected.
-LEARNT_EPOCHS = 50
+LEARNT_EPOCHS = 100
 PLOTTED_VARIANTS = [
     "full_connectome",
     "learnt_recurrence",
