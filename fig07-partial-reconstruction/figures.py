@@ -36,7 +36,6 @@ from common.plotting import (
     pool_populations,
 )
 from common.style import (
-    LEGEND_GREY,
     OBSERVED,
     PAIR,
     TICK_SIZE,
@@ -61,7 +60,6 @@ GROUPS = {
     "observed": ("Observed", OBSERVED),
     "heldout": ("Unobserved", UNOBSERVED),
 }
-OPERATING_POINT = 0.1
 #: Reconstruction level shown in the rate scatters: where the sweep has separated but the
 #: student still tracks the stimulus (observed 0.68, unobserved 0.14 on Fluctuation R²).
 SCATTER_LEVEL = 0.5
@@ -146,19 +144,6 @@ def curve(sweep, ylim):
             "reconstructed_fraction",
             color,
         )
-    ax.axvspan(
-        OPERATING_POINT - 0.02, OPERATING_POINT + 0.02, color="#dddddd", zorder=0
-    )
-    ax.text(
-        OPERATING_POINT,
-        1.0,
-        "Our Dataset",
-        transform=ax.get_xaxis_transform(),
-        ha="center",
-        va="bottom",
-        fontsize=TICK_SIZE - 1,
-        color=LEGEND_GREY,
-    )
     ax.set_xlim(1.05, 0.0)
     performance_axis(ax, ylim)
     ax.set_xlabel("Fraction of Units Reconstructed")
@@ -171,7 +156,7 @@ def curve(sweep, ylim):
     )
     # The free-parameter counts used to be annotated along the axis (2026-09-21): they
     # hardly vary across the sweep, so they were clutter. They are in fig07_summary.csv.
-    ax.set_title(HELD_OUT_TITLE, pad=18)
+    ax.set_title(HELD_OUT_TITLE)
     sweep_layout(fig)
     return fig
 
