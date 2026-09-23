@@ -140,6 +140,11 @@ PANEL_AXES_WIDTH = PANEL_WIDTH - PANEL_MARGIN_LEFT - PANEL_MARGIN_RIGHT
 PANEL_HEIGHT = 5.0
 PANEL_MARGIN_BOTTOM = 0.75
 PANEL_MARGIN_TOP = 0.55
+#: The drive bars are drawn on a canvas this much larger with the type left at its
+#: point size (2026-09-24), so that placed on a slide at 1.5x the width the bars grow and
+#: the text still matches the other panels. Enlarging the exported image instead would
+#: have enlarged the type with it.
+DRIVE_SCALE = 1.5
 #: (c) stacks three rows, so it keeps its own height at the shared width.
 TRACE_PANEL_HEIGHT = 7.0
 
@@ -428,7 +433,7 @@ def synaptic_drive(drive):
     spreads = [
         drive.loc[drive["pathway"] == p, "drive_fraction"].std() for p in pathways
     ]
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = plt.subplots(figsize=(SINGLE[0] * DRIVE_SCALE, SINGLE[1] * DRIVE_SCALE))
     ax.bar(
         pathways,
         means,
