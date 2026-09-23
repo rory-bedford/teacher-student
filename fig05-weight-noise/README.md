@@ -59,8 +59,9 @@ As built (2026-09-21), one SVG each:
 
 - **(a)** `fig05-a-weight-perturbation` — what the noise does to a synapse: the perturbed
   weight against the teacher's, side by side at noise 0.1 and 0.5, with the identity
-  dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries R², which
-  falls **0.987 → 0.779**. The population mean and SD are not shown (2026-09-23): the noise
+  dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries r² — the squared
+  correlation between the two weight sets, lower case to keep it distinct from the
+  variance-explained R² on every other panel — which falls **0.987 → 0.779**. The population mean and SD are not shown (2026-09-23): the noise
   preserves them exactly by construction — 0.0325 and 0.2085 at both levels — so they are
   recorded in `fig05_weight_perturbation.csv` rather than on the panel.
   Needs no trained run: `analysis.py` applies the same function training applies.
