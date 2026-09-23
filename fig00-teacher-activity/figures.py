@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 from scipy.ndimage import gaussian_filter1d
 
@@ -47,12 +48,10 @@ from common.style import (
     EXCITATORY,
     INHIBITORY,
     INK,
-    PAIR,
     REFERENCE_GREY,
     SINGLE,
     TEACHER,
     TICK_SIZE,
-    WIDE,
     apply_style,
     clear_panels,
     save,
@@ -122,6 +121,48 @@ def symmetric_limit(values, percentile=99.5):
     """Current limits from a percentile, so one transient cannot own the axis."""
     limit = nice_limit(np.percentile(np.abs(values), percentile))
     return -limit, limit
+
+
+#: Panels (a), (c) and (f) are laid out in absolute inches on one canvas width, so that
+#: dropped on a slide at the same size their text comes out the same size (2026-09-24).
+#: Before this (a) was 6.5 in wide against 11 in for the other two, and scaling them to
+#: match on screen scaled (a)'s type up by a factor of 1.7.
+#: The right band holds the rastermap's colourbar and stays empty on the others, and the
+#: left margin fits the widest y label, so (a) and (f) share an axes box exactly and can
+#: be stacked one under the other on the same time axis.
+PANEL_WIDTH = 12.0
+PANEL_MARGIN_LEFT = 1.75
+#: Wide enough for (c)'s per-row legends, which sit outside their axes; on (a) and
+#: (f) the band holds the colourbar or nothing at all.
+PANEL_MARGIN_RIGHT = 2.6
+PANEL_AXES_WIDTH = PANEL_WIDTH - PANEL_MARGIN_LEFT - PANEL_MARGIN_RIGHT
+#: (a) and (f) share this height as well, so the stacked pair is two equal bands.
+PANEL_HEIGHT = 5.0
+PANEL_MARGIN_BOTTOM = 0.75
+PANEL_MARGIN_TOP = 0.55
+#: (c) stacks three rows, so it keeps its own height at the shared width.
+TRACE_PANEL_HEIGHT = 7.0
+
+
+def panel_layout(fig, height=PANEL_HEIGHT):
+    """Place the axes in inches and pin the canvas, so every panel crops identically.
+
+    The invisible full-width line defeats ``bbox_inches="tight"``: without it a panel
+    with narrow y labels would be cropped tighter than one with wide labels, and the two
+    would no longer line up when stacked.
+    """
+    fig.subplots_adjust(
+        left=PANEL_MARGIN_LEFT / PANEL_WIDTH,
+        right=1 - PANEL_MARGIN_RIGHT / PANEL_WIDTH,
+        bottom=PANEL_MARGIN_BOTTOM / height,
+        top=1 - PANEL_MARGIN_TOP / height,
+    )
+    fig.add_artist(
+        Line2D([0.0, 1.0], [0.0, 0.0], transform=fig.transFigure, color="none")
+    )
+    fig.add_artist(
+        Line2D([0.0, 1.0], [1.0, 1.0], transform=fig.transFigure, color="none")
+    )
 
 
 def assembly_colors(n):
@@ -203,7 +244,9 @@ def neuron_traces(data):
     current = -data["current_pa"][window]
     conductance = data["conductance_ns"][window]
     threshold = float(data["threshold_mv"])
-    fig, axes = plt.subplots(3, 1, figsize=(PAIR[0], PAIR[1] * 1.35), sharex=True)
+    fig, axes = plt.subplots(
+        3, 1, figsize=(PANEL_WIDTH, TRACE_PANEL_HEIGHT), sharex=True
+    )
 
     axes[0].plot(
         time_s,
@@ -273,7 +316,10 @@ def neuron_traces(data):
     # at the 98th percentile of everything, as the library's dashboard cuts it.
     axes[2].set_ylim(0, nice_limit(np.percentile(conductance, 98)))
     trace_legend(axes[2])
+    # tight_layout first (it packs the three rows), then the shared margins on top, so
+    # (c) carries the same left edge and canvas width as (a) and (f).
     fig.tight_layout()
+    panel_layout(fig, height=TRACE_PANEL_HEIGHT)
     fig.align_ylabels(axes)  # one left edge for all three y labels
     return fig
 
@@ -295,7 +341,7 @@ def assembly_series(data, key, y_label, title, label="Input", legend_loc="upper 
     The dominant odourant's own line is drawn heavier in both assembly panels, so the eye
     can follow one colour from the stimulus to the response.
     """
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, PANEL_HEIGHT))
     colors = assembly_colors(data["assembly"].size)
     dominant = [int(k) for k in np.atleast_1d(data["dominant"])]
     for column in range(data["assembly"].size):
@@ -334,7 +380,7 @@ def assembly_series(data, key, y_label, title, label="Input", legend_loc="upper 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(y_label)
     ax.set_title(title)
-    fig.tight_layout()
+    panel_layout(fig)
     return fig
 
 
@@ -490,7 +536,7 @@ def assembly_rastermap(data):
         rate.std(axis=1, keepdims=True) + 1e-6
     )
 
-    fig, ax = plt.subplots(figsize=(WIDE[0], WIDE[1] * 1.4))
+    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, PANEL_HEIGHT))
     image = ax.imshow(
         z,
         aspect="auto",
@@ -517,9 +563,21 @@ def assembly_rastermap(data):
     ax.xaxis.set_major_locator(MultipleLocator(RASTER_TICK_S))
     ax.set_xlabel("Time (s)")
     ax.set_title("Assembly Firing Rate by Neuron")
-    bar = fig.colorbar(image, ax=ax, pad=0.015)
+    # In the reserved right band, added by hand so the axes keeps its full width: a
+    # colorbar taken out of the axes would make (f) narrower than (a).
+    bar = fig.colorbar(
+        image,
+        cax=fig.add_axes(
+            [
+                (PANEL_MARGIN_LEFT + PANEL_AXES_WIDTH + 0.12) / PANEL_WIDTH,
+                PANEL_MARGIN_BOTTOM / PANEL_HEIGHT,
+                0.16 / PANEL_WIDTH,
+                1 - (PANEL_MARGIN_BOTTOM + PANEL_MARGIN_TOP) / PANEL_HEIGHT,
+            ]
+        ),
+    )
     bar.set_label("Rate (z per Neuron)", fontsize=TICK_SIZE)
-    fig.tight_layout()
+    panel_layout(fig)
     return fig
 
 
