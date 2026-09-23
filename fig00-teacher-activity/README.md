@@ -71,8 +71,8 @@ dynamics look like, and how high-dimensional the result is.
 |---|---|---|
 | **(a)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 inputs over one trial, the two leaders drawn heavy |
 | **(b)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
-| **(c)** | `neuron-traces` | one excitatory neuron: membrane potential with its spikes, input currents, and every synapse type's conductance on one shared axes |
-| **(d)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, a box per pathway over the 50 trials (median ratio 2.4) |
+| **(c)** | `neuron-traces` | one excitatory neuron: membrane potential with its spikes, input currents, and every synapse type's conductance on one shared axes, over a 2 s window chosen for spike density and re-zeroed |
+| **(d)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, mean over the 50 trials with an SD whisker — **0.29 ± 0.02 against 0.71 ± 0.02**, a 2.4:1 split that barely varies between trials |
 | **(e)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
 
 These follow the library's own dashboards (`create_activity_dashboard`,

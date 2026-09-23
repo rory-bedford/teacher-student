@@ -60,6 +60,8 @@ FIGURE = "fig00"
 #: and a cell that fires in bursts leaves most of a fixed window empty -- so the window is
 #: the one whose spikes are spread over the most sub-bins (ties going to the most spikes).
 TRACE_WINDOW_S = 2.0
+#: Ticks every half second across the two-second window.
+TRACE_TICK_S = 0.5
 TRACE_WINDOW_BIN_S = 0.5
 #: Assembly panels tick every 5 s, so the 15 s trial ends on a tick.
 ASSEMBLY_TICK_S = 5.0
@@ -133,6 +135,21 @@ def thick_legend(ax, **kwargs):
 # ==========
 
 
+def trace_legend(ax):
+    """The trace panels' legend: same anchor and padding on every row, so they align."""
+    return thick_legend(
+        ax,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
+        frameon=True,
+        fontsize=TICK_SIZE * 0.85,
+        borderpad=0.35,
+        labelspacing=0.3,
+        handletextpad=0.5,
+        handlelength=1.6,
+    )
+
+
 def trace_window_start(spike_times, duration_s):
     """The start of the TRACE_WINDOW_S window whose spikes are the most spread out.
 
@@ -170,7 +187,9 @@ def neuron_traces(data):
     """
     start = trace_window_start(data["spike_time_s"], float(data["time_s"][-1]))
     window = (data["time_s"] >= start) & (data["time_s"] <= start + TRACE_WINDOW_S)
-    time_s = data["time_s"][window]
+    # The window is chosen for spike density, then re-zeroed: the axis reads 0 to 2 s
+    # rather than 1.5 to 3.5, which looked like an arbitrary slice of a longer recording.
+    time_s = data["time_s"][window] - start
     synapses = [str(name) for name in data["synapse"]]
     current = -data["current_pa"][window]
     leak = -data["leak_current_pa"][window]
@@ -187,7 +206,7 @@ def neuron_traces(data):
         rasterized=True,
     )
     spikes = data["spike_time_s"]
-    spikes = spikes[(spikes >= start) & (spikes <= start + TRACE_WINDOW_S)]
+    spikes = spikes[(spikes >= start) & (spikes <= start + TRACE_WINDOW_S)] - start
     if spikes.size:
         axes[0].vlines(
             spikes, threshold, 0.0, color=INK, linewidth=0.6, alpha=0.9, zorder=1
@@ -209,13 +228,7 @@ def neuron_traces(data):
         label=f"Rest ({float(data['rest_mv']):.0f} mV)",
     )
     axes[0].set_ylabel("Membrane\nPotential (mV)")
-    thick_legend(
-        axes[0],
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        frameon=True,
-        fontsize=TICK_SIZE * 0.85,
-    )
+    trace_legend(axes[0])
     axes[0].set_title(f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s})", pad=6)
 
     traces = []
@@ -235,15 +248,9 @@ def neuron_traces(data):
         label="Leak",
         rasterized=True,
     )
-    axes[1].set_ylabel("Input Current (pA)\npositive = depolarising")
+    axes[1].set_ylabel("Input Current (pA)")
     axes[1].set_ylim(*symmetric_limit(np.concatenate([*traces, leak])))
-    thick_legend(
-        axes[1],
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        frameon=True,
-        fontsize=TICK_SIZE * 0.85,
-    )
+    trace_legend(axes[1])
 
     for name in synapses:
         color, linestyle = SYNAPSE_STYLES[name]
@@ -258,17 +265,12 @@ def neuron_traces(data):
         )
     axes[2].set_ylabel("Conductance (nS)")
     axes[2].set_xlabel("Time (s)")
-    axes[2].set_xlim(time_s[0], time_s[-1])
+    axes[2].set_xlim(0, TRACE_WINDOW_S)
+    axes[2].xaxis.set_major_locator(MultipleLocator(TRACE_TICK_S))
     # The inhibitory conductance is an order of magnitude above the rest; the axis is cut
     # at the 98th percentile of everything, as the library's dashboard cuts it.
     axes[2].set_ylim(0, nice_limit(np.percentile(conductance, 98)))
-    thick_legend(
-        axes[2],
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        frameon=True,
-        fontsize=TICK_SIZE * 0.85,
-    )
+    trace_legend(axes[2])
     fig.tight_layout()
     return fig
 
@@ -280,10 +282,11 @@ def ou_trajectories(data):
         "mixing_weight",
         "Mixing Weight",
         "Input Mixing Coefficient",
+        legend_loc="center right",  # the top right is where a dominant input sits at ~1.0
     )
 
 
-def assembly_series(data, key, y_label, title, label="Input"):
+def assembly_series(data, key, y_label, title, label="Input", legend_loc="upper right"):
     """One line per assembly, in the shared assembly colours.
 
     The dominant odourant's own line is drawn heavier in both assembly panels, so the eye
@@ -306,9 +309,7 @@ def assembly_series(data, key, y_label, title, label="Input"):
         )
     thick_legend(
         ax,
-        # Centre right: the top right is where a dominant input sits at ~1.0, and the top
-        # left is where the early competition happens.
-        loc="center right",
+        loc=legend_loc,
         frameon=True,
         fontsize=TICK_SIZE * 0.8,
         borderpad=0.3,
@@ -360,30 +361,31 @@ def assembly_rates(data):
 def synaptic_drive(drive):
     """(d) The share of excitatory synaptic drive each pathway delivers, across trials.
 
-    A box per pathway over the 50 trials (2026-09-23), rather than one bar for the whole
-    dataset: the spread is the point, and a bar hid it.
+    A bar per pathway with a whisker for the spread over the 50 trials. The whisker is
+    the SD, and it is worth having: it shows the 2.4:1 split is not one trial's accident.
+    (Unlike the performance panels, where three seeds are shown as points, there are 50
+    trials here and the points would be a smear.)
     """
     colors = {label: color for label, color, _ in PATHWAYS}
     pathways = list(dict.fromkeys(drive["pathway"]))
+    means = [
+        drive.loc[drive["pathway"] == p, "drive_fraction"].mean() for p in pathways
+    ]
+    spreads = [
+        drive.loc[drive["pathway"] == p, "drive_fraction"].std() for p in pathways
+    ]
     fig, ax = plt.subplots(figsize=SINGLE)
-    boxes = ax.boxplot(
-        [drive.loc[drive["pathway"] == name, "drive_fraction"] for name in pathways],
-        tick_labels=pathways,
-        widths=0.5,
-        patch_artist=True,
-        medianprops={"color": INK, "linewidth": 1.4},
-        whiskerprops={"color": INK},
-        capprops={"color": INK},
-        flierprops={
-            "marker": "o",
-            "markersize": 3,
-            "markerfacecolor": REFERENCE_GREY,
-            "markeredgecolor": "none",
-        },
+    ax.bar(
+        pathways,
+        means,
+        width=0.5,
+        color=[colors.get(name, REFERENCE_GREY) for name in pathways],
+        edgecolor="white",
+        linewidth=0.5,
     )
-    for patch, name in zip(boxes["boxes"], pathways, strict=True):
-        patch.set_facecolor(colors.get(name, REFERENCE_GREY))
-        patch.set_edgecolor(INK)
+    ax.errorbar(
+        pathways, means, yerr=spreads, fmt="none", ecolor=INK, capsize=5, linewidth=1.2
+    )
     ax.set_ylabel("Fraction of Excitatory Synaptic Drive")
     ax.set_ylim(0, 1)
     ax.set_title("Excitatory Synaptic Drive by Pathway")
