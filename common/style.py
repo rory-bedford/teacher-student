@@ -23,6 +23,8 @@ from connectome_snns.visualization import (
 )
 from matplotlib import font_manager as fm
 from matplotlib.lines import Line2D
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path as Path_
 from matplotlib.ticker import MultipleLocator
 from matplotlib.transforms import blended_transform_factory
 
@@ -312,17 +314,44 @@ def group_brackets(ax, ticks, x=-0.012, width=0.012):
     for label, ys in runs:
         if not label:
             continue
-        low, high = min(ys), max(ys)
-        ax.plot(
-            [x, x - width, x - width, x],
-            [low - 0.6, low - 0.6, high + 0.6, high + 0.6],
-            transform=transform,
-            color=INK,
-            linewidth=1.2,
-            clip_on=False,
+        low, high = min(ys) - 0.6, max(ys) + 0.6
+        middle = (low + high) / 2
+        # A curly brace: two quadratic Beziers per half, meeting at a point that reaches
+        # further left than the arms. Square brackets read as heavy at this size.
+        vertices = [
+            (x, low),
+            (x - width, low),
+            (x - width, (low + middle) / 2),
+            (x - width, middle),
+            (x - 2 * width, middle),
+            (x - width, middle),
+            (x - width, (middle + high) / 2),
+            (x - width, high),
+            (x, high),
+        ]
+        codes = [
+            Path_.MOVETO,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+            Path_.CURVE3,
+        ]
+        ax.add_patch(
+            PathPatch(
+                Path_(vertices, codes),
+                transform=transform,
+                facecolor="none",
+                edgecolor=INK,
+                linewidth=1.2,
+                clip_on=False,
+            )
         )
         ax.text(
-            x - width - 0.008,
+            x - 2 * width - 0.006,
             (low + high) / 2,
             label,
             transform=transform,
@@ -401,6 +430,9 @@ def spike_raster(ax, spikes, neurons, duration_s, labels):
         ],
         loc="upper left",
         bbox_to_anchor=(1.01, 1.0),
+        borderpad=0.35,
+        labelspacing=0.3,
+        handletextpad=0.4,
         frameon=True,
     )
 

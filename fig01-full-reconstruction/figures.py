@@ -87,7 +87,8 @@ def raster(spikes):
         .drop_duplicates()
         .sort_values(["observed", "neuron_id"], ascending=[False, True])
     )
-    fig, ax = plt.subplots(figsize=WIDE)
+    # 1.2x WIDE's height: six rows of spikes need room to breathe.
+    fig, ax = plt.subplots(figsize=(WIDE[0], WIDE[1] * 1.2))
     spike_raster(
         ax,
         spikes[spikes["time_s"] <= RASTER_SECONDS],
