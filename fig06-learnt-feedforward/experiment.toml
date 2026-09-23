@@ -1,6 +1,6 @@
-script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-learnt-feedforward/train.py"
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig06-learnt-feedforward/train.py"
 output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig06-learnt-input"
-parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-learnt-feedforward/parameters.toml"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig06-learnt-feedforward/parameters.toml"
 log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
 description = "Figure 7: the full recurrent connectome, every feedforward weight learnt, every neuron observed."
 
