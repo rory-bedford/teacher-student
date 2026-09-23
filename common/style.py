@@ -224,8 +224,11 @@ def tighten_pair(fig, axes, suptitle):
     axes = np.atleast_1d(axes)
     for ax in axes[1:]:
         ax.set_ylabel("")
-    fig.suptitle(suptitle, y=0.99)
-    fig.tight_layout(rect=(0, 0, 1, 0.97), w_pad=0.6)
+    fig.suptitle(suptitle, y=0.995, va="top")
+    # rect's top at 1.0 and a small w_pad: tight_layout otherwise reserves a band under
+    # the suptitle and a wide gutter between panels (2026-09-23).
+    fig.tight_layout(rect=(0, 0, 1, 1.0), w_pad=0.2, h_pad=0.2)
+    fig.subplots_adjust(top=0.88, wspace=0.06)
     return fig
 
 
@@ -288,10 +291,11 @@ def scatter_legend(ax, marker_size, loc="upper left"):
         markerscale=(LEGEND_MARKER_AREA / marker_size) ** 0.5,
         scatterpoints=1,
         frameon=True,
-        borderpad=0.35,
-        labelspacing=0.25,
-        handletextpad=0.4,
-        borderaxespad=0.3,
+        borderpad=0.25,
+        labelspacing=0.15,
+        handletextpad=0.3,
+        borderaxespad=0.25,
+        handlelength=1.0,
     )
     for handle in legend.legend_handles:
         handle.set_alpha(1.0)
