@@ -34,11 +34,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.ticker import MultipleLocator
+from scipy.ndimage import gaussian_filter1d
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
+from connectome_snns.visualization import FIGURE_ORANGE, FIGURE_TEAL
 
 from common.style import (
     EXCITATORY,
@@ -424,52 +427,98 @@ def variance_spectrum(spectrum, summary):
     return fig
 
 
-#: The assembly raster's window and tick spacing, matching the population panel above it.
+#: The rastermap's window and tick spacing, matching the population panel above it.
 RASTER_SECONDS = 15.0
 RASTER_TICK_S = 5.0
+#: Bin width before smoothing, and the Gaussian applied along time. The same 500 ms as
+#: the population panel: at 50 ms the recurrent fluctuation swamps the stimulus response.
+RASTER_BIN_MS = 100.0
+RASTER_SMOOTHING_MS = 500.0
+#: z is clipped here so a handful of bursty cells cannot own the colour scale.
+RASTER_Z_LIMIT = 1.5
+#: Cells below this rate are left out (2026-09-24): half of each assembly fires under
+#: 0.5 Hz, which is seven spikes in the trial, and z-scoring seven spikes produces a row
+#: of noise that fills a third of the panel and says nothing.
+RASTER_MIN_RATE_HZ = 1.0
 
 
-def assembly_raster(data):
-    """(f) Spikes of the two leading assemblies, grouped and sorted within each group.
+def rastermap_colors():
+    """Diverging map for the z-scored rate, from the talk palette.
 
-    The population panel plots these cells' mean rate; this is the spikes behind it, so
-    the switch can be seen in the raw data rather than only after a 500 ms Gaussian.
-    Neurons are ordered by assembly, then by firing rate inside the assembly -- a sort
-    that cannot invent structure, unlike an embedding.
+    Deliberately NOT the red/blue pair: in this deck red and blue mean excitatory and
+    inhibitory (COLORSCHEME.txt), and every neuron here is excitatory, so reusing them
+    would read as a cell-type split. Teal and orange carry no meaning inside fig00.
+    """
+    return LinearSegmentedColormap.from_list(
+        "assembly_z", [FIGURE_TEAL, "#ffffff", FIGURE_ORANGE]
+    )
+
+
+def assembly_rastermap(data):
+    """(f) Each leading assembly's neurons as a z-scored rate map, sorted within assembly.
+
+    The population panel shows these two assemblies' mean rates; this shows the same
+    thing per neuron, so the switch can be seen as a population of cells changing
+    together rather than as one smoothed line. z is per neuron over the trial, because
+    assemblies differ in intrinsic rate by more than the stimulus moves them (see
+    analysis.py) -- without it the map shows which cells are fast, not what the stimulus
+    did. Neurons are ordered by assembly, then by firing rate inside it: a sort unrelated
+    to the switch, so it cannot manufacture the diagonal it appears to show.
     """
     spikes = data["spikes"]
     assembly = data["assembly"]
     leaders = [int(k) for k in np.atleast_1d(data["leaders"])]
     dt_ms = float(data["dt_ms"])
-    colors = assembly_colors(20)
+
+    keep = spikes.mean(axis=0) * (1000.0 / dt_ms) >= RASTER_MIN_RATE_HZ
+    # The label names the assembly's own size, counted before the rate cut below.
+    members = {int(k): int((assembly == k).sum()) for k in np.unique(assembly)}
+    spikes, assembly = spikes[:, keep], assembly[keep]
+
+    bin_steps = round(RASTER_BIN_MS / dt_ms)
+    n_bins = spikes.shape[0] // bin_steps
+    binned = (
+        spikes[: n_bins * bin_steps]
+        .reshape(n_bins, bin_steps, -1)
+        .sum(axis=1)
+        .T.astype(np.float32)
+    )
+    rate = gaussian_filter1d(
+        binned, sigma=RASTER_SMOOTHING_MS / RASTER_BIN_MS, axis=1
+    ) * (1000.0 / RASTER_BIN_MS)
+    z = (rate - rate.mean(axis=1, keepdims=True)) / (
+        rate.std(axis=1, keepdims=True) + 1e-6
+    )
+
     fig, ax = plt.subplots(figsize=(WIDE[0], WIDE[1] * 1.4))
-    for row in range(spikes.shape[1]):
-        times = np.flatnonzero(spikes[:, row]) * dt_ms * 1e-3
-        if times.size:
-            ax.eventplot(
-                times,
-                lineoffsets=row,
-                linelengths=0.9,
-                linewidths=0.6,
-                colors=colors[int(assembly[row])],
-                rasterized=True,
-            )
-    # One label per assembly, centred on its block, rather than a tick per neuron.
-    ticks, labels = [], []
+    image = ax.imshow(
+        z,
+        aspect="auto",
+        cmap=rastermap_colors(),
+        vmin=-RASTER_Z_LIMIT,
+        vmax=RASTER_Z_LIMIT,
+        extent=[0, RASTER_SECONDS, z.shape[0], 0],
+        interpolation="nearest",
+    )
+    ticks = []
     for leader in leaders:
         rows = np.flatnonzero(assembly == leader)
         ticks.append(float(rows.mean()))
-        labels.append(f"Assembly {leader}\n({rows.size} cells)")
+    ax.axhline(
+        float(np.flatnonzero(assembly == leaders[1]).min()),
+        color=INK,
+        linewidth=1.2,
+    )
     ax.set_yticks(ticks)
-    ax.set_yticklabels(labels, fontsize=TICK_SIZE * 0.9)
-    boundary = float(np.flatnonzero(assembly == leaders[1]).min()) - 0.5
-    ax.axhline(boundary, color=REFERENCE_GREY, linewidth=1)
-    ax.set_ylim(-0.5, spikes.shape[1] - 0.5)
-    ax.invert_yaxis()
-    ax.set_xlim(0, RASTER_SECONDS)
+    ax.set_yticklabels(
+        [f"Assembly {k}\n({members[k]} cells)" for k in leaders],
+        fontsize=TICK_SIZE * 0.9,
+    )
     ax.xaxis.set_major_locator(MultipleLocator(RASTER_TICK_S))
     ax.set_xlabel("Time (s)")
-    ax.set_title("Assembly Spike Trains")
+    ax.set_title("Assembly Firing Rate by Neuron")
+    bar = fig.colorbar(image, ax=ax, pad=0.015)
+    bar.set_label("Rate (z per Neuron)", fontsize=TICK_SIZE)
     fig.tight_layout()
     return fig
 
@@ -496,7 +545,7 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     output(variance_spectrum(spectrum, summary), "e", "variance-spectrum")
 
     raster = np.load(data_dir / "fig00_assembly_raster.npz")
-    output(assembly_raster(raster), "f", "assembly-raster", raster=True)
+    output(assembly_rastermap(raster), "f", "assembly-rastermap", raster=True)
 
 
 if __name__ == "__main__":
