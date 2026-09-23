@@ -118,8 +118,8 @@ def subpanel(ax, summary, metric, group, title):
 #: Bar figures are laid out in absolute inches, not by tight_layout, so that one subpanel
 #: is the same width whether a figure holds one of them or three (2026-09-23). The margins
 #: are what the y label, ticks and titles need; everything else is the axes.
-AXES_WIDTH = 2.2
-AXES_HEIGHT = 3.4
+AXES_WIDTH = 3.0
+AXES_HEIGHT = 3.0  # square: wide bars, and the same box in both bar figures
 MARGIN_LEFT = 1.05
 MARGIN_RIGHT = 0.12
 #: Figure title, subpanel title, and TITLE_PAD_IN under each -- the same band every
@@ -140,13 +140,20 @@ def bars(summary, metric, populations, ylim):
         subpanel(ax, summary, metric, *population)
         performance_axis(ax, ylim)
     axes[0].set_ylabel(METRIC_LABELS[metric])
-    fig.suptitle(PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE)
     fig.subplots_adjust(
         left=MARGIN_LEFT / width,
         right=1 - MARGIN_RIGHT / width,
         top=1 - MARGIN_TOP / height,
         bottom=MARGIN_BOTTOM / height,
         wspace=PANEL_GAP / AXES_WIDTH,
+    )
+    # Centred over the axes, not the canvas: the y label and ticks live outside the
+    # plotting area and must not pull the title off centre (2026-09-23).
+    fig.suptitle(
+        PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE,
+        x=(MARGIN_LEFT + (width - MARGIN_LEFT - MARGIN_RIGHT) / 2) / width,
+        y=1 - TITLE_PAD_IN / height,
+        va="top",
     )
     return fig
 

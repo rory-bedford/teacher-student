@@ -99,7 +99,7 @@ def raster(spikes):
             for o in neurons["observed"]
         ],
     )
-    ax.set_title("Observed and Unobserved Spikes, Held-Out Stimulus")
+    ax.set_title("Spike Raster, Held-Out Stimulus")
     fig.tight_layout()
     # tight_layout ignores the group brackets, which are drawn outside the axes.
     fig.subplots_adjust(left=0.13)
@@ -113,7 +113,7 @@ def scatters(rates, held_out):
         subset = rates[rates["observed"] == int(group == "observed")]
         rate_scatter(ax, subset, label)
         ax.title.set_fontsize(TICK_SIZE)
-    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
+    tighten_pair(fig, axes, "Firing Rates, Held-Out Stimulus")
     return fig
 
 
@@ -245,7 +245,7 @@ def delta_scatter(summary, deltas):
     scatter_legend(ax, DELTA_MARKER_SIZE)
     # No R² stack (2026-09-23): the numbers are in the CSVs and on the bar panels, and
     # three dense lines of them crowded the scatter they sat above.
-    ax.set_title("Rate Change, Student vs Teacher, Perturbation")
+    ax.set_title("Perturbation Firing Rate Change")
     fig.tight_layout()
     return fig
 
@@ -288,7 +288,7 @@ def delta_means(deltas):
     ax.set_xticks(range(len(populations)))
     ax.set_xticklabels([label for label, _ in populations])
     ax.set_ylabel("Mean Δrate (Hz)")
-    ax.set_title("Mean Rate Change per Population, Student vs Teacher")
+    ax.set_title("Perturbation Mean Rate Change by Cell Type")
     ax.legend(frameon=True)
     fig.tight_layout()
     return fig

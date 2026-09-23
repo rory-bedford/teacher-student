@@ -234,7 +234,7 @@ def neuron_traces(data):
     axes[0].set_ylim(top=0.0)  # spikes are drawn up to 0 mV, so that is the ceiling
     axes[0].set_ylabel("Membrane Potential\n(mV)")
     trace_legend(axes[0])
-    axes[0].set_title(f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s})", pad=6)
+    axes[0].set_title(f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s})")
 
     traces = []
     for label, color, members in PATHWAYS:
@@ -280,7 +280,7 @@ def ou_trajectories(data):
         data,
         "mixing_weight",
         "Mixing Weight",
-        "Input Mixing Coefficient",
+        "Ornstein-Uhlenbeck Mixing Coefficient",
         legend_loc="center right",  # the top right is where a dominant input sits at ~1.0
     )
 
