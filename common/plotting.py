@@ -43,7 +43,11 @@ PERTURBATION_SERIES = (
 #: Shared wording for the perturbation panels, so the four figures agree (2026-09-21).
 #: The series are the unobserved cells that were NOT targeted, E and I pooled; the value
 #: is the change the intervention caused, perturbed minus unperturbed.
-PERTURBATION_TITLE = "Inhibiting 25% of Unobserved I Cells (Δ = On − Off)"
+#: The two titles every performance panel carries (2026-09-23). What the perturbation is
+#: -- an E_L shift on 25% of unobserved inhibitory cells, scored as on minus off -- belongs
+#: on the slide and in each figure's README, not in the panel title.
+HELD_OUT_TITLE = "Held-Out Test Set Accuracy"
+PERTURBATION_TITLE = "Perturbation Accuracy"
 PERTURBATION_LABEL = "Unobserved, Not Targeted"
 
 
@@ -177,6 +181,32 @@ def ceiling_line(
         linewidth=1.0,
         label=label,
     )
+
+
+def plotted_performance_values(summary, group, pool_by, cell_type="all"):
+    """Every value the performance panels of a figure actually draw.
+
+    Held-out rows are plotted as they come; perturbation rows are plotted POOLED over cell
+    types, so the per-cell-type rows must never set the axis (2026-09-23: they were, and
+    the floor dropped to -0.6 for points no panel contains).
+    """
+    held = summary[
+        (summary.get("evaluation", "held_out") == "held_out")
+        & (summary["metric"] == "fluctuation_r2")
+        & (summary["group"] == group)
+    ]
+    if "cell_type" in held:
+        held = held[held["cell_type"] == cell_type]
+    values = list(held["value"])
+    if "evaluation" in summary:
+        delta = summary[
+            (summary["evaluation"] == "perturbation")
+            & (summary["metric"] == "delta_fluctuation_r2")
+            & (summary["group"] == group)
+        ]
+        if not delta.empty:
+            values += list(pool_populations(delta, pool_by)["value"])
+    return values
 
 
 def pool_populations(rows, by):

@@ -32,8 +32,11 @@ from matplotlib.ticker import NullFormatter
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    HELD_OUT_TITLE,
     METRIC_LABELS,
     PERTURBATION_LABEL,
+    PERTURBATION_TITLE,
+    plotted_performance_values,
     pool_populations,
 )
 from common.style import (
@@ -127,11 +130,9 @@ def limits(summary):
     Both panels report a Fluctuation R², so reading one against the other only works if
     they share a scale (2026-09-23).
     """
-    rows = summary[
-        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
-        & (summary["group"] == "unobserved")
-    ]
-    return performance_limits(rows["value"])
+    return performance_limits(
+        plotted_performance_values(summary, "unobserved", ["obs_fraction", "seed"])
+    )
 
 
 def curve(summary, dimensionality, ylim):
@@ -161,6 +162,7 @@ def curve(summary, dimensionality, ylim):
     markers = dimensionality_markers(ax, dimensionality)
     # Decreasing left to right (2026-09-21): the slide reads as neurons being taken away,
     # ending at the hard end of the sweep.
+    ax.set_title(HELD_OUT_TITLE)
     observed_axis(ax, summary["obs_fraction"].unique())
     performance_axis(ax, ylim)
     ax.set_ylabel("Fluctuation R²")
@@ -229,6 +231,7 @@ def delta_sweep(summary, metric, dimensionality, ylim):
     )
     ceiling(ax, pooled, "obs_fraction", UNOBSERVED)
     markers = dimensionality_markers(ax, dimensionality)
+    ax.set_title(PERTURBATION_TITLE)
     observed_axis(ax, pooled["obs_fraction"].unique())
     performance_axis(ax, ylim)  # shared with panel (a)
     ax.set_ylabel(METRIC_LABELS[metric])

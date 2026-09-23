@@ -30,9 +30,11 @@ from matplotlib.ticker import MultipleLocator
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    HELD_OUT_TITLE,
     METRIC_LABELS,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
+    plotted_performance_values,
     pool_populations,
 )
 from common.style import (
@@ -148,11 +150,9 @@ def group_rows(summary, group, metric, cell_type="all"):
 
 def limits(summary):
     """One y range for all three panels, as in Figures 3 and 4."""
-    rows = summary[
-        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
-        & (summary["group"] == "unobserved")
-    ]
-    return performance_limits(rows["value"])
+    return performance_limits(
+        plotted_performance_values(summary, "unobserved", ["weight_noise", "seed"])
+    )
 
 
 def curve(summary, clipped, ylim):
@@ -186,7 +186,7 @@ def curve(summary, clipped, ylim):
     # The mean/SD-preserving perturbation clips a few weights at zero (1.5-4.5% across
     # the sweep). That was in the title until 2026-09-21: five numbers nobody reads from
     # the back of a room, and the figure's README carries them instead.
-    ax.set_title("Observed and Unobserved Neurons vs Weight Noise")
+    ax.set_title(HELD_OUT_TITLE)
     fig.tight_layout()
     return fig
 
@@ -229,7 +229,7 @@ def perturbation(summary, metric, ylim):
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    ax.set_title(f"{METRIC_LABELS[metric]}\n{PERTURBATION_TITLE}")
+    ax.set_title(PERTURBATION_TITLE)
     fig.tight_layout()
     return fig
 

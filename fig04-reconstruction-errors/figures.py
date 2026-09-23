@@ -32,7 +32,13 @@ from connectome_snns.visualization import (
     SYNAPSE_DROPOUT_COLOR,
 )
 
-from common.plotting import METRIC_LABELS, PERTURBATION_TITLE, pool_populations
+from common.plotting import (
+    HELD_OUT_TITLE,
+    METRIC_LABELS,
+    PERTURBATION_TITLE,
+    plotted_performance_values,
+    pool_populations,
+)
 from common.style import (
     SINGLE,
     TICK_SIZE,
@@ -59,11 +65,11 @@ X_LABEL = "Fraction of Recurrent Input Lost"
 
 def limits(summary):
     """One y range for panels (a) and (b), so the two read on the same scale."""
-    rows = summary[
-        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
-        & (summary["group"] == "unobserved")
-    ]
-    return performance_limits(rows["value"])
+    return performance_limits(
+        plotted_performance_values(
+            summary, "unobserved", ["error_model", "level", "seed"]
+        )
+    )
 
 
 def curve(summary, ylim):
@@ -111,7 +117,7 @@ def curve(summary, ylim):
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    ax.set_title("Unobserved Neurons vs Input Volume Lost")
+    ax.set_title(HELD_OUT_TITLE)
     fig.tight_layout()
     return fig
 
@@ -171,7 +177,7 @@ def delta_sweep(summary, metric, ylim):
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(
-        f"{METRIC_LABELS[metric]}: {PERTURBATION_TITLE}",
+        PERTURBATION_TITLE,
         fontsize=TICK_SIZE + 1,
     )
     fig.tight_layout()

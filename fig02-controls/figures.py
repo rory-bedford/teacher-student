@@ -40,13 +40,21 @@ from connectome_snns.visualization import (
     SHUFFLE_WEIGHTS_COLOR,
 )
 
-from common.plotting import METRIC_LABELS, PERTURBATION_LABEL, pool_populations
+from common.plotting import (
+    HELD_OUT_TITLE,
+    METRIC_LABELS,
+    PERTURBATION_LABEL,
+    PERTURBATION_TITLE,
+    plotted_performance_values,
+    pool_populations,
+)
 from common.style import (
     LEGEND_GREY,
     TRUTH,
     apply_style,
     clear_panels,
     performance_axis,
+    performance_limits,
     save,
 )
 
@@ -125,13 +133,17 @@ def panel_rows(summary, metric, group, cell_type):
 
 
 def limits(summary):
-    """One y range for both figures, so every subpanel is directly comparable."""
-    metrics = [metric for metric, _ in FIGURES]
-    rows = summary[
-        summary["metric"].isin(metrics) & summary["variant"].isin(PLOTTED_VARIANTS)
-    ]
-    low = min(0.0, float(rows["value"].min()))
-    return low - 0.08, 1.08
+    """One quantised y range for both figures, so every subpanel is comparable.
+
+    Over the values the panels DRAW: the held-out subpanels show both populations, and the
+    perturbation subpanel shows the unobserved population pooled over cell types. Reading
+    the per-cell-type rows here would stretch the axis to points no panel contains.
+    """
+    plotted = summary[summary["variant"].isin(PLOTTED_VARIANTS)]
+    values = []
+    for group in ("observed", "unobserved"):
+        values += plotted_performance_values(plotted, group, ["variant", "seed"])
+    return performance_limits(values)
 
 
 def subpanel(ax, summary, metric, group, cell_type, title):
@@ -190,6 +202,7 @@ def bars(summary, metric, populations, ylim):
     for ax in np.atleast_1d(axes):
         performance_axis(ax, ylim)
     fig.supylabel(METRIC_LABELS[metric])
+    fig.suptitle(PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE)
     fig.tight_layout()
     return fig
 

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="148.858125pt" height="127.56pt" viewBox="0 0 148.858125 127.56" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="216.087187pt" height="184.14pt" viewBox="0 0 216.087187 184.14" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-23T14:49:25.745720</dc:date>
+    <dc:date>2026-09-23T14:58:08.130554</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,38 +21,38 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 127.56 
-L 148.858125 127.56 
-L 148.858125 0 
-L 0 0 
+   <path d="M 0 184.14 
+L 216.087187 184.14 
+L 216.087187 -0 
+L 0 -0 
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="legend_1">
    <g id="patch_2">
-    <path d="M 9.6 120.36 
-L 139.258125 120.36 
-Q 141.658125 120.36 141.658125 117.96 
-L 141.658125 9.6 
-Q 141.658125 7.2 139.258125 7.2 
-L 9.6 7.2 
-Q 7.2 7.2 7.2 9.6 
-L 7.2 117.96 
-Q 7.2 120.36 9.6 120.36 
+    <path d="M 10.8 176.94 
+L 205.287187 176.94 
+Q 208.887187 176.94 208.887187 173.34 
+L 208.887187 10.8 
+Q 208.887187 7.2 205.287187 7.2 
+L 10.8 7.2 
+Q 7.2 7.2 7.2 10.8 
+L 7.2 173.34 
+Q 7.2 176.94 10.8 176.94 
 z
 " style="fill: #ffffff; opacity: 0.8; stroke: #cccccc; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 12 24 
-L 36 24 
-L 36 15.6 
-L 12 15.6 
+    <path d="M 14.4 32.4 
+L 50.4 32.4 
+L 50.4 19.8 
+L 14.4 19.8 
 z
 " style="fill: #457b9d; stroke: #457b9d; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <!-- Full Connectome -->
-    <g style="fill: #262626" transform="translate(45.6 24) scale(0.12 -0.12)">
+    <g style="fill: #262626" transform="translate(64.8 32.4) scale(0.18 -0.18)">
      <defs>
       <path id="SourceSans3-Regular-7" d="M 576 0 
 L 576 4198 
@@ -296,16 +296,16 @@ z
     </g>
    </g>
    <g id="patch_4">
-    <path d="M 12 45.912 
-L 36 45.912 
-L 36 37.512 
-L 12 37.512 
+    <path d="M 14.4 65.268 
+L 50.4 65.268 
+L 50.4 52.668 
+L 14.4 52.668 
 z
 " style="fill: #e07b2e; stroke: #e07b2e; stroke-linejoin: miter"/>
    </g>
    <g id="text_2">
     <!-- Learnt Recurrence -->
-    <g style="fill: #262626" transform="translate(45.6 45.912) scale(0.12 -0.12)">
+    <g style="fill: #262626" transform="translate(64.8 65.268) scale(0.18 -0.18)">
      <defs>
       <path id="SourceSans3-Regular-d" d="M 576 0 
 L 576 4198 
@@ -412,16 +412,16 @@ z
     </g>
    </g>
    <g id="patch_5">
-    <path d="M 12 67.824 
-L 36 67.824 
-L 36 59.424 
-L 12 59.424 
+    <path d="M 14.4 98.136 
+L 50.4 98.136 
+L 50.4 85.536 
+L 14.4 85.536 
 z
 " style="fill: #2a9d8f; stroke: #2a9d8f; stroke-linejoin: miter"/>
    </g>
    <g id="text_3">
     <!-- Shuffled Weights -->
-    <g style="fill: #262626" transform="translate(45.6 67.824) scale(0.12 -0.12)">
+    <g style="fill: #262626" transform="translate(64.8 98.136) scale(0.18 -0.18)">
      <defs>
       <path id="SourceSans3-Regular-14" d="M 1741 -77 
 Q 1293 -77 918 89 
@@ -707,16 +707,16 @@ z
     </g>
    </g>
    <g id="patch_6">
-    <path d="M 12 89.736 
-L 36 89.736 
-L 36 81.336 
-L 12 81.336 
+    <path d="M 14.4 131.004 
+L 50.4 131.004 
+L 50.4 118.404 
+L 14.4 118.404 
 z
 " style="fill: #8e6bb3; stroke: #8e6bb3; stroke-linejoin: miter"/>
    </g>
    <g id="text_4">
     <!-- Shuffled Topology -->
-    <g style="fill: #262626" transform="translate(45.6 89.736) scale(0.12 -0.12)">
+    <g style="fill: #262626" transform="translate(64.8 131.004) scale(0.18 -0.18)">
      <defs>
       <path id="SourceSans3-Regular-15" d="M 1446 0 
 L 1446 3750 
@@ -803,14 +803,14 @@ z
     </g>
    </g>
    <g id="line2d_1">
-    <path d="M 12 107.448 
-L 24 107.448 
-L 36 107.448 
+    <path d="M 14.4 157.572 
+L 32.4 157.572 
+L 50.4 157.572 
 " style="fill: none; stroke-dasharray: 1.5,2.475; stroke-dashoffset: 0; stroke: #404040; stroke-width: 1.5"/>
    </g>
    <g id="text_5">
     <!-- Noise Ceiling -->
-    <g style="fill: #262626" transform="translate(45.6 111.648) scale(0.12 -0.12)">
+    <g style="fill: #262626" transform="translate(64.8 163.872) scale(0.18 -0.18)">
      <defs>
       <path id="SourceSans3-Regular-f" d="M 576 0 
 L 576 4198 

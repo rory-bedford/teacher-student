@@ -28,6 +28,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    HELD_OUT_TITLE,
     METRIC_LABELS,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
@@ -126,7 +127,9 @@ def curve(sweep, ylim):
     0.71 at 10% reconstructed against ~0.97 at full reconstruction.
     """
     rows = held_out(sweep)
-    fig, ax = plt.subplots(figsize=(SINGLE[0] * 1.35, SINGLE[1] * 1.15))
+    # SINGLE, exactly as the perturbation panel: the two share a y axis and belong side
+    # by side on a slide, so their canvases and their text must come out the same size.
+    fig, ax = plt.subplots(figsize=SINGLE)
     for group, (_, color) in GROUPS.items():
         sweep_series(
             ax,
@@ -170,7 +173,7 @@ def curve(sweep, ylim):
     )
     # The free-parameter counts used to be annotated along the axis (2026-09-21): they
     # hardly vary across the sweep, so they were clutter. They are in fig07_summary.csv.
-    ax.set_title("Observed and Unobserved Neurons vs Reconstructed Fraction", pad=18)
+    ax.set_title(HELD_OUT_TITLE, pad=18)
     fig.tight_layout()
     return fig
 
@@ -214,7 +217,7 @@ def perturbation(sweep, metric, ylim):
         bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
-    ax.set_title(f"{METRIC_LABELS[metric]}\n{PERTURBATION_TITLE}")
+    ax.set_title(PERTURBATION_TITLE)
     fig.tight_layout()
     return fig
 

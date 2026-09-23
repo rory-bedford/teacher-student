@@ -28,8 +28,10 @@ from matplotlib.patches import Patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
+    HELD_OUT_TITLE,
     METRIC_LABELS,
     PERTURBATION_LABEL,
+    PERTURBATION_TITLE,
     pool_populations,
     rate_scatter,
 )
@@ -123,6 +125,7 @@ def bars(summary, metric, populations, ylim):
     for ax in np.atleast_1d(axes):
         performance_axis(ax, ylim)
     fig.supylabel(METRIC_LABELS[metric])
+    fig.suptitle(PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE)
     fig.tight_layout()
     return fig
 
