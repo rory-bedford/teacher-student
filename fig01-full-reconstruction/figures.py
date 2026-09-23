@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
-from matplotlib.ticker import NullFormatter, ScalarFormatter
+from matplotlib.ticker import MultipleLocator, NullFormatter, ScalarFormatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -279,6 +279,12 @@ def delta_means(deltas):
                 position + offset,
                 subset[column].mean(),
                 width,
+                # SEM over the neurons in the population (2026-09-23): these bars
+                # average cells, and the per-cell SD is ~30 Hz, which would swamp a
+                # 14 Hz mean. The whisker is how well the mean is pinned down.
+                yerr=subset[column].sem(),
+                capsize=3,
+                error_kw={"linewidth": 1.0, "ecolor": "k"},
                 color=color,
                 edgecolor="white",
                 linewidth=0.5,
@@ -287,6 +293,10 @@ def delta_means(deltas):
     ax.axhline(0, color="k", linewidth=0.5)
     ax.set_xticks(range(len(populations)))
     ax.set_xticklabels([label for label, _ in populations])
+    # 10 Hz ticks over a fixed -20 to 10 Hz range (2026-09-23): the same quantised
+    # treatment the performance panels get, and it holds across seeds.
+    ax.yaxis.set_major_locator(MultipleLocator(10))
+    ax.set_ylim(-20, 10)
     ax.set_ylabel("Mean Δrate (Hz)")
     ax.set_title("Perturbation Mean Rate Change by Cell Type")
     ax.legend(frameon=True)
