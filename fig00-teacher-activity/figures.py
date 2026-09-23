@@ -49,6 +49,7 @@ from common.style import (
     SINGLE,
     TEACHER,
     TICK_SIZE,
+    WIDE,
     apply_style,
     clear_panels,
     save,
@@ -423,6 +424,56 @@ def variance_spectrum(spectrum, summary):
     return fig
 
 
+#: The assembly raster's window and tick spacing, matching the population panel above it.
+RASTER_SECONDS = 15.0
+RASTER_TICK_S = 5.0
+
+
+def assembly_raster(data):
+    """(f) Spikes of the two leading assemblies, grouped and sorted within each group.
+
+    The population panel plots these cells' mean rate; this is the spikes behind it, so
+    the switch can be seen in the raw data rather than only after a 500 ms Gaussian.
+    Neurons are ordered by assembly, then by firing rate inside the assembly -- a sort
+    that cannot invent structure, unlike an embedding.
+    """
+    spikes = data["spikes"]
+    assembly = data["assembly"]
+    leaders = [int(k) for k in np.atleast_1d(data["leaders"])]
+    dt_ms = float(data["dt_ms"])
+    colors = assembly_colors(20)
+    fig, ax = plt.subplots(figsize=(WIDE[0], WIDE[1] * 1.4))
+    for row in range(spikes.shape[1]):
+        times = np.flatnonzero(spikes[:, row]) * dt_ms * 1e-3
+        if times.size:
+            ax.eventplot(
+                times,
+                lineoffsets=row,
+                linelengths=0.9,
+                linewidths=0.6,
+                colors=colors[int(assembly[row])],
+                rasterized=True,
+            )
+    # One label per assembly, centred on its block, rather than a tick per neuron.
+    ticks, labels = [], []
+    for leader in leaders:
+        rows = np.flatnonzero(assembly == leader)
+        ticks.append(float(rows.mean()))
+        labels.append(f"Assembly {leader}\n({rows.size} cells)")
+    ax.set_yticks(ticks)
+    ax.set_yticklabels(labels, fontsize=TICK_SIZE * 0.9)
+    boundary = float(np.flatnonzero(assembly == leaders[1]).min()) - 0.5
+    ax.axhline(boundary, color=REFERENCE_GREY, linewidth=1)
+    ax.set_ylim(-0.5, spikes.shape[1] - 0.5)
+    ax.invert_yaxis()
+    ax.set_xlim(0, RASTER_SECONDS)
+    ax.xaxis.set_major_locator(MultipleLocator(RASTER_TICK_S))
+    ax.set_xlabel("Time (s)")
+    ax.set_title("Assembly Spike Trains")
+    fig.tight_layout()
+    return fig
+
+
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
@@ -443,6 +494,9 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     spectrum = pd.read_csv(data_dir / "fig00_pca_spectrum.csv")
     summary = pd.read_csv(data_dir / "fig00_dimensionality.csv").iloc[0]
     output(variance_spectrum(spectrum, summary), "e", "variance-spectrum")
+
+    raster = np.load(data_dir / "fig00_assembly_raster.npz")
+    output(assembly_raster(raster), "f", "assembly-raster", raster=True)
 
 
 if __name__ == "__main__":

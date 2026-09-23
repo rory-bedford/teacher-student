@@ -681,11 +681,58 @@ def step_dimensionality(teacher, out_dir, device):
     print(pd.Series(summary))
 
 
+#: The assembly raster shows the two assemblies that lead the chosen trial, so it is the
+#: same trial and the same pair as the assembly population panel (2026-09-24).
+ASSEMBLY_RASTER_SECONDS = 15.0
+
+
+def step_assembly_raster(teacher, out_dir, device):
+    """Excitatory spikes of the two leading assemblies, sorted within each.
+
+    The population panel shows the two assemblies' mean rates; this shows the spikes those
+    means are made of, so a listener can see that the switch is a population of cells
+    changing rate and not a smoothing artefact. Neurons are grouped by assembly and sorted
+    by firing rate within the group -- no embedding or reordering that could manufacture
+    structure the data does not have.
+    """
+    data = teacher.zarr
+    steps = teacher.steps(ASSEMBLY_RASTER_SECONDS)
+    trial, leaders = choose_assembly_trial(data, steps)
+    spikes = np.asarray(data["output_spikes"][trial, :steps, :])
+    excitatory = teacher.cell_type_indices == teacher.cell_type_names.index(
+        "excitatory"
+    )
+    rows, assembly_of = [], []
+    for assembly in leaders:
+        members = np.flatnonzero(excitatory & (teacher.assembly_ids == assembly))
+        rates = spikes[:, members].mean(axis=0) * (1000.0 / teacher.dt)
+        order = members[np.argsort(rates)[::-1]]
+        rows.append(order)
+        assembly_of.append(np.full(order.size, assembly, dtype=np.int16))
+    neurons = np.concatenate(rows)
+    np.savez_compressed(
+        out_dir / "fig00_assembly_raster.npz",
+        spikes=spikes[:, neurons],
+        neuron_id=neurons.astype(np.int32),
+        assembly=np.concatenate(assembly_of),
+        leaders=np.array(leaders, dtype=np.int32),
+        dt_ms=np.float32(teacher.dt),
+        trial=np.int32(trial),
+    )
+    counts = [int((np.concatenate(assembly_of) == a).sum()) for a in leaders]
+    print(
+        f"  assembly raster: trial {trial}, assemblies "
+        + " then ".join(f"{a} ({n} excitatory)" for a, n in zip(leaders, counts))
+        + f", {spikes[:, neurons].sum()} spikes over {ASSEMBLY_RASTER_SECONDS:.0f} s"
+    )
+
+
 #: step name -> (function, the files it writes).
 STEPS = {
     "conditions": (step_conditions, ["fig00_condition_rates.csv"]),
     "dynamics": (step_dynamics, ["fig00_raster.npz", "fig00_traces.npz"]),
     "assemblies": (step_assemblies, ["fig00_assemblies.npz"]),
+    "assembly-raster": (step_assembly_raster, ["fig00_assembly_raster.npz"]),
     "drive": (step_drive, ["fig00_drive.csv"]),
     "dimensionality": (
         step_dimensionality,
