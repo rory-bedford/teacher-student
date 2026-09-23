@@ -76,9 +76,8 @@ def weight_perturbation(table):
     """(a) Single synapses before and after the noise, one panel per level.
 
     A recreation of the old repository's ``weight_perturbation.svg``: the perturbed weight
-    against the original, the identity dashed, and r², which is what degrades. Lower
-    case: it is the squared correlation between two sets of weights, not the variance a
-    model explains, which is what R² means on every other panel in the talk. The mean and
+    against the original, the identity dashed, and r, the correlation between the two
+    sets of weights -- not R², which on every other panel means variance explained. The mean and
     SD are not quoted (2026-09-23): the noise preserves them exactly by construction, so
     they said nothing the panel needed. They remain in fig05_weight_perturbation.csv, over
     the whole non-zero population. R² is over that population too; the points are a random
@@ -115,7 +114,7 @@ def weight_perturbation(table):
         ax.text(
             0.04,
             0.96,
-            f"r² = {rows['correlation'].iloc[0] ** 2:.3f}",
+            f"r = {rows['correlation'].iloc[0]:.3f}",
             transform=ax.transAxes,
             ha="left",
             va="top",
