@@ -16,7 +16,7 @@ Identical to Figure 1 except for the swept degradation:
 | recurrent reconstruction | 100% |
 | observed fraction | **50%** (matches Figures 1–4; 2026-09-18, was 10%) |
 | trained parameters | 6 scaling factors |
-| **weight noise** | **swept**, 0 → 0.5 |
+| **weight noise** | **swept**, 0 → 0.8 |
 | seeds | 3 per point |
 
 ## What weight noise is
@@ -58,10 +58,14 @@ Figure 4 meaningful.
 As built (2026-09-21), one SVG each:
 
 - **(a)** `fig05-a-weight-perturbation` — what the noise does to a synapse: the perturbed
-  weight against the teacher's, side by side at noise 0.1 and 0.5, with the identity
-  dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries r, the correlation
+  weight against the teacher's, side by side at noise 0.1, 0.7 and 0.8, with the
+  identity dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries r, the correlation
   between the two weight sets — not R², which everywhere else means variance explained —
-  falling **0.993 → 0.883**. The population mean and SD are not shown (2026-09-23): the noise
+  falling **0.993 → 0.808 → 0.770**. Noise **0.7** is the level to talk about: there the
+  teacher's and student's weights correlate at r = 0.81, the weight-against-synapse-volume
+  correlation measured in Holler et al., *Structure and function of a neocortical synapse*.
+  It is the precision a real reconstruction achieves, and 0.8 sits beside it as the next
+  step past that. The population mean and SD are not shown (2026-09-23): the noise
   preserves them exactly by construction — 0.0325 and 0.2085 at both levels — so they are
   recorded in `fig05_weight_perturbation.csv` rather than on the panel.
   Needs no trained run: `analysis.py` applies the same function training applies.

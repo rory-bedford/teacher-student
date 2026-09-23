@@ -48,8 +48,9 @@ def label(params, evaluation):
 #: 0.7 rather than 0.5 (2026-09-23): at 0.7 the teacher's weights and the student's
 #: correlate at r = 0.81, which is the weight-against-synapse-volume correlation measured
 #: in Holler et al., "Structure and function of a neocortical synapse" -- so the right-hand
-#: panel shows the perturbation at the precision a real reconstruction achieves.
-PERTURBATION_LEVELS = (0.1, 0.7)
+#: panel shows the perturbation at the precision a real reconstruction achieves, with 0.8
+#: beside it as the next step past that.
+PERTURBATION_LEVELS = (0.1, 0.7, 0.8)
 PERTURBATION_SAMPLE = 3000
 PERTURBATION_SEED = 44
 

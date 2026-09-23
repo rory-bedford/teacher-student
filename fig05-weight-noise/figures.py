@@ -88,7 +88,15 @@ def weight_perturbation(table):
     limit = float(
         np.percentile(table[["original", "noisy"]].to_numpy(), PERTURBATION_PERCENTILE)
     )
-    fig, axes = plt.subplots(1, len(levels), figsize=PAIR, sharex=True, sharey=True)
+    # One panel's width per level, so adding a level widens the figure instead of
+    # squeezing the scatters.
+    fig, axes = plt.subplots(
+        1,
+        len(levels),
+        figsize=(PAIR[0] / 2 * len(levels), PAIR[1]),
+        sharex=True,
+        sharey=True,
+    )
     for ax, noise in zip(np.atleast_1d(axes), levels, strict=True):
         rows = table[table["weight_noise"] == noise]
         ax.plot(
