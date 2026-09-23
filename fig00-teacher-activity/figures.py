@@ -140,13 +140,13 @@ PANEL_AXES_WIDTH = PANEL_WIDTH - PANEL_MARGIN_LEFT - PANEL_MARGIN_RIGHT
 PANEL_HEIGHT = 5.0
 PANEL_MARGIN_BOTTOM = 0.75
 PANEL_MARGIN_TOP = 0.55
-#: The drive bars are drawn on a canvas this much larger with the type left at its
-#: point size (2026-09-24), so that placed on a slide at 1.5x the width the bars grow and
-#: the text still matches the other panels. Enlarging the exported image instead would
-#: have enlarged the type with it.
-DRIVE_SCALE = 1.5
 #: (c) stacks three rows, so it keeps its own height at the shared width.
 TRACE_PANEL_HEIGHT = 7.0
+#: The drive bars are half (c)'s height and half the shared width, with the type left at
+#: its point size (2026-09-24): dropped on the slide beside (c) at its natural scale, the
+#: panel is a half-height tile and its text still matches every other panel. Scaling the
+#: exported image instead would have scaled the type with it.
+DRIVE_SIZE = (PANEL_WIDTH * 0.5, TRACE_PANEL_HEIGHT * 0.5)
 
 
 def panel_layout(fig, height=PANEL_HEIGHT):
@@ -433,7 +433,7 @@ def synaptic_drive(drive):
     spreads = [
         drive.loc[drive["pathway"] == p, "drive_fraction"].std() for p in pathways
     ]
-    fig, ax = plt.subplots(figsize=(SINGLE[0] * DRIVE_SCALE, SINGLE[1] * DRIVE_SCALE))
+    fig, ax = plt.subplots(figsize=DRIVE_SIZE)
     ax.bar(
         pathways,
         means,
@@ -445,7 +445,7 @@ def synaptic_drive(drive):
     ax.errorbar(
         pathways, means, yerr=spreads, fmt="none", ecolor=INK, capsize=5, linewidth=1.2
     )
-    ax.set_ylabel("Fraction of Excitatory Synaptic Drive")
+    ax.set_ylabel("Fraction of Drive")
     ax.set_ylim(0, 1)
     ax.set_title("Excitatory Synaptic Drive by Pathway")
     fig.tight_layout()
