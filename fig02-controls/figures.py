@@ -184,26 +184,37 @@ def subpanel(ax, summary, metric, group, cell_type, title):
     ax.set_title(title)
 
 
-def bars(summary, metric, populations, ylim):
-    """One figure, one subpanel per population.
+#: Bar figures are laid out in absolute inches, not by tight_layout, so that one subpanel
+#: is the same width whether a figure holds one of them or three (2026-09-23). The margins
+#: are what the y label, ticks and titles need; everything else is the axes.
+AXES_WIDTH = 2.2
+AXES_HEIGHT = 3.4
+MARGIN_LEFT = 1.05
+MARGIN_RIGHT = 0.12
+MARGIN_TOP = 0.95  # room for the figure title above the subpanel titles
+MARGIN_BOTTOM = 0.3
+PANEL_GAP = 0.3
 
-    Subpanels are ``SUBPANEL_SIZE`` in both figures and share one y axis, so the held-out
-    figure (two populations) and the perturbation figure (three) tile on a slide with
-    every subpanel the same size. The legend is a separate file.
-    """
-    fig, axes = plt.subplots(
-        1,
-        len(populations),
-        figsize=(SUBPANEL_SIZE[0] * len(populations), SUBPANEL_SIZE[1]),
-        sharey=True,
-    )
-    for ax, (group, cell_type, title) in zip(np.atleast_1d(axes), populations):
-        subpanel(ax, summary, metric, group, cell_type, title)
-    for ax in np.atleast_1d(axes):
+
+def bars(summary, metric, populations, ylim):
+    """One figure, one subpanel per population, every subpanel identically sized."""
+    n = len(populations)
+    width = MARGIN_LEFT + n * AXES_WIDTH + (n - 1) * PANEL_GAP + MARGIN_RIGHT
+    height = MARGIN_TOP + AXES_HEIGHT + MARGIN_BOTTOM
+    fig, axes = plt.subplots(1, n, figsize=(width, height), sharey=True)
+    axes = np.atleast_1d(axes)
+    for ax, population in zip(axes, populations, strict=True):
+        subpanel(ax, summary, metric, *population)
         performance_axis(ax, ylim)
-    fig.supylabel(METRIC_LABELS[metric])
+    axes[0].set_ylabel(METRIC_LABELS[metric])
     fig.suptitle(PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE)
-    fig.tight_layout()
+    fig.subplots_adjust(
+        left=MARGIN_LEFT / width,
+        right=1 - MARGIN_RIGHT / width,
+        top=1 - MARGIN_TOP / height,
+        bottom=MARGIN_BOTTOM / height,
+        wspace=PANEL_GAP / AXES_WIDTH,
+    )
     return fig
 
 
