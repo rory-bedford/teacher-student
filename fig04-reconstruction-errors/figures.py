@@ -39,6 +39,8 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    performance_axis,
+    performance_limits,
     save,
     sweep_legend,
     sweep_series,
@@ -61,7 +63,7 @@ def limits(summary):
         summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
         & (summary["group"] == "unobserved")
     ]
-    return min(0.0, float(rows["value"].min()) - 0.05), 1.0
+    return performance_limits(rows["value"])
 
 
 def curve(summary, ylim):
@@ -94,7 +96,7 @@ def curve(summary, ylim):
             x_group="level",
         )
         ceiling(ax, rows, "kappa_snapped", color, x_group="level")
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel("Fluctuation R² (Unobserved)")
     sweep_legend(
@@ -158,7 +160,7 @@ def delta_sweep(summary, metric, ylim):
         )
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(METRIC_LABELS[metric])
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     sweep_legend(
         ax,
         {},

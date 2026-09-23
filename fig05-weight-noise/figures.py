@@ -47,6 +47,8 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    performance_axis,
+    performance_limits,
     save,
     sweep_legend,
     sweep_series,
@@ -150,7 +152,7 @@ def limits(summary):
         summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
         & (summary["group"] == "unobserved")
     ]
-    return min(0.0, float(rows["value"].min()) - 0.05), 1.02
+    return performance_limits(rows["value"])
 
 
 def curve(summary, clipped, ylim):
@@ -170,7 +172,7 @@ def curve(summary, clipped, ylim):
         ceiling(ax, group_rows(rows, group, "fluctuation_r2"), "weight_noise", color)
     ax.set_xlim(-0.025, rows["weight_noise"].max() + 0.025)
     # Limits from the data, not fixed: the real sweep runs lower than the estimates.
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel("Fluctuation R²")
     sweep_legend(
@@ -218,7 +220,7 @@ def perturbation(summary, metric, ylim):
     ceiling(ax, pooled, "weight_noise", UNOBSERVED)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     sweep_legend(
         ax,
         {PERTURBATION_LABEL: UNOBSERVED},

@@ -162,6 +162,33 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None, raster=Fa
     print(f"Saved {path}")
 
 
+#: Performance panels (Fluctuation R² and its perturbation delta) share one treatment
+#: (2026-09-23): ticks every 0.2, a grey line at zero, and a quantised range -- 0 to 1 when
+#: nothing is negative, otherwise -0.4 to 1, dropping a further 0.2 at a time until every
+#: point fits. No point is ever clipped; the floor is always a multiple of the tick, so two
+#: panels of the same figure can be read against each other.
+PERFORMANCE_TICK = 0.2
+PERFORMANCE_FLOOR = -0.4
+
+
+def performance_limits(values):
+    """(0, 1) if nothing is negative, else -0.4 or lower, in whole ticks, to fit the data."""
+    low = float(np.nanmin(values))
+    if low >= 0.0:
+        return (0.0, 1.0)
+    floor = PERFORMANCE_FLOOR
+    while low < floor:
+        floor -= PERFORMANCE_TICK
+    return (round(floor, 10), 1.0)
+
+
+def performance_axis(ax, ylim):
+    """Apply the shared range, 0.2 ticks and the zero line to a performance panel."""
+    ax.set_ylim(*ylim)
+    ax.yaxis.set_major_locator(MultipleLocator(PERFORMANCE_TICK))
+    ax.axhline(0, color=REFERENCE_GREY, linewidth=1, zorder=0)
+
+
 #: Rate scatters are linear over 0 to this many Hz (2026-09-18). The teacher's rates run
 #: to ~270 Hz with a median of 0.4, so the axis is cut rather than scaled: the tail is a
 #: handful of cells firing every 2 ms (nothing enforces a refractory period in the model),

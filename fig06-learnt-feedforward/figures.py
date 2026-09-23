@@ -41,6 +41,8 @@ from common.style import (
     TRUTH,
     apply_style,
     clear_panels,
+    performance_axis,
+    performance_limits,
     save,
 )
 
@@ -66,8 +68,7 @@ def held_out(summary):
 def limits(summary):
     """One y range over both bar figures, so the two can be read against each other."""
     rows = summary[summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])]
-    low = min(0.0, float(rows["value"].min()))
-    return (np.floor(low * 4) / 4, 1.05)
+    return performance_limits(rows["value"])
 
 
 def subpanel(ax, summary, metric, group, title):
@@ -119,7 +120,8 @@ def bars(summary, metric, populations, ylim):
     )
     for ax, (group, title) in zip(np.atleast_1d(axes), populations, strict=True):
         subpanel(ax, summary, metric, group, title)
-    np.atleast_1d(axes)[0].set_ylim(*ylim)
+    for ax in np.atleast_1d(axes):
+        performance_axis(ax, ylim)
     fig.supylabel(METRIC_LABELS[metric])
     fig.tight_layout()
     return fig

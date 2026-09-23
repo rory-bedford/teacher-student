@@ -43,6 +43,8 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    performance_axis,
+    performance_limits,
     rate_scatter,
     save,
     sweep_legend,
@@ -109,7 +111,7 @@ def limits(sweep):
         sweep["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
         & sweep["group"].isin(["unobserved", "heldout"])
     ]
-    return min(0.0, float(rows["value"].min()) - 0.05), 1.05
+    return performance_limits(rows["value"])
 
 
 def curve(sweep, ylim):
@@ -155,7 +157,7 @@ def curve(sweep, ylim):
         color=LEGEND_GREY,
     )
     ax.set_xlim(1.05, 0.0)
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel("Fluctuation R²")
     sweep_legend(
@@ -203,7 +205,7 @@ def perturbation(sweep, metric, ylim):
     ax.set_xlim(1.05, 0.0)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
-    ax.set_ylim(*ylim)
+    performance_axis(ax, ylim)
     sweep_legend(
         ax,
         {PERTURBATION_LABEL: UNOBSERVED},

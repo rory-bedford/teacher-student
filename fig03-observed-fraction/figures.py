@@ -47,6 +47,8 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    performance_axis,
+    performance_limits,
     rate_scatter,
     save,
     sweep_legend,
@@ -119,7 +121,20 @@ def neuron_axis(ax):
     return top
 
 
-def curve(summary, dimensionality):
+def limits(summary):
+    """One y range for the sweep and its perturbation panel, as in Figures 4 and 5.
+
+    Both panels report a Fluctuation R², so reading one against the other only works if
+    they share a scale (2026-09-23).
+    """
+    rows = summary[
+        summary["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
+        & (summary["group"] == "unobserved")
+    ]
+    return performance_limits(rows["value"])
+
+
+def curve(summary, dimensionality, ylim):
     """(a) Fluctuation R² against observed fraction, observed and unobserved."""
     fig, ax = plt.subplots(figsize=SINGLE)
     for group, (_, color) in GROUPS.items():
@@ -147,7 +162,7 @@ def curve(summary, dimensionality):
     # Decreasing left to right (2026-09-21): the slide reads as neurons being taken away,
     # ending at the hard end of the sweep.
     observed_axis(ax, summary["obs_fraction"].unique())
-    ax.set_ylim(min(0.0, summary["value"].min() - 0.05), 1.0)
+    performance_axis(ax, ylim)
     ax.set_ylabel("Fluctuation R²")
     sweep_legend(
         ax,
@@ -188,7 +203,7 @@ def scatters(summary, rates, fractions, seed):
     return fig
 
 
-def delta_sweep(summary, metric, dimensionality):
+def delta_sweep(summary, metric, dimensionality, ylim):
     """(c) Perturbation Δ R² against observed fraction, cell types pooled.
 
     Built like panel (a) -- same reversed percentage axis, individual seeds, no error
@@ -215,6 +230,7 @@ def delta_sweep(summary, metric, dimensionality):
     ceiling(ax, pooled, "obs_fraction", UNOBSERVED)
     markers = dimensionality_markers(ax, dimensionality)
     observed_axis(ax, pooled["obs_fraction"].unique())
+    performance_axis(ax, ylim)  # shared with panel (a)
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.legend(
         handles=[
@@ -255,7 +271,8 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     held_out = summary
     if "evaluation" in summary:
         held_out = summary[summary["evaluation"] == "held_out"]
-    output(curve(held_out, dimensionality), "a", "curve")
+    ylim = limits(summary)
+    output(curve(held_out, dimensionality, ylim), "a", "curve")
 
     fractions = scatter_fractions or default_scatter_fractions(held_out)
     seed = int(rates["seed"].min())
@@ -265,7 +282,7 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
-            delta_sweep(summary, "delta_fluctuation_r2", dimensionality),
+            delta_sweep(summary, "delta_fluctuation_r2", dimensionality, ylim),
             "c",
             "delta-fluctuation",
         )
