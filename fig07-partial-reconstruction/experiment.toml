@@ -1,0 +1,26 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-partial-reconstruction/train.py"
+# Historical path: this was Figure 6 until 2026-09-23, and its 31 finished runs record
+# this directory in their provenance, so the directory keeps the old name.
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig06-learnt-feedforward"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-partial-reconstruction/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
+description = "Figure 6: reconstructed segment swept from 100% to 10% of pooled units; unreconstructed inputs injected with learnt low-rank weights; fixed 50% recorded pool."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "bernstein"
+name = ""
+entity = ""
+group = "fig07-partial-reconstruction"
+tags = ["fig06", "learnt-feedforward", "ff-learnt", "wn-0"]
+notes = "Reconstructed-fraction sweep with learnt unreconstructed inputs."

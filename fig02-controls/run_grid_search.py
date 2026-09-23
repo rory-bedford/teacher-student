@@ -28,7 +28,7 @@ VARIANTS = ["learnt", "shuffle_inputs", "configuration_model"]
 #: Epoch budget per variant, where it differs from parameters.toml's 50 (2026-09-21).
 #: Learnt recurrence fits 25M weights and was still descending at 50 epochs (van Rossum
 #: 145 -> 141 over the final tenth), so it gets the 100 epochs every other learnt-weights
-#: model in this project gets (see fig06-learnt-feedforward/parameters.toml). The
+#: model in this project gets (see fig06-partial-reconstruction/parameters.toml). The
 #: 6-parameter controls stay at 50, where they have long since converged.
 #: The longer runs land in their own directories (``learnt-100ep__seed-N``) so the
 #: 50-epoch runs stay in place until the figure switches over; see figures.py's

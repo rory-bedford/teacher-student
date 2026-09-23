@@ -23,7 +23,8 @@ dependency. Data is **not** stored here — it lives in `../bernstein`.
 | `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 1% |
 | `fig04-reconstruction-errors/` | Neuron removal vs synapse dropout |
 | `fig05-weight-noise/` | Weight-noise sweep, 0 → 0.5 |
-| `fig06-learnt-feedforward/` | Unreconstructed inputs with learnt weights, reconstructed fraction 100% → 10% |
+| `fig06-learnt-feedforward/` | The whole recurrent connectome given, every feedforward weight learnt (full rank), 50% observed |
+| `fig07-partial-reconstruction/` | Partial reconstruction: unreconstructed units injected through learnt weights, reconstructed fraction 100% → 10% |
 
 Each figure folder holds `README.md` (its claim, configuration and recipe as run),
 `experiment.toml`, `parameters.toml`, `train.py`, `run_grid_search.py`, `analysis.py`,

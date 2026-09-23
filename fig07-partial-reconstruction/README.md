@@ -1,4 +1,4 @@
-# Figure 6 — Unreconstructed inputs break prediction of unobserved neurons
+# Figure 7 — Unreconstructed inputs break prediction of unobserved neurons
 
 > Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
 
@@ -55,21 +55,21 @@ It was dropped from panel (a) on 2026-09-21: an unlabelled cross needed a senten
 setup that the slide cannot spare, and it does not cleanly separate missing connectivity
 from missing constraints — going from 219 to 489 neurons in the loss lifted the observed
 fit from 0.57 to 0.71, so observation helps without closing the gap. The run stays in
-`fig06_summary.csv` (`recorded_pool_fraction` 1.0) as a backup slide or a verbal answer.
+`fig07_summary.csv` (`recorded_pool_fraction` 1.0) as a backup slide or a verbal answer.
 The matched control that would separate the two — restricting the loss to 219 neurons at
 *full* reconstruction — is still not implemented.
 
 ## Axes
 
-Report against both the **fraction of units reconstructed** and **κ**, the fraction of each modelled neuron's input volume that is known. For a random S these coincide in expectation, but κ is the invariant that lets this figure be compared with anything else. Both are columns of `fig06_summary.csv`; panel (a) plots the reconstructed fraction.
+Report against both the **fraction of units reconstructed** and **κ**, the fraction of each modelled neuron's input volume that is known. For a random S these coincide in expectation, but κ is the invariant that lets this figure be compared with anything else. Both are columns of `fig07_summary.csv`; panel (a) plots the reconstructed fraction.
 
 ## Panels
 
 As built (2026-09-21), one SVG each:
 
-- **(a)** `fig06-a-curve` — Fluctuation R² vs reconstructed fraction, observed and unobserved, individual seeds, the 10% operating point shaded.
-- **(b)** `fig06-b-scatter-50pct` — firing rates at 50% reconstructed, observed beside unobserved, with Activity R² in each title.
-- **(c)** `fig06-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
+- **(a)** `fig07-a-curve` — Fluctuation R² vs reconstructed fraction, observed and unobserved, individual seeds, the 10% operating point shaded.
+- **(b)** `fig07-b-scatter-50pct` — firing rates at 50% reconstructed, observed beside unobserved, with Activity R² in each title.
+- **(c)** `fig07-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled, shared y range with (a).
 
 The free-parameter counts were removed from panel (a) (they hardly vary across the sweep)
 and the raster was dropped. Group naming follows the project convention -- observed and
@@ -78,7 +78,7 @@ unobserved -- although the CSVs still key the unobserved group as `heldout`.
 ## Files
 
 ```
-fig06-learnt-feedforward/
+fig07-partial-reconstruction/
   analysis.py
   figures.py
   run_grid_search.py
@@ -86,12 +86,12 @@ fig06-learnt-feedforward/
   experiment.toml
   parameters.toml
   README.md
-  fig06_rates.csv
-  fig06_spikes.csv
-  fig06_summary.csv
-  fig06-a-curve.svg
-  fig06-b-scatter-50pct.svg
-  fig06-c-delta-fluctuation.svg
+  fig07_rates.csv
+  fig07_spikes.csv
+  fig07_summary.csv
+  fig07-a-curve.svg
+  fig07-b-scatter-50pct.svg
+  fig07-c-delta-fluctuation.svg
 ```
 
 ---
@@ -103,9 +103,9 @@ fig06-learnt-feedforward/
 ### How to run
 
 ```bash
-./run --grid fig06-learnt-feedforward/experiment.toml   # 10 levels x 3 seeds + 1 fully observed = 31 runs
-uv run python fig06-learnt-feedforward/analysis.py       # fig06_summary.csv, fig06_rates.csv, fig06_spikes.csv
-uv run python fig06-learnt-feedforward/figures.py        # panel SVGs, from this figure's CSVs
+./run --grid fig07-partial-reconstruction/experiment.toml   # 10 levels x 3 seeds + 1 fully observed = 31 runs
+uv run python fig07-partial-reconstruction/analysis.py       # fig07_summary.csv, fig07_rates.csv, fig07_spikes.csv
+uv run python fig07-partial-reconstruction/figures.py        # panel SVGs, from this figure's CSVs
 ```
 
 Levels: reconstructed fraction ∈ {0.1, 0.2, ..., 1.0} (`RECONSTRUCTED_FRACTIONS` in

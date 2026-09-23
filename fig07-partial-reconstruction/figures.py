@@ -1,10 +1,10 @@
 """Figure 6 — one SVG per panel from the CSVs written by analysis.py.
 
-    uv run python fig06-learnt-feedforward/figures.py
+    uv run python fig07-partial-reconstruction/figures.py
 
-    fig06-a-curve               Fluctuation R² vs reconstructed fraction, observed / unobserved
-    fig06-b-scatter-50pct       firing rates at 50% reconstructed, observed | unobserved
-    fig06-c-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
+    fig07-a-curve               Fluctuation R² vs reconstructed fraction, observed / unobserved
+    fig07-b-scatter-50pct       firing rates at 50% reconstructed, observed | unobserved
+    fig07-c-delta-fluctuation   perturbation: ΔFluctuation R² vs reconstructed fraction
 
 Two panels (2026-09-21). The rate scatters went first -- they were the only panels
 quoting Activity R², which no other panel reports -- and then the raster: the sweep
@@ -50,7 +50,7 @@ from common.style import (
 )
 
 HERE = Path(__file__).resolve().parent
-FIGURE = "fig06"
+FIGURE = "fig07"
 GROUPS = {
     "observed": ("Observed", OBSERVED),
     "heldout": ("Unobserved", UNOBSERVED),
@@ -124,7 +124,7 @@ def curve(sweep, ylim):
     """(a) Observed and unobserved Fluctuation R² against the reconstructed fraction.
 
     The fully observed control at 10% reconstruction is trained and scored (it is in
-    fig06_summary.csv, ``recorded_pool_fraction`` 1.0) but not drawn: it needed a sentence
+    fig07_summary.csv, ``recorded_pool_fraction`` 1.0) but not drawn: it needed a sentence
     of setup that a slide cannot spare, and going from 219 to 489 neurons in the loss
     lifted the observed fit 0.57 -> 0.71, so it shows that observation helps without
     closing the gap rather than separating missing connectivity from missing constraints.
@@ -175,7 +175,7 @@ def curve(sweep, ylim):
         fontsize=TICK_SIZE - 2,
     )
     # The free-parameter counts used to be annotated along the axis (2026-09-21): they
-    # hardly vary across the sweep, so they were clutter. They are in fig06_summary.csv.
+    # hardly vary across the sweep, so they were clutter. They are in fig07_summary.csv.
     ax.set_title("Observed and Unobserved Neurons vs Reconstructed Fraction", pad=18)
     fig.tight_layout()
     return fig
@@ -228,8 +228,8 @@ def perturbation(sweep, metric, ylim):
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
-    summary = pd.read_csv(data_dir / "fig06_summary.csv")
-    rates = pd.read_csv(data_dir / "fig06_rates.csv")
+    summary = pd.read_csv(data_dir / "fig07_summary.csv")
+    rates = pd.read_csv(data_dir / "fig07_rates.csv")
     # The fully observed control (recorded_pool_fraction 1.0) is excluded from the sweep
     # and no longer drawn; see curve().
     sweep = summary[summary["recorded_pool_fraction"] < 1.0]

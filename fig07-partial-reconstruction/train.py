@@ -1,4 +1,4 @@
-"""Figure 6 — train a student whose feedforward weights are learnt.
+"""Figure 6 — train a student whose unreconstructed inputs have learnt weights.
 
 The student and training loop are shared by every figure (``common/``); what this
 figure trains is set entirely by ``parameters.toml``.

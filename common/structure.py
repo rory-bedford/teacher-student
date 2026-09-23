@@ -11,6 +11,8 @@ all read from the ``[student]`` table of ``parameters.toml``:
                               "configuration_model" (Fig 2)
     reconstructed_fraction    fraction of the 6500 pooled units in the reconstructed segment S (Fig 6)
     recorded_pool_fraction    fixed recorded pool over the 5000 recurrent neurons (Fig 6)
+    learnt_feedforward        every mitral weight learnt, the whole recurrent connectome
+                              known, every neuron modelled (Fig 7)
 
 The result is saved as ``student_structure.npz`` in the run directory, so that
 evaluation rebuilds exactly the network that was trained rather than re-deriving it.
@@ -217,6 +219,13 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
     dropout = float(student_cfg.get("synapse_dropout_fraction", 0.0))
     noise = float(student_cfg.get("weight_noise", 0.0))
     reconstructed = student_cfg.get("reconstructed_fraction")
+    learnt_feedforward = bool(student_cfg.get("learnt_feedforward", False))
+    if learnt_feedforward and reconstructed is not None:
+        raise ValueError(
+            "learnt_feedforward and reconstructed_fraction are alternatives: the first "
+            "makes exactly the feedforward input unknown, the second draws a random "
+            "segment across feedforward and recurrent units alike"
+        )
 
     # --- Scaling-factor perturbation (archived scheme): the student's weights are
     # multiplied by a per-pair factor, so the correct scaling factor is its inverse.
@@ -232,7 +241,23 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
     modelled = np.ones(n_rec, dtype=bool)
     kappa = np.full(n_rec, np.nan)
 
-    if reconstructed is not None:
+    if learnt_feedforward:
+        # Figure 7: the whole recurrent connectome is known and every neuron is modelled;
+        # only the feedforward weights are unknown, so every mitral unit is injected
+        # through learnt weights. Figure 6's segment makes feedforward and recurrent units
+        # unknown together; this isolates the feedforward half of that manipulation.
+        known_ff = np.zeros(n_ff, dtype=bool)
+        modelled_ids = np.flatnonzero(modelled)
+        n_observed = round(float(student_cfg["observed_fraction"]) * modelled_ids.size)
+        observed = np.zeros(n_rec, dtype=bool)
+        observed[
+            _rng(seed, _STREAM_OBSERVED).permutation(modelled_ids)[:n_observed]
+        ] = True
+        kappa[modelled] = (
+            rec[modelled].sum(axis=0)[modelled]
+            / (ff.sum(axis=0) + rec.sum(axis=0))[modelled]
+        )
+    elif reconstructed is not None:
         # Figure 6: a random segment S of the pooled units. Everything outside S has
         # known activity but unknown weights, and is injected with learnt weights.
         n_pooled = n_ff + n_rec
@@ -258,9 +283,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
             modelled[removed] = False
 
         modelled_ids = np.flatnonzero(modelled)
-        n_observed = int(
-            round(float(student_cfg["observed_fraction"]) * modelled_ids.size)
-        )
+        n_observed = round(float(student_cfg["observed_fraction"]) * modelled_ids.size)
         observed = np.zeros(n_rec, dtype=bool)
         observed[
             _rng(seed, _STREAM_OBSERVED).permutation(modelled_ids)[:n_observed]
@@ -321,7 +344,9 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
         "recurrent_model": np.array(recurrent_model),
         # Figure 6: units outside the reconstructed segment keep their known activity
         # and are injected through learnt weights. Removed neurons (Fig 4) are not.
-        "inject_unreconstructed": np.array(reconstructed is not None),
+        "inject_unreconstructed": np.array(
+            reconstructed is not None or learnt_feedforward
+        ),
         "noise_clipped_fraction": np.array(
             n_noise_clipped / n_noise_weights if n_noise_weights else 0.0
         ),

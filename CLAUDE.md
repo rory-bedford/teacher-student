@@ -22,6 +22,7 @@ fig00-teacher-activity/               # makes the teacher network + spike data (
 common/                               # student, training, evaluation, plotting shared by all figures
 fig01-full-reconstruction/  fig02-controls/  fig03-observed-fraction/
 fig04-reconstruction-errors/  fig05-weight-noise/  fig06-learnt-feedforward/
+fig07-partial-reconstruction/
 run                                   # wrapper over the connectome-snns run framework
 ```
 

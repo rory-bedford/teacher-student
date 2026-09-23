@@ -1,4 +1,4 @@
-# Figure 6 — unreconstructed inputs with learnt weights.
+# Figure 7 — unreconstructed inputs with learnt weights.
 #
 # A random segment S of the 6500 pooled units (1500 feedforward + 5000 recurrent) is
 # reconstructed: its connectivity is known (perturbed, with 6 trainable scaling factors
@@ -14,20 +14,11 @@ seed = 44                              # overridden per run by run_grid_search.p
 chunk_size = 100
 
 [student]
-# The whole recurrent connectome is given, with the 6 tied scaling factors; only the 1500
-# mitral units' weights are learnt. Identical to Figure 1 except for that, so Figure 1 is
-# the control: there the input is given and both populations are predicted, here the input
-# is learnt and the point is that the fit on observed cells survives while prediction of
-# unobserved cells does not.
-learnt_feedforward = true
-observed_fraction = 0.5                # as every other figure: the loss sees half the cells
-recurrent_model = "connectome"         # the teacher's recurrent weights, 6 tied scaling factors
+reconstructed_fraction = 0.5           # overridden per run
+recorded_pool_fraction = 0.5           # fixed recorded pool over the 5000 recurrent neurons
 
 [training]
-total_epochs = 400                     # the archived run's cosine to the teacher only starts
-                                       # climbing past ~150 epochs (0.02 at 100, 0.11 at 200,
-                                       # 0.30 at 300, 0.38 at 432), so 100 would show a model
-                                       # that never learnt the input -- a circular result
+total_epochs = 100                     # archived 500; loss is 98% converged by ~90 (see README)
 chunks_per_update = 10
 log_interval = 10
 checkpoint_interval = 100
@@ -39,15 +30,8 @@ mixed_precision = false
 
 [optimiser]
 surrgrad_scale = 10.0
-low_rank = 1500                        # FULL rank for the mitral blocks (1500 sources), so a
-                                       # failure to predict cannot be a capacity artefact.
-                                       # exp(U V) is built once per chunk, so rank costs no
-                                       # time: measured 1.41 chunk/s at rank 1500 against
-                                       # 1.37 at rank 20 (2026-09-23).
-lr_weights = 8e-3                      # the only rate ever observed to learn the input: the
-                                       # archived rank-20 run reached cosine 0.38 to the
-                                       # teacher's feedforward matrix at 8e-3, while every
-                                       # rank-1 run at 1e-3 stayed at chance (~0.01)
+low_rank = 1                           # rank of each learnt source-type x target-type block
+lr_weights = 1e-3
 lr_min_weights = 5e-4
 grad_clip_weights = 0.8
 lr_scaling = 1e-3
