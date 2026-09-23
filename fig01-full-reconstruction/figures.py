@@ -49,6 +49,7 @@ from common.style import (
     save,
     scatter_legend,
     spike_raster,
+    tighten_pair,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -92,23 +93,38 @@ def raster(spikes):
         spikes[spikes["time_s"] <= RASTER_SECONDS],
         list(neurons["neuron_id"]),
         RASTER_SECONDS,
-        group_labels(list(neurons["observed"])),
+        [
+            GROUPS["observed"] if o else GROUPS["unobserved"]
+            for o in neurons["observed"]
+        ],
     )
     ax.set_title("Observed and Unobserved Spikes, Held-Out Stimulus")
     fig.tight_layout()
+    # tight_layout ignores the group brackets, which are drawn outside the axes.
+    fig.subplots_adjust(left=0.13)
     return fig
 
 
 def scatters(rates, held_out):
     """(b) teacher vs student firing rate, observed beside unobserved."""
-    fig, axes = plt.subplots(1, 2, figsize=PAIR)
+    fig, axes = plt.subplots(1, 2, figsize=PAIR, sharey=True)
     for ax, (group, label) in zip(axes, GROUPS.items()):
         subset = rates[rates["observed"] == int(group == "observed")]
         rate_scatter(ax, subset, label)
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
-    fig.tight_layout()
+    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
     return fig
+
+
+#: "mitral_to_excitatory" -> "FF→E". Full names ran off the axis and needed rotating.
+SHORT_POPULATION = {"mitral": "FF", "excitatory": "E", "inhibitory": "I"}
+
+
+def short_factor(name):
+    source, target = name.split("_to_")
+    return (
+        f"{SHORT_POPULATION.get(source, source)}→{SHORT_POPULATION.get(target, target)}"
+    )
 
 
 def condition_label(factors, condition):
@@ -170,9 +186,9 @@ def scaling_factors(factors):
     ax.set_ylim(0.2, 5.0)
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels(
-        [name.replace("_to_", "→").replace("_", " ") for name in order],
-        rotation=30,
-        ha="right",
+        [short_factor(name) for name in order],
+        rotation=0,
+        ha="center",
     )
     ax.set_ylabel("Learnt / True Scaling Factor")
     ax.legend(

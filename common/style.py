@@ -24,6 +24,7 @@ from connectome_snns.visualization import (
 from matplotlib import font_manager as fm
 from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
+from matplotlib.transforms import blended_transform_factory
 
 # One role, one colour, across every slide (2026-09-21, COLORSCHEME.txt). Cell type takes
 # the deck's red/blue accents (the neuroscience convention). Teacher vs student is one hue
@@ -211,6 +212,21 @@ RATE_MARKER_SIZE = 10
 LEGEND_MARKER_AREA = 90
 
 
+def tighten_pair(fig, axes, suptitle):
+    """Panels side by side with one y label, close together, under a close suptitle.
+
+    matplotlib's defaults leave a wide gutter between panels and a tall gap under a
+    suptitle (2026-09-23). Only the leftmost axes keeps its y label, since the panels
+    share the axis.
+    """
+    axes = np.atleast_1d(axes)
+    for ax in axes[1:]:
+        ax.set_ylabel("")
+    fig.suptitle(suptitle, y=0.99)
+    fig.tight_layout(rect=(0, 0, 1, 0.97), w_pad=0.6)
+    return fig
+
+
 def nice_max(values, step=10):
     """A round upper limit covering every value (rates are plotted on a symlog axis)."""
     return float(step * np.ceil(np.nanmax(values) / step))
@@ -260,16 +276,61 @@ def rate_scatter(ax, rates, title, max_rate=RATE_MAX_HZ, clip=RATE_MAX_HZ):
 
 
 def scatter_legend(ax, marker_size, loc="upper left"):
-    """A framed legend whose swatches are LEGEND_MARKER_AREA regardless of point size."""
+    """A framed legend whose swatches are LEGEND_MARKER_AREA regardless of point size.
+
+    Packed tight (2026-09-23): the defaults leave enough padding that the box reaches into
+    the cloud, and on a delta scatter the data runs through the middle of the panel.
+    """
     legend = ax.legend(
         loc=loc,
         markerscale=(LEGEND_MARKER_AREA / marker_size) ** 0.5,
         scatterpoints=1,
         frameon=True,
+        borderpad=0.35,
+        labelspacing=0.25,
+        handletextpad=0.4,
+        borderaxespad=0.3,
     )
     for handle in legend.legend_handles:
         handle.set_alpha(1.0)
     return legend
+
+
+def group_brackets(ax, ticks, x=-0.012, width=0.012):
+    """A square bracket left of the axes per run of rows sharing a label.
+
+    ``ticks`` is (y, label, row index) per row, bottom to top. Drawn in a blended
+    transform: x in axes fractions, y in data units, so the bracket tracks the rows.
+    """
+    transform = blended_transform_factory(ax.transAxes, ax.transData)
+    runs = []
+    for y, label, _ in ticks:
+        if runs and runs[-1][0] == label:
+            runs[-1][1].append(y)
+        else:
+            runs.append((label, [y]))
+    for label, ys in runs:
+        if not label:
+            continue
+        low, high = min(ys), max(ys)
+        ax.plot(
+            [x, x - width, x - width, x],
+            [low - 0.6, low - 0.6, high + 0.6, high + 0.6],
+            transform=transform,
+            color=INK,
+            linewidth=1.2,
+            clip_on=False,
+        )
+        ax.text(
+            x - width - 0.008,
+            (low + high) / 2,
+            label,
+            transform=transform,
+            rotation=90,
+            ha="right",
+            va="center",
+            fontsize=TICK_SIZE * 0.85,
+        )
 
 
 def spike_raster(ax, spikes, neurons, duration_s, labels):
@@ -302,21 +363,41 @@ def spike_raster(ax, spikes, neurons, duration_s, labels):
                 linewidths=1.6,
                 colors=color,
             )
-        ticks.append((base + 0.5, label))
+        ticks.append((base + 0.5, label, i))
     n = len(neurons)
     ax.set_ylim(-0.5 - gap / 2, (n - 1) * (2 + gap) + 1.5 + gap / 2)
     ax.set_xlim(0, duration_s)
     ax.set_xticks(np.arange(0, duration_s + 1e-9, 1.0))
-    ax.set_yticks([t for t, _ in ticks])
-    ax.set_yticklabels([label for _, label in ticks])
-    ax.tick_params(axis="y", length=0)
+    # A bracket per group rather than a label per row (2026-09-23): the rows of a group
+    # belong together, and six repeated labels said so six times.
+    ax.set_yticks([])
+    group_brackets(ax, ticks)
     ax.grid(axis="y", visible=False)
     ax.grid(axis="x", visible=True)  # a line per second, the one grid worth keeping
     ax.set_xlabel("Time (s)")
     ax.legend(
         handles=[
-            Line2D([], [], color=STUDENT, linewidth=4, label="Student"),
-            Line2D([], [], color=TEACHER, linewidth=4, label="Teacher"),
+            # Vertical strokes: the marks in the panel are spikes, not lines.
+            Line2D(
+                [],
+                [],
+                color=STUDENT,
+                marker="|",
+                linestyle="None",
+                markersize=14,
+                markeredgewidth=3,
+                label="Student",
+            ),
+            Line2D(
+                [],
+                [],
+                color=TEACHER,
+                marker="|",
+                linestyle="None",
+                markersize=14,
+                markeredgewidth=3,
+                label="Teacher",
+            ),
         ],
         loc="upper left",
         bbox_to_anchor=(1.01, 1.0),
