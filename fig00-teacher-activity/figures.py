@@ -62,6 +62,8 @@ FIGURE = "fig00"
 TRACE_WINDOW_S = 2.0
 #: Ticks every half second across the two-second window.
 TRACE_TICK_S = 0.5
+#: The current panel's fixed range, in pA.
+CURRENT_LIMIT_PA = 250
 TRACE_WINDOW_BIN_S = 0.5
 #: Assembly panels tick every 5 s, so the 15 s trial ends on a tick.
 ASSEMBLY_TICK_S = 5.0
@@ -141,6 +143,7 @@ def trace_legend(ax):
         ax,
         loc="upper left",
         bbox_to_anchor=(1.02, 1.0),
+        borderaxespad=0.0,  # flush with the top of the axes it belongs to
         frameon=True,
         fontsize=TICK_SIZE * 0.85,
         borderpad=0.35,
@@ -192,7 +195,6 @@ def neuron_traces(data):
     time_s = data["time_s"][window] - start
     synapses = [str(name) for name in data["synapse"]]
     current = -data["current_pa"][window]
-    leak = -data["leak_current_pa"][window]
     conductance = data["conductance_ns"][window]
     threshold = float(data["threshold_mv"])
     fig, axes = plt.subplots(3, 1, figsize=(PAIR[0], PAIR[1] * 1.35), sharex=True)
@@ -227,7 +229,8 @@ def neuron_traces(data):
         zorder=2,
         label=f"Rest ({float(data['rest_mv']):.0f} mV)",
     )
-    axes[0].set_ylabel("Membrane\nPotential (mV)")
+    axes[0].set_ylim(top=0.0)  # spikes are drawn up to 0 mV, so that is the ceiling
+    axes[0].set_ylabel("Membrane Potential\n(mV)")
     trace_legend(axes[0])
     axes[0].set_title(f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s})", pad=6)
 
@@ -239,17 +242,10 @@ def neuron_traces(data):
         axes[1].plot(
             time_s, trace, color=color, linewidth=0.8, label=label, rasterized=True
         )
-    axes[1].plot(
-        time_s,
-        leak,
-        color=INK,
-        linestyle=":",
-        linewidth=0.8,
-        label="Leak",
-        rasterized=True,
-    )
-    axes[1].set_ylabel("Input Current (pA)")
-    axes[1].set_ylim(*symmetric_limit(np.concatenate([*traces, leak])))
+    axes[1].axhline(0, color=REFERENCE_GREY, linewidth=1, zorder=0)
+    axes[1].set_ylabel("Input Current\n(pA)")
+    # +-250 pA: the pathways run to about 200 and the axis keeps a little headroom.
+    axes[1].set_ylim(-CURRENT_LIMIT_PA, CURRENT_LIMIT_PA)
     trace_legend(axes[1])
 
     for name in synapses:
@@ -263,7 +259,7 @@ def neuron_traces(data):
             label=name,
             rasterized=True,
         )
-    axes[2].set_ylabel("Conductance (nS)")
+    axes[2].set_ylabel("Conductance\n(nS)")
     axes[2].set_xlabel("Time (s)")
     axes[2].set_xlim(0, TRACE_WINDOW_S)
     axes[2].xaxis.set_major_locator(MultipleLocator(TRACE_TICK_S))
@@ -272,6 +268,7 @@ def neuron_traces(data):
     axes[2].set_ylim(0, nice_limit(np.percentile(conductance, 98)))
     trace_legend(axes[2])
     fig.tight_layout()
+    fig.align_ylabels(axes)  # one left edge for all three y labels
     return fig
 
 
