@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-23T13:56:21.138172</dc:date>
+    <dc:date>2026-09-23T14:41:23.648742</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -485,12 +485,7 @@ z
    </g>
    <g id="matplotlib.axis_2">
     <g id="ytick_1">
-     <g id="line2d_3">
-      <path d="M 46.8555 283.708 
-L 447.0375 283.708 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_4"/>
+     <g id="line2d_3"/>
      <g id="text_3">
       <!-- 0.0 -->
       <g style="fill: #262626" transform="translate(28.438 289.708) scale(0.12 -0.12)">
@@ -535,12 +530,7 @@ z
      </g>
     </g>
     <g id="ytick_2">
-     <g id="line2d_5">
-      <path d="M 46.8555 235.654 
-L 447.0375 235.654 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_6"/>
+     <g id="line2d_4"/>
      <g id="text_4">
       <!-- 0.2 -->
       <g style="fill: #262626" transform="translate(28.438 241.654) scale(0.12 -0.12)">
@@ -577,12 +567,7 @@ z
      </g>
     </g>
     <g id="ytick_3">
-     <g id="line2d_7">
-      <path d="M 46.8555 187.6 
-L 447.0375 187.6 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_8"/>
+     <g id="line2d_5"/>
      <g id="text_5">
       <!-- 0.4 -->
       <g style="fill: #262626" transform="translate(28.438 193.6) scale(0.12 -0.12)">
@@ -619,12 +604,7 @@ z
      </g>
     </g>
     <g id="ytick_4">
-     <g id="line2d_9">
-      <path d="M 46.8555 139.546 
-L 447.0375 139.546 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_10"/>
+     <g id="line2d_6"/>
      <g id="text_6">
       <!-- 0.6 -->
       <g style="fill: #262626" transform="translate(28.438 145.546) scale(0.12 -0.12)">
@@ -671,12 +651,7 @@ z
      </g>
     </g>
     <g id="ytick_5">
-     <g id="line2d_11">
-      <path d="M 46.8555 91.492 
-L 447.0375 91.492 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_12"/>
+     <g id="line2d_7"/>
      <g id="text_7">
       <!-- 0.8 -->
       <g style="fill: #262626" transform="translate(28.438 97.492) scale(0.12 -0.12)">
@@ -738,12 +713,7 @@ z
      </g>
     </g>
     <g id="ytick_6">
-     <g id="line2d_13">
-      <path d="M 46.8555 43.438 
-L 447.0375 43.438 
-" clip-path="url(#pfcf97bd7ca)" style="fill: none; stroke: #cccccc; stroke-width: 0.8; stroke-linecap: round"/>
-     </g>
-     <g id="line2d_14"/>
+     <g id="line2d_8"/>
      <g id="text_8">
       <!-- 1.0 -->
       <g style="fill: #262626" transform="translate(28.438 49.438) scale(0.12 -0.12)">
@@ -921,7 +891,7 @@ L 186.312864 283.708
 L 186.312864 213.057925 
 L 65.045591 213.057925 
 z
-" clip-path="url(#pfcf97bd7ca)" style="fill: #9e9e9e"/>
+" clip-path="url(#p4bf9c9f0a0)" style="fill: #9e9e9e"/>
    </g>
    <g id="patch_4">
     <path d="M 307.580136 283.708 
@@ -929,7 +899,7 @@ L 428.847409 283.708
 L 428.847409 114.088075 
 L 307.580136 114.088075 
 z
-" clip-path="url(#pfcf97bd7ca)" style="fill: #e87878"/>
+" clip-path="url(#p4bf9c9f0a0)" style="fill: #e87878"/>
    </g>
    <g id="patch_5">
     <path d="M 46.8555 283.708 
@@ -1614,7 +1584,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pfcf97bd7ca">
+  <clipPath id="p4bf9c9f0a0">
    <rect x="46.8555" y="43.438" width="400.182" height="240.27"/>
   </clipPath>
  </defs>

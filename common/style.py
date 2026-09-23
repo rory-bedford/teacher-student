@@ -105,6 +105,10 @@ def apply_style():
         {
             "font.family": register_fonts(),
             "axes.titleweight": TITLE_WEIGHT,
+            # No background grid (2026-09-23). The library style is seaborn's whitegrid;
+            # on a projected slide the grey lines compete with the data. The spike rasters
+            # turn their x grid back on, where a line per second helps read the timing.
+            "axes.grid": False,
             "figure.titleweight": TITLE_WEIGHT,
             "font.size": LABEL_SIZE,
             "axes.titlesize": LABEL_SIZE,
@@ -275,6 +279,7 @@ def spike_raster(ax, spikes, neurons, duration_s, labels):
     ax.set_yticklabels([label for _, label in ticks])
     ax.tick_params(axis="y", length=0)
     ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", visible=True)  # a line per second, the one grid worth keeping
     ax.set_xlabel("Time (s)")
     ax.legend(
         handles=[
