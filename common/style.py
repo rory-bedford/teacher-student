@@ -89,7 +89,7 @@ WIDE = (11.0, 3.6)
 #: so it now hangs in a band to the right; the axes box is fixed in inches, so a figure's
 #: held-out and perturbation panels come out exactly the same size as each other however
 #: wide their legends are.
-SWEEP_AXES = (5.9, 3.1)
+SWEEP_AXES = (4.6, 3.1)
 SWEEP_MARGIN_LEFT = 1.0
 SWEEP_MARGIN_BOTTOM = 0.75
 #: Room for the panel title, and for a secondary axis above it where a figure has one.
