@@ -62,11 +62,11 @@ TEACHER = TRUTH
 STUDENT = MODEL
 LEGEND_GREY = "#404040"
 
-#: Text sizes, 1.5x the originals (2026-09-23) so a panel reads from the back of the room.
+#: Text sizes, 1.4x the originals (2026-09-23; 1.5 was a shade too much) so a panel reads from the back of the room.
 #: Everything that sets a size does it from these three, so the ratio between ticks,
 #: labels and titles is preserved. Panel widths are unchanged, so text now occupies more of
 #: each panel -- that is the intent.
-TEXT_SCALE = 1.5
+TEXT_SCALE = 1.4
 TICK_SIZE = 12 * TEXT_SCALE
 LABEL_SIZE = 13 * TEXT_SCALE
 TITLE_SIZE = 14 * TEXT_SCALE
