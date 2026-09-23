@@ -24,10 +24,14 @@ observed_fraction = 0.5                # as every other figure: the loss sees ha
 recurrent_model = "connectome"         # the teacher's recurrent weights, 6 tied scaling factors
 
 [training]
-total_epochs = 400                     # the archived run's cosine to the teacher only starts
-                                       # climbing past ~150 epochs (0.02 at 100, 0.11 at 200,
-                                       # 0.30 at 300, 0.38 at 432), so 100 would show a model
-                                       # that never learnt the input -- a circular result
+total_epochs = 200                     # twice the budget that trained Figure 2's 25M-parameter
+                                       # learnt recurrence to 0.887 on observed neurons, and
+                                       # twice Figure 7's. The archived cosine-to-teacher only
+                                       # climbs past ~150 epochs, but that measures RECOVERY of
+                                       # the true input, which this figure does not need: it
+                                       # needs a good fit on observed cells and a failure on
+                                       # unobserved ones, and every comparable run here reaches
+                                       # its fit within 100.
 chunks_per_update = 10
 log_interval = 10
 checkpoint_interval = 100
