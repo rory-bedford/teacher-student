@@ -67,6 +67,8 @@ CURRENT_LIMIT_PA = 250
 TRACE_WINDOW_BIN_S = 0.5
 #: Assembly panels tick every 5 s, so the 15 s trial ends on a tick.
 ASSEMBLY_TICK_S = 5.0
+#: The deviation panel ticks every 2 Hz and always reaches -2.
+ASSEMBLY_RATE_TICK_HZ = 2.0
 #: Each synapse type's colour is its presynaptic population's; AMPA and NMDA of one
 #: population share it and are separated by line style.
 SYNAPSE_STYLES = {
@@ -316,10 +318,15 @@ def assembly_series(data, key, y_label, title, label="Input", legend_loc="upper 
     # To the whole trial rather than the last sample (14.995 s), so 15 s carries a tick.
     ax.set_xlim(0, float(np.ceil(data["time_s"][-1])))
     ax.xaxis.set_major_locator(MultipleLocator(ASSEMBLY_TICK_S))
-    if (
-        data[key].min() >= 0
-    ):  # a rate starts at zero; a deviation must show its negatives
-        ax.set_ylim(bottom=0)
+    if data[key].min() >= 0:
+        ax.set_ylim(bottom=0)  # a rate starts at zero
+    else:
+        # A deviation must show its negatives: ticks every 2 Hz, reaching at least -2.
+        ax.yaxis.set_major_locator(MultipleLocator(ASSEMBLY_RATE_TICK_HZ))
+        ax.set_ylim(bottom=min(-2.0, float(np.floor(data[key].min()))))
+        # The zero line is added after this, and an axhline re-autoscales the axis unless
+        # autoscaling is off -- which silently pulled the bottom back to -1.75.
+        ax.autoscale(enable=False, axis="y")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(y_label)
     ax.set_title(title)
@@ -347,8 +354,8 @@ def assembly_rates(data):
     fig = assembly_series(
         deviation,
         "deviation_hz",
-        "Firing Rate − Assembly Mean (Hz)",
-        "Assembly Activity Deviation",
+        "Assembly Mean Deviation (Hz)",
+        "Assembly Population Activity",
         label="Assembly",
     )
     fig.axes[0].axhline(0.0, color=REFERENCE_GREY, linewidth=1, zorder=1)

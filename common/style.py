@@ -69,6 +69,11 @@ LEGEND_GREY = "#404040"
 #: Everything that sets a size does it from these three, so the ratio between ticks,
 #: labels and titles is preserved. Panel widths are unchanged, so text now occupies more of
 #: each panel -- that is the intent.
+#: Breathing room between a title and what it sits above, in inches (~3.5 mm). Fixed in
+#: inches rather than as a fraction of the figure, so a short panel and a tall one leave
+#: the same gap (2026-09-23). Axes titles use it through ``axes.titlepad``; figure titles
+#: through :func:`title_top`.
+TITLE_PAD_IN = 0.14
 TEXT_SCALE = 1.4
 TICK_SIZE = 12 * TEXT_SCALE
 LABEL_SIZE = 13 * TEXT_SCALE
@@ -113,6 +118,7 @@ def apply_style():
         {
             "font.family": register_fonts(),
             "axes.titleweight": TITLE_WEIGHT,
+            "axes.titlepad": TITLE_PAD_IN * 72,
             # No background grid (2026-09-23). The library style is seaborn's whitegrid;
             # on a projected slide the grey lines compete with the data. The spike rasters
             # turn their x grid back on, where a line per second helps read the timing.
@@ -214,6 +220,17 @@ RATE_MARKER_SIZE = 10
 LEGEND_MARKER_AREA = 90
 
 
+def title_top(fig, title_rows=1):
+    """The ``top`` for subplots_adjust that leaves TITLE_PAD_IN under a figure title.
+
+    ``title_rows`` counts the lines of text above the axes: a figure title alone, or a
+    figure title with a subpanel title under it.
+    """
+    height = fig.get_figheight()
+    band = title_rows * (TITLE_SIZE / 72) + (title_rows + 1) * TITLE_PAD_IN
+    return 1 - band / height
+
+
 def tighten_pair(fig, axes, suptitle):
     """Panels side by side with one y label, close together, under a close suptitle.
 
@@ -224,12 +241,10 @@ def tighten_pair(fig, axes, suptitle):
     axes = np.atleast_1d(axes)
     for ax in axes[1:]:
         ax.set_ylabel("")
-    fig.suptitle(suptitle, y=0.985, va="top")
-    # tight_layout otherwise reserves a wide band under the suptitle and a wide gutter
-    # between panels; top=0.86 leaves a couple of millimetres of breathing room under the
-    # title, which reading it flush against the subpanel titles did not (2026-09-23).
+    fig.suptitle(suptitle, y=1 - TITLE_PAD_IN / fig.get_figheight(), va="top")
     fig.tight_layout(rect=(0, 0, 1, 1.0), w_pad=0.2, h_pad=0.2)
-    fig.subplots_adjust(top=0.86, wspace=0.06)
+    # Two rows of text above the axes here: the figure title and each panel's own title.
+    fig.subplots_adjust(top=title_top(fig, title_rows=2), wspace=0.06)
     for ax in axes[1:]:
         ax.tick_params(labelleft=True)  # every panel keeps its own y ticks
     return fig

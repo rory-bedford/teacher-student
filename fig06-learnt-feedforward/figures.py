@@ -40,6 +40,8 @@ from common.style import (
     MODEL,
     PAIR,
     TICK_SIZE,
+    TITLE_PAD_IN,
+    TITLE_SIZE,
     TRUTH,
     apply_style,
     clear_panels,
@@ -120,7 +122,9 @@ AXES_WIDTH = 2.2
 AXES_HEIGHT = 3.4
 MARGIN_LEFT = 1.05
 MARGIN_RIGHT = 0.12
-MARGIN_TOP = 0.95  # room for the figure title above the subpanel titles
+#: Figure title, subpanel title, and TITLE_PAD_IN under each -- the same band every
+#: other titled panel in the repo leaves.
+MARGIN_TOP = 2 * (TITLE_SIZE / 72) + 3 * TITLE_PAD_IN
 MARGIN_BOTTOM = 0.3
 PANEL_GAP = 0.3
 
