@@ -579,36 +579,40 @@ def step_drive(teacher, out_dir, device):
     data = teacher.zarr
     output_spikes = data["output_spikes"]
     input_spikes = data["input_spikes"]
-    n_trials, n_steps, n_neurons = output_spikes.shape
-    chunk = output_spikes.chunks[1]
-    output_counts = np.zeros(n_neurons, dtype=np.int64)
-    input_counts = np.zeros(input_spikes.shape[2], dtype=np.int64)
-    started = time.time()
-    for start in range(0, n_steps, chunk):
-        stop = start + chunk
-        output_counts += output_spikes[:, start:stop, :].sum(axis=(0, 1))
-        input_counts += input_spikes[:, start:stop, :].sum(axis=(0, 1))
-        print(
-            f"  drive: {min(stop, n_steps)}/{n_steps} steps ({time.time() - started:.0f} s)",
-            flush=True,
-        )
+    n_trials = output_spikes.shape[0]
     excitatory = teacher.cell_type_indices == 0
-    recurrent_drive = float(
-        (output_counts[excitatory] * teacher.weights[excitatory, :].sum(axis=1)).sum()
-    )
-    feedforward_drive = float(
-        (input_counts * teacher.feedforward_weights.sum(axis=1)).sum()
-    )
-    total = recurrent_drive + feedforward_drive
-    pd.DataFrame(
-        {
-            "pathway": ["Feedforward", "Recurrent Excitatory"],
-            "drive": [feedforward_drive, recurrent_drive],
-            "drive_fraction": [feedforward_drive / total, recurrent_drive / total],
-            "n_trials": n_trials,
-            "seconds_per_trial": n_steps * teacher.dt / 1000.0,
-        }
-    ).to_csv(out_dir / "fig00_drive.csv", index=False)
+    out_weight = teacher.weights[excitatory, :].sum(axis=1)
+    ff_weight = teacher.feedforward_weights.sum(axis=1)
+    # One value per trial (2026-09-23), so the panel can show the spread across trials
+    # rather than a single number per pathway.
+    rows = []
+    started = time.time()
+    for trial in range(n_trials):
+        output_counts = output_spikes[trial].sum(axis=0)
+        input_counts = input_spikes[trial].sum(axis=0)
+        recurrent = float((output_counts[excitatory] * out_weight).sum())
+        feedforward = float((input_counts * ff_weight).sum())
+        total = recurrent + feedforward
+        rows += [
+            {
+                "trial": trial,
+                "pathway": "Feedforward",
+                "drive": feedforward,
+                "drive_fraction": feedforward / total,
+            },
+            {
+                "trial": trial,
+                "pathway": "Recurrent Excitatory",
+                "drive": recurrent,
+                "drive_fraction": recurrent / total,
+            },
+        ]
+        print(f"  drive: trial {trial + 1}/{n_trials}", end="\r", flush=True)
+    table = pd.DataFrame(rows)
+    table.to_csv(out_dir / "fig00_drive.csv", index=False)
+    print(f"  drive: {n_trials} trials in {time.time() - started:.0f} s")
+    recurrent_drive = table[table.pathway == "Recurrent Excitatory"]["drive"].sum()
+    feedforward_drive = table[table.pathway == "Feedforward"]["drive"].sum()
     print(
         f"  drive: recurrent excitatory / feedforward = {recurrent_drive / feedforward_drive:.3f}"
     )

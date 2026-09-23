@@ -34,33 +34,24 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
 from matplotlib.ticker import MultipleLocator
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from connectome_snns.visualization import RASTER_BAND_COLOR
 
 from common.style import (
     EXCITATORY,
     INHIBITORY,
     INK,
-    LEGEND_GREY,
-    MARKERS,
     PAIR,
-    RATE_MARKER_SIZE,
-    RATE_MAX_HZ,
-    RATE_TICK_HZ,
     REFERENCE_GREY,
     SINGLE,
     TEACHER,
     TICK_SIZE,
-    WIDE,
     apply_style,
     clear_panels,
     save,
-    scatter_legend,
 )
 
 FIGURE = "fig00"
@@ -70,6 +61,8 @@ FIGURE = "fig00"
 #: the one whose spikes are spread over the most sub-bins (ties going to the most spikes).
 TRACE_WINDOW_S = 2.0
 TRACE_WINDOW_BIN_S = 0.5
+#: Assembly panels tick every 5 s, so the 15 s trial ends on a tick.
+ASSEMBLY_TICK_S = 5.0
 #: Each synapse type's colour is its presynaptic population's; AMPA and NMDA of one
 #: population share it and are separated by line style.
 SYNAPSE_STYLES = {
@@ -135,96 +128,9 @@ def thick_legend(ax, **kwargs):
     return legend
 
 
-def condition_scatter(rates, x, y, x_label, y_label, title):
-    """One rate scatter, linear over 0-RATE_MAX_HZ, coloured by cell type.
-
-    Cells outside the window are left off rather than counted on the axis or piled on
-    its edge, as in ``common.style.rate_scatter``.
-    """
-    fig, ax = plt.subplots(figsize=SINGLE)
-    for cell_type, color, name in (
-        ("inhibitory", INHIBITORY, "Inhibitory"),
-        ("excitatory", EXCITATORY, "Excitatory"),
-    ):
-        subset = rates[rates["cell_type"] == cell_type]
-        inside = (subset[x] <= RATE_MAX_HZ) & (subset[y] <= RATE_MAX_HZ)
-        ax.scatter(
-            subset.loc[inside, x],
-            subset.loc[inside, y],
-            s=RATE_MARKER_SIZE,
-            alpha=0.45,
-            color=color,
-            marker=MARKERS[cell_type],
-            label=name,
-            rasterized=True,
-        )
-    ax.plot([0, RATE_MAX_HZ], [0, RATE_MAX_HZ], "k--", linewidth=1, alpha=0.5)
-    ax.set_xlim(0, RATE_MAX_HZ)
-    ax.set_ylim(0, RATE_MAX_HZ)
-    ax.xaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
-    ax.yaxis.set_major_locator(MultipleLocator(RATE_TICK_HZ))
-    ax.set_aspect("equal")
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.set_title(title)
-    scatter_legend(ax, RATE_MARKER_SIZE)
-    fig.tight_layout()
-    return fig
-
-
 # ==========
 # Dynamics
 # ==========
-
-
-def raster(data):
-    """(c) One trial's spikes, feedforward and recurrent, as the dashboard draws them.
-
-    Laid out like ``plot_spike_trains`` inside ``create_activity_dashboard``
-    (``connectome_snns/visualization``): feedforward rows at the bottom, then excitatory,
-    then inhibitory; one eventplot with 0.6-long, 0.8-wide ticks; a pale band behind every
-    other row; no y ticks, since a row's identity is its colour, not its index; and a
-    framed patch legend in the upper right, populations in reverse order (the
-    dashboard leaves it unframed; every legend in the talk is boxed). Colours are ours
-    (2026-09-21): the dashboard's own red/blue for cell type agree with the scheme, and
-    its feedforward grey becomes REFERENCE_GREY.
-    """
-    population = data["population"]
-    n = population.size
-    fig, ax = plt.subplots(figsize=WIDE)
-    # Alternating single-row bands, as the dashboard shades its raster.
-    for row in range(0, n, 2):
-        ax.axhspan(row - 0.5, row + 0.5, color=RASTER_BAND_COLOR, zorder=0)
-    ax.eventplot(
-        [data["time_s"][data["row"] == row] for row in range(n)],
-        lineoffsets=np.arange(n),
-        linelengths=0.6,
-        linewidths=0.8,
-        colors=[POPULATION_COLORS[str(name)] for name in population],
-        rasterized=True,
-    )
-    ax.set_xlim(0, float(data["duration_s"]))
-    # The dashboard's own ylim is (-0.5, rows - 0.5) with the legend inside the upper
-    # right, which here covered the top rows' spikes: two rows of headroom keep its
-    # placement without the legend sitting on the data.
-    ax.set_ylim(-0.5, n + 1.5)
-    ax.set_yticks([])
-    ax.grid(visible=False)
-    ax.set_xlabel("Time (s)")
-    ax.set_title(
-        f"Network Spike Trains, {n} Neurons of One Trial (Feedforward + Recurrent)"
-    )
-    ax.legend(
-        handles=[
-            Patch(facecolor=POPULATION_COLORS[name], label=name.capitalize())
-            for name in POPULATION_COLORS
-            if name in set(population)
-        ][::-1],
-        loc="upper right",
-        frameon=True,
-    )
-    fig.tight_layout()
-    return fig
 
 
 def trace_window_start(spike_times, duration_s):
@@ -251,24 +157,27 @@ def trace_window_start(spike_times, duration_s):
 
 
 def neuron_traces(data):
-    """(e) One neuron's membrane potential, its spikes, and the currents that move it.
+    """(c) One neuron: membrane potential with its spikes, input currents, conductances.
 
-    Follows the library's activity dashboard: spikes are drawn as vertical lines from
-    threshold to 0 mV (the simulator resets the voltage, so the trace itself has no spike
-    peak), and current is plotted **inward-positive**, so excitatory input goes up. The
-    stored values are g(V - E_syn), which is negative for an excitatory synapse, hence
-    the sign flip here.
+    The conductance panel was its own figure until 2026-09-23; it is the bottom row here,
+    with every synapse type on one axes rather than split into excitatory / inhibitory /
+    feedforward, so the three rows read as one neuron's story.
+
+    Spikes are drawn as vertical lines from threshold to 0 mV (the simulator resets the
+    voltage, so the trace has no spike peak), and current is inward-positive, so
+    excitatory input goes up: the stored values are g(V - E_syn), negative for an
+    excitatory synapse, hence the sign flip.
     """
     start = trace_window_start(data["spike_time_s"], float(data["time_s"][-1]))
     window = (data["time_s"] >= start) & (data["time_s"] <= start + TRACE_WINDOW_S)
     time_s = data["time_s"][window]
-    synapses = list(data["synapse"])
+    synapses = [str(name) for name in data["synapse"]]
     current = -data["current_pa"][window]
     leak = -data["leak_current_pa"][window]
+    conductance = data["conductance_ns"][window]
     threshold = float(data["threshold_mv"])
-    fig, axes = plt.subplots(2, 1, figsize=PAIR, sharex=True)
-    # Five thousand samples per line: the traces are rasterized so the SVG stays small,
-    # as the dense scatters are elsewhere. Text and axes remain vector.
+    fig, axes = plt.subplots(3, 1, figsize=(PAIR[0], PAIR[1] * 1.35), sharex=True)
+
     axes[0].plot(
         time_s,
         data["voltage_mv"][window],
@@ -277,22 +186,11 @@ def neuron_traces(data):
         zorder=3,
         rasterized=True,
     )
-    spike_times = data["spike_time_s"]
-    spike_times = spike_times[
-        (spike_times >= start) & (spike_times <= start + TRACE_WINDOW_S)
-    ]
-    if spike_times.size:
-        # Thinner than the trace and behind it: a fast cell fires often enough that
-        # full-weight spike lines read as a black band rather than as spikes.
+    spikes = data["spike_time_s"]
+    spikes = spikes[(spikes >= start) & (spikes <= start + TRACE_WINDOW_S)]
+    if spikes.size:
         axes[0].vlines(
-            spike_times,
-            threshold,
-            0.0,
-            color=INK,
-            linewidth=0.6,
-            alpha=0.9,
-            zorder=1,
-            rasterized=True,
+            spikes, threshold, 0.0, color=INK, linewidth=0.6, alpha=0.9, zorder=1
         )
     axes[0].axhline(
         threshold,
@@ -310,18 +208,16 @@ def neuron_traces(data):
         zorder=2,
         label=f"Rest ({float(data['rest_mv']):.0f} mV)",
     )
-    axes[0].set_ylabel("Membrane Potential (mV)")
+    axes[0].set_ylabel("Membrane\nPotential (mV)")
     thick_legend(
         axes[0],
         loc="upper left",
         bbox_to_anchor=(1.01, 1.0),
         frameon=True,
-        fontsize=TICK_SIZE,
+        fontsize=TICK_SIZE * 0.85,
     )
-    axes[0].set_title(
-        f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s}): "
-        "Membrane Potential and Input Currents"
-    )
+    axes[0].set_title(f"Neuron {int(data['neuron_id'])} ({data['cell_type']!s})", pad=6)
+
     traces = []
     for label, color, members in PATHWAYS:
         columns = [synapses.index(name) for name in members]
@@ -340,77 +236,38 @@ def neuron_traces(data):
         rasterized=True,
     )
     axes[1].set_ylabel("Input Current (pA)\npositive = depolarising")
-    axes[1].set_xlabel("Time (s)")
-    axes[1].set_xlim(time_s[0], time_s[-1])
     axes[1].set_ylim(*symmetric_limit(np.concatenate([*traces, leak])))
     thick_legend(
         axes[1],
         loc="upper left",
         bbox_to_anchor=(1.01, 1.0),
         frameon=True,
-        fontsize=TICK_SIZE,
+        fontsize=TICK_SIZE * 0.85,
     )
-    fig.tight_layout()
-    return fig
 
-
-def conductances(data):
-    """(f) The same neuron's conductance, split excitatory / inhibitory / feedforward.
-
-    The three groups and their y limits follow the library's
-    ``plot_synaptic_conductances``: excitatory and feedforward share a limit taken from
-    their 98th percentile and inhibition gets ten times it, so a rare transient cannot
-    flatten every other trace. Peaks above the limit are therefore clipped, exactly as
-    the dashboard clips them.
-    """
-    time_s = data["time_s"]
-    names = [str(name) for name in data["synapse"]]
-    conductance = data["conductance_ns"]
-    groups = (
-        (
-            "Excitatory",
-            [n for n in names if n.startswith("Recurrent") and "GABA" not in n],
-        ),
-        ("Inhibitory", [n for n in names if "GABA" in n]),
-        ("Feedforward", [n for n in names if n.startswith("Feedforward")]),
-    )
-    shared = np.concatenate(
-        [
-            conductance[:, names.index(n)]
-            for label, members in groups
-            for n in members
-            if label != "Inhibitory"
-        ]
-    )
-    limit = nice_limit(np.percentile(shared, 98))
-    limits = {"Excitatory": limit, "Feedforward": limit, "Inhibitory": limit * 10}
-    fig, axes = plt.subplots(3, 1, figsize=PAIR, sharex=True)
-    for ax, (label, members) in zip(axes, groups, strict=True):
-        for name in members:
-            color, linestyle = SYNAPSE_STYLES[name]
-            ax.plot(
-                time_s,
-                conductance[:, names.index(name)],
-                color=color,
-                linestyle=linestyle,
-                linewidth=0.8,
-                label=name,
-                rasterized=True,
-            )
-        ax.set_xlim(time_s[0], time_s[-1])
-        ax.set_ylim(0, limits[label])
-        ax.set_ylabel(label)
-        thick_legend(
-            ax,
-            loc="upper left",
-            bbox_to_anchor=(1.01, 1.0),
-            frameon=True,
-            fontsize=TICK_SIZE,
+    for name in synapses:
+        color, linestyle = SYNAPSE_STYLES[name]
+        axes[2].plot(
+            time_s,
+            conductance[:, synapses.index(name)],
+            color=color,
+            linestyle=linestyle,
+            linewidth=0.8,
+            label=name,
+            rasterized=True,
         )
-    axes[-1].set_xlabel("Time (s)")
-    axes[0].set_title(
-        f"Synaptic Conductance (nS) of Neuron {int(data['neuron_id'])} "
-        f"({data['cell_type']!s})"
+    axes[2].set_ylabel("Conductance (nS)")
+    axes[2].set_xlabel("Time (s)")
+    axes[2].set_xlim(time_s[0], time_s[-1])
+    # The inhibitory conductance is an order of magnitude above the rest; the axis is cut
+    # at the 98th percentile of everything, as the library's dashboard cuts it.
+    axes[2].set_ylim(0, nice_limit(np.percentile(conductance, 98)))
+    thick_legend(
+        axes[2],
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+        frameon=True,
+        fontsize=TICK_SIZE * 0.85,
     )
     fig.tight_layout()
     return fig
@@ -422,11 +279,11 @@ def ou_trajectories(data):
         data,
         "mixing_weight",
         "Mixing Weight",
-        "Odourant Mixing Coefficient",
+        "Input Mixing Coefficient",
     )
 
 
-def assembly_series(data, key, y_label, title, label="Odourant"):
+def assembly_series(data, key, y_label, title, label="Input"):
     """One line per assembly, in the shared assembly colours.
 
     The dominant odourant's own line is drawn heavier in both assembly panels, so the eye
@@ -447,22 +304,27 @@ def assembly_series(data, key, y_label, title, label="Odourant"):
             label=f"{label} {column}" if leading else None,
             rasterized=True,
         )
-    thick_legend(ax, loc="upper right", frameon=True, fontsize=TICK_SIZE)
-    ax.set_xlim(data["time_s"][0], data["time_s"][-1])
+    thick_legend(
+        ax,
+        # Centre right: the top right is where a dominant input sits at ~1.0, and the top
+        # left is where the early competition happens.
+        loc="center right",
+        frameon=True,
+        fontsize=TICK_SIZE * 0.8,
+        borderpad=0.3,
+        labelspacing=0.25,
+        handletextpad=0.4,
+    )
+    # To the whole trial rather than the last sample (14.995 s), so 15 s carries a tick.
+    ax.set_xlim(0, float(np.ceil(data["time_s"][-1])))
+    ax.xaxis.set_major_locator(MultipleLocator(ASSEMBLY_TICK_S))
     if (
         data[key].min() >= 0
     ):  # a rate starts at zero; a deviation must show its negatives
         ax.set_ylim(bottom=0)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(y_label)
-    smoothed = (
-        key != "mixing_weight"
-    )  # the coefficient is the stimulus, not a measurement
-    ax.set_title(
-        f"{title} (Gaussian σ = {float(data['smoothing_ms']):.0f} ms)"
-        if smoothed
-        else title
-    )
+    ax.set_title(title)
     fig.tight_layout()
     return fig
 
@@ -488,7 +350,7 @@ def assembly_rates(data):
         deviation,
         "deviation_hz",
         "Firing Rate − Assembly Mean (Hz)",
-        "Assembly Activity, Deviation From Its Mean",
+        "Assembly Activity Deviation",
         label="Assembly",
     )
     fig.axes[0].axhline(0.0, color=REFERENCE_GREY, linewidth=1, zorder=1)
@@ -496,23 +358,35 @@ def assembly_rates(data):
 
 
 def synaptic_drive(drive):
-    """(f) The share of excitatory synaptic drive each pathway delivers."""
+    """(d) The share of excitatory synaptic drive each pathway delivers, across trials.
+
+    A box per pathway over the 50 trials (2026-09-23), rather than one bar for the whole
+    dataset: the spread is the point, and a bar hid it.
+    """
     colors = {label: color for label, color, _ in PATHWAYS}
+    pathways = list(dict.fromkeys(drive["pathway"]))
     fig, ax = plt.subplots(figsize=SINGLE)
-    ax.bar(
-        drive["pathway"],
-        drive["drive_fraction"],
-        width=0.5,
-        color=[colors.get(name, REFERENCE_GREY) for name in drive["pathway"]],
+    boxes = ax.boxplot(
+        [drive.loc[drive["pathway"] == name, "drive_fraction"] for name in pathways],
+        tick_labels=pathways,
+        widths=0.5,
+        patch_artist=True,
+        medianprops={"color": INK, "linewidth": 1.4},
+        whiskerprops={"color": INK},
+        capprops={"color": INK},
+        flierprops={
+            "marker": "o",
+            "markersize": 3,
+            "markerfacecolor": REFERENCE_GREY,
+            "markeredgecolor": "none",
+        },
     )
+    for patch, name in zip(boxes["boxes"], pathways, strict=True):
+        patch.set_facecolor(colors.get(name, REFERENCE_GREY))
+        patch.set_edgecolor(INK)
     ax.set_ylabel("Fraction of Excitatory Synaptic Drive")
     ax.set_ylim(0, 1)
-    ax.grid(axis="x", visible=False)
-    ax.set_title(
-        "Excitatory Synaptic Drive by Pathway\n"
-        f"({int(drive['n_trials'].iloc[0])} Trials x "
-        f"{drive['seconds_per_trial'].iloc[0]:.0f} s)"
-    )
+    ax.set_title("Excitatory Synaptic Drive by Pathway")
     fig.tight_layout()
     return fig
 
@@ -520,34 +394,6 @@ def synaptic_drive(drive):
 # ==========
 # Dimensionality
 # ==========
-
-
-def variance_explained(spectrum, summary):
-    """(g) Cumulative variance explained, with the participation ratio marked."""
-    pr = float(summary["participation_ratio"])
-    n90 = int(summary["n_pcs_90pct_var"])
-    fig, ax = plt.subplots(figsize=SINGLE)
-    ax.plot(spectrum["component"], spectrum["cumulative_fraction"], color=TEACHER)
-    ax.axvline(pr, color=REFERENCE_GREY, linewidth=1.2, label=f"PR = {pr:.1f}")
-    ax.axhline(0.9, color=LEGEND_GREY, linestyle="--", linewidth=1)
-    ax.axvline(
-        n90,
-        color=LEGEND_GREY,
-        linestyle="--",
-        linewidth=1,
-        label=f"90% at {n90} PCs",
-    )
-    ax.set_xscale("log")
-    ax.set_xlabel("PCA Component")
-    ax.set_ylabel("Cumulative Variance Explained")
-    ax.set_ylim(0, 1.02)
-    ax.legend(loc="upper left", frameon=True)
-    ax.set_title(
-        f"Variance Explained by the Teacher's PCs\n({int(summary['n_neurons'])} Neurons, "
-        f"Gaussian σ = {summary['smoothing_sigma_ms']:.0f} ms)"
-    )
-    fig.tight_layout()
-    return fig
 
 
 def variance_spectrum(spectrum, summary):
@@ -566,10 +412,7 @@ def variance_spectrum(spectrum, summary):
     ax.set_xlim(0, SPECTRUM_COMPONENTS)
     ax.set_ylim(0, float(shown["variance_fraction"].max()) * 1.1)
     ax.legend(loc="upper right", frameon=True)
-    ax.set_title(
-        f"Variance Spectrum of the Teacher's PCs\n({int(summary['n_trials'])} Trials x "
-        f"{summary['seconds_per_trial']:.0f} s)"
-    )
+    ax.set_title("Variance Spectrum of the Teacher's PCs")
     fig.tight_layout()
     return fig
 
@@ -585,32 +428,15 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     output(ou_trajectories(assemblies), "a", "ou-trajectories", raster=True)
     output(assembly_rates(assemblies), "b", "assembly-rates", raster=True)
 
-    output(raster(np.load(data_dir / "fig00_raster.npz")), "c", "raster", raster=True)
-    output(
-        condition_scatter(
-            pd.read_csv(data_dir / "fig00_condition_rates.csv"),
-            "odour_hz",
-            "odour_repeat_hz",
-            "Odourant 1 Firing Rate (Hz)",
-            "Odourant 1, Repeated (Hz)",
-            "Firing Rate per Neuron, One Odourant and Two Input Noise Seeds",
-        ),
-        "d",
-        "rates-odour-repeat",
-        raster=True,
-    )
-
     traces = np.load(data_dir / "fig00_traces.npz")
-    output(neuron_traces(traces), "e", "neuron-traces", raster=True)
-    output(conductances(traces), "f", "conductances", raster=True)
+    output(neuron_traces(traces), "c", "neuron-traces", raster=True)
     output(
-        synaptic_drive(pd.read_csv(data_dir / "fig00_drive.csv")), "g", "synaptic-drive"
+        synaptic_drive(pd.read_csv(data_dir / "fig00_drive.csv")), "d", "synaptic-drive"
     )
 
     spectrum = pd.read_csv(data_dir / "fig00_pca_spectrum.csv")
     summary = pd.read_csv(data_dir / "fig00_dimensionality.csv").iloc[0]
-    output(variance_explained(spectrum, summary), "h", "variance-explained")
-    output(variance_spectrum(spectrum, summary), "i", "variance-spectrum")
+    output(variance_spectrum(spectrum, summary), "e", "variance-spectrum")
 
 
 if __name__ == "__main__":

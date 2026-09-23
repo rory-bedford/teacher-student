@@ -69,18 +69,11 @@ dynamics look like, and how high-dimensional the result is.
 
 | | Panel | What it shows |
 |---|---|---|
-| **(a)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 odourants over one trial, the two leaders drawn heavy |
+| **(a)** | `ou-trajectories` | the Ornstein-Uhlenbeck mixing coefficient of each of the 20 inputs over one trial, the two leaders drawn heavy |
 | **(b)** | `assembly-rates` | each assembly's excitatory population rate over the same trial, **against its own mean across all 50 trials**, Gaussian σ = 500 ms |
-| **(c)** | `raster` | ten spike trains of one trial — two feedforward, six excitatory, two inhibitory |
-| **(d)** | `rates-odour-repeat` | per-neuron rate for one odourant presented twice with different Poisson noise — the network's own trial-to-trial variability |
-| **(e)** | `neuron-traces` | one excitatory neuron's membrane potential with its spikes, and its recurrent-E, recurrent-I, feedforward and leak currents |
-| **(f)** | `conductances` | the same neuron's conductance, split excitatory / inhibitory / feedforward |
-| **(g)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, over the whole dataset (ratio 2.4) |
-| **(h)** | `variance-explained` | cumulative variance explained, with the participation ratio and the 90% count marked |
-| **(i)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
-
-Panels (a)–(f) are 400 dpi PNG rather than SVG: their ink is thousands of points or dense
-traces, which makes a deck slow to page through in vector form. The rest are SVG.
+| **(c)** | `neuron-traces` | one excitatory neuron: membrane potential with its spikes, input currents, and every synapse type's conductance on one shared axes |
+| **(d)** | `synaptic-drive` | feedforward vs recurrent-excitatory share of excitatory drive, a box per pathway over the 50 trials (median ratio 2.4) |
+| **(e)** | `variance-spectrum` | variance fraction per component, first 100 components, linear axes |
 
 These follow the library's own dashboards (`create_activity_dashboard`,
 `create_assembly_activity_dashboard`, `plot_synaptic_conductances`,
