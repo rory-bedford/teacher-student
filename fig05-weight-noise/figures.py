@@ -94,7 +94,7 @@ def weight_perturbation(table):
     fig, axes = plt.subplots(
         1,
         len(levels),
-        figsize=(PAIR[0] / 2 * len(levels), PAIR[1]),
+        figsize=(PAIR[1] * 0.92 * len(levels), PAIR[1]),
         sharex=True,
         sharey=True,
     )
@@ -136,7 +136,9 @@ def weight_perturbation(table):
             },
         )
     np.atleast_1d(axes)[0].set_ylabel("Student Weight (nS)")
-    sweep_layout(fig)
+    # Not sweep_layout: this panel is a pair of square scatters with no legend, so it
+    # packs itself tight instead of reserving the sweep panels' legend band (2026-09-23).
+    fig.tight_layout(w_pad=0.4)
     return fig
 
 
