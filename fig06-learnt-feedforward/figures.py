@@ -32,6 +32,7 @@ from common.plotting import (
     METRIC_LABELS,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
+    SCATTER_TITLE,
     pool_populations,
     rate_scatter,
 )
@@ -184,7 +185,7 @@ def scatters(rates, summary):
         rows = subset[subset["observed"] == int(group == "observed")]
         rate_scatter(ax, rows, title)
         ax.title.set_fontsize(TICK_SIZE)
-    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
+    tighten_pair(fig, axes, SCATTER_TITLE)
     return fig
 
 

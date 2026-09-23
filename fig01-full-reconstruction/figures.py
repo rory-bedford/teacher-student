@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
     DELTA_MARKER_SIZE,
+    SCATTER_TITLE,
     delta_rate_scatter,
 )
 from common.style import (
@@ -113,7 +114,7 @@ def scatters(rates, held_out):
         subset = rates[rates["observed"] == int(group == "observed")]
         rate_scatter(ax, subset, label)
         ax.title.set_fontsize(TICK_SIZE)
-    tighten_pair(fig, axes, "Firing Rates, Held-Out Stimulus")
+    tighten_pair(fig, axes, SCATTER_TITLE)
     return fig
 
 

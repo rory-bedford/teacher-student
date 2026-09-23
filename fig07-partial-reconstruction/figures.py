@@ -32,6 +32,7 @@ from common.plotting import (
     METRIC_LABELS,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
+    SCATTER_TITLE,
     pool_populations,
 )
 from common.style import (
@@ -100,7 +101,7 @@ def scatters(sweep, rates, fraction, seed):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
         rate_scatter(ax, level[level["group"] == group], label)
-    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
+    tighten_pair(fig, axes, SCATTER_TITLE)
     return fig
 
 

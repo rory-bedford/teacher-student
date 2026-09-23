@@ -48,6 +48,9 @@ PERTURBATION_SERIES = (
 #: on the slide and in each figure's README, not in the panel title.
 HELD_OUT_TITLE = "Held-Out Test Set Accuracy"
 PERTURBATION_TITLE = "Perturbation Accuracy"
+#: Every teacher-vs-student rate scatter carries this title (2026-09-23); the panels
+#: differ only in their per-axes subtitles.
+SCATTER_TITLE = "Firing Rates, Held-Out Stimulus"
 PERTURBATION_LABEL = "Unobserved, Not Targeted"
 
 

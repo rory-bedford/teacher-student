@@ -36,6 +36,7 @@ from common.plotting import (
     METRIC_LABELS,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
+    SCATTER_TITLE,
     plotted_performance_values,
     pool_populations,
 )
@@ -43,7 +44,6 @@ from common.style import (
     LEGEND_GREY,
     OBSERVED,
     REFERENCE_GREY,
-    SINGLE,
     TICK_SIZE,
     TRIPLE,
     UNOBSERVED,
@@ -73,6 +73,35 @@ GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
+#: The legend sat inside the axes and covered the 25% and 10% points (2026-09-23). It now
+#: hangs in a band to the right. The panel is laid out in absolute inches so the axes box
+#: is identical in (a) and (c), and an invisible line pinned to the right edge makes
+#: ``bbox_inches="tight"`` crop both canvases at the same place despite different legends.
+AXES_WIDTH = 5.0
+AXES_HEIGHT = 3.1
+MARGIN_LEFT = 1.0
+MARGIN_BOTTOM = 0.75
+#: Panel title, the secondary axis and its label.
+MARGIN_TOP = 1.0
+LEGEND_BAND_IN = 2.8
+SWEEP_SIZE = (
+    MARGIN_LEFT + AXES_WIDTH + LEGEND_BAND_IN,
+    MARGIN_TOP + AXES_HEIGHT + MARGIN_BOTTOM,
+)
+
+
+def sweep_layout(fig):
+    """Place the axes in inches and hold the canvas open across the legend band."""
+    width, height = SWEEP_SIZE
+    fig.subplots_adjust(
+        left=MARGIN_LEFT / width,
+        right=(MARGIN_LEFT + AXES_WIDTH) / width,
+        bottom=MARGIN_BOTTOM / height,
+        top=(MARGIN_TOP + AXES_HEIGHT) / height,
+    )
+    fig.add_artist(
+        Line2D([1.0, 1.0], [0.0, 1.0], transform=fig.transFigure, color="none")
+    )
 
 
 def default_scatter_fractions(summary):
@@ -114,13 +143,21 @@ def observed_axis(ax, fractions):
     ax.get_xaxis().set_minor_formatter(NullFormatter())
     ax.invert_xaxis()
     ax.set_xlabel("Neurons Observed (% of Network)")
-    neuron_axis(ax)
+    neuron_axis(ax, fractions)
 
 
-def neuron_axis(ax):
+def neuron_axis(ax, fractions):
+    """The same tick positions as the bottom axis, labelled in neurons.
+
+    Left to itself the secondary log axis labelled only the decades (10³, 10²), which
+    told the reader nothing about the points (2026-09-23).
+    """
     top = ax.secondary_xaxis(
         "top", functions=(lambda f: f * N_NEURONS, lambda n: n / N_NEURONS)
     )
+    top.set_xticks([fraction * N_NEURONS for fraction in fractions])
+    top.set_xticklabels([f"{fraction * N_NEURONS:,.0f}" for fraction in fractions])
+    top.xaxis.set_minor_formatter(NullFormatter())
     top.set_xlabel(f"Neurons Observed (of {N_NEURONS:,})")
     return top
 
@@ -138,7 +175,7 @@ def limits(summary):
 
 def curve(summary, dimensionality, ylim):
     """(a) Fluctuation R² against observed fraction, observed and unobserved."""
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = plt.subplots(figsize=SWEEP_SIZE)
     for group, (_, color) in GROUPS.items():
         rows = summary[
             (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
@@ -172,12 +209,12 @@ def curve(summary, dimensionality, ylim):
         {label: color for label, color in GROUPS.values()},
         metrics=False,
         extra=markers,
-        loc="lower left",
-        bbox_to_anchor=None,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
         fontsize=TICK_SIZE - 2,
     )
     # No title (2026-09-21): the slide carries the claim.
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
@@ -201,7 +238,7 @@ def scatters(summary, rates, fractions, seed):
             f"{fraction * 100:g}% Observed ({n_observed} Neurons)",
         )
         ax.title.set_fontsize(TICK_SIZE)
-    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
+    tighten_pair(fig, axes, SCATTER_TITLE)
     return fig
 
 
@@ -219,7 +256,7 @@ def delta_sweep(summary, metric, dimensionality, ylim):
         & (summary["group"] == "unobserved")
     ]
     pooled = pool_populations(rows, ["obs_fraction", "seed"])
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = plt.subplots(figsize=SWEEP_SIZE)
     sweep_series(
         ax,
         pooled,
@@ -247,14 +284,15 @@ def delta_sweep(summary, metric, dimensionality, ylim):
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
         ]
         + markers,
-        loc="lower left",
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
         frameon=True,
         framealpha=0.9,
         fontsize=TICK_SIZE - 2,
         handlelength=1.6,
         labelspacing=0.35,
     )
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
