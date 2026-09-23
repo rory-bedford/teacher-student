@@ -50,6 +50,7 @@ from common.style import (
     save,
     sweep_legend,
     sweep_series,
+    tighten_pair,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -99,8 +100,7 @@ def scatters(sweep, rates, fraction, seed):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
         rate_scatter(ax, level[level["group"] == group], label)
-    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
-    fig.tight_layout()
+    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
     return fig
 
 

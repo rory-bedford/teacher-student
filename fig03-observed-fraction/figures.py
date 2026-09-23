@@ -56,6 +56,7 @@ from common.style import (
     save,
     sweep_legend,
     sweep_series,
+    tighten_pair,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -200,8 +201,7 @@ def scatters(summary, rates, fractions, seed):
             f"{fraction * 100:g}% Observed ({n_observed} Neurons)",
         )
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
-    fig.tight_layout()
+    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
     return fig
 
 

@@ -224,11 +224,14 @@ def tighten_pair(fig, axes, suptitle):
     axes = np.atleast_1d(axes)
     for ax in axes[1:]:
         ax.set_ylabel("")
-    fig.suptitle(suptitle, y=0.995, va="top")
-    # rect's top at 1.0 and a small w_pad: tight_layout otherwise reserves a band under
-    # the suptitle and a wide gutter between panels (2026-09-23).
+    fig.suptitle(suptitle, y=0.985, va="top")
+    # tight_layout otherwise reserves a wide band under the suptitle and a wide gutter
+    # between panels; top=0.86 leaves a couple of millimetres of breathing room under the
+    # title, which reading it flush against the subpanel titles did not (2026-09-23).
     fig.tight_layout(rect=(0, 0, 1, 1.0), w_pad=0.2, h_pad=0.2)
-    fig.subplots_adjust(top=0.88, wspace=0.06)
+    fig.subplots_adjust(top=0.86, wspace=0.06)
+    for ax in axes[1:]:
+        ax.tick_params(labelleft=True)  # every panel keeps its own y ticks
     return fig
 
 

@@ -46,6 +46,7 @@ from common.style import (
     performance_axis,
     performance_limits,
     save,
+    tighten_pair,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -172,8 +173,7 @@ def scatters(rates, summary):
         rows = subset[subset["observed"] == int(group == "observed")]
         rate_scatter(ax, rows, title)
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
-    fig.tight_layout()
+    tighten_pair(fig, axes, "Firing Rates, Student vs Teacher, Held-Out Stimulus")
     return fig
 
 
