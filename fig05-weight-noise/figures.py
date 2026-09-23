@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LABEL,
+    PERTURBATION_LEGEND_LABEL,
     PERTURBATION_TITLE,
     plotted_performance_values,
     pool_populations,
@@ -43,7 +43,6 @@ from common.style import (
     OBSERVED,
     PAIR,
     REFERENCE_GREY,
-    SINGLE,
     TICK_SIZE,
     UNOBSERVED,
     apply_style,
@@ -52,7 +51,9 @@ from common.style import (
     performance_axis,
     performance_limits,
     save,
+    sweep_layout,
     sweep_legend,
+    sweep_panel,
     sweep_series,
 )
 
@@ -135,7 +136,7 @@ def weight_perturbation(table):
             },
         )
     np.atleast_1d(axes)[0].set_ylabel("Student Weight (nS)")
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
@@ -163,7 +164,7 @@ def limits(summary):
 def curve(summary, clipped, ylim):
     """(a) Fluctuation R² against weight noise, per population, with dotted ceilings."""
     rows = held_out(summary)
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     for group, (_, color) in GROUPS.items():
         sweep_series(
             ax,
@@ -184,15 +185,13 @@ def curve(summary, clipped, ylim):
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     # The mean/SD-preserving perturbation clips a few weights at zero (1.5-4.5% across
     # the sweep). That was in the title until 2026-09-21: five numbers nobody reads from
     # the back of a room, and the figure's README carries them instead.
     ax.set_title(HELD_OUT_TITLE)
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
@@ -209,7 +208,7 @@ def perturbation(summary, metric, ylim):
         & (summary["group"] == "unobserved")
     ]
     pooled = pool_populations(rows, ["weight_noise", "seed"])
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     # sweep_series looks its marker/linestyle up by the base metric name, so the delta
     # panels keep the archived Activity o- / Fluctuation s-- convention.
     base_metric = metric.replace("delta_", "")
@@ -228,14 +227,12 @@ def perturbation(summary, metric, ylim):
     performance_axis(ax, ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LABEL: UNOBSERVED},
+        {PERTURBATION_LEGEND_LABEL: UNOBSERVED},
         metrics=False,
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(PERTURBATION_TITLE)
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 

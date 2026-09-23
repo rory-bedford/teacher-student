@@ -21,7 +21,6 @@ import argparse
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.lines import Line2D
 
@@ -40,7 +39,6 @@ from common.plotting import (
     pool_populations,
 )
 from common.style import (
-    SINGLE,
     TICK_SIZE,
     apply_style,
     ceiling,
@@ -48,7 +46,9 @@ from common.style import (
     performance_axis,
     performance_limits,
     save,
+    sweep_layout,
     sweep_legend,
+    sweep_panel,
     sweep_series,
 )
 
@@ -75,7 +75,7 @@ def limits(summary):
 def curve(summary, ylim):
     """(a) unobserved Fluctuation R² against input volume lost, per error model."""
     unobserved = summary[summary["group"] == "unobserved"]
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     for model, (_, color, linestyle) in MODELS.items():
         rows = unobserved[
             (unobserved["error_model"] == model)
@@ -113,12 +113,10 @@ def curve(summary, ylim):
             Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
             for label, color, linestyle in MODELS.values()
         ],
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(HELD_OUT_TITLE)
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
@@ -135,7 +133,7 @@ def delta_sweep(summary, metric, ylim):
         & (summary["metric"] == metric)
         & (summary["group"] == "unobserved")
     ]
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     handles = []
     for model, (label, color, linestyle) in MODELS.items():
         sub = rows[rows["error_model"] == model]
@@ -172,15 +170,13 @@ def delta_sweep(summary, metric, ylim):
         {},
         metrics=False,
         extra=handles,
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(
         PERTURBATION_TITLE,
         fontsize=TICK_SIZE + 1,
     )
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 

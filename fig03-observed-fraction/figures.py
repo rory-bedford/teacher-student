@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LABEL,
+    PERTURBATION_LEGEND_LABEL,
     PERTURBATION_TITLE,
     SCATTER_TITLE,
     plotted_performance_values,
@@ -43,7 +43,6 @@ from common.plotting import (
 from common.style import (
     LEGEND_GREY,
     OBSERVED,
-    REFERENCE_GREY,
     TICK_SIZE,
     TRIPLE,
     UNOBSERVED,
@@ -54,7 +53,9 @@ from common.style import (
     performance_limits,
     rate_scatter,
     save,
+    sweep_layout,
     sweep_legend,
+    sweep_panel,
     sweep_series,
     tighten_pair,
 )
@@ -73,35 +74,6 @@ GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
-#: The legend sat inside the axes and covered the 25% and 10% points (2026-09-23). It now
-#: hangs in a band to the right. The panel is laid out in absolute inches so the axes box
-#: is identical in (a) and (c), and an invisible line pinned to the right edge makes
-#: ``bbox_inches="tight"`` crop both canvases at the same place despite different legends.
-AXES_WIDTH = 5.0
-AXES_HEIGHT = 3.1
-MARGIN_LEFT = 1.0
-MARGIN_BOTTOM = 0.75
-#: Panel title, the secondary axis and its label.
-MARGIN_TOP = 1.0
-LEGEND_BAND_IN = 2.8
-SWEEP_SIZE = (
-    MARGIN_LEFT + AXES_WIDTH + LEGEND_BAND_IN,
-    MARGIN_TOP + AXES_HEIGHT + MARGIN_BOTTOM,
-)
-
-
-def sweep_layout(fig):
-    """Place the axes in inches and hold the canvas open across the legend band."""
-    width, height = SWEEP_SIZE
-    fig.subplots_adjust(
-        left=MARGIN_LEFT / width,
-        right=(MARGIN_LEFT + AXES_WIDTH) / width,
-        bottom=MARGIN_BOTTOM / height,
-        top=(MARGIN_TOP + AXES_HEIGHT) / height,
-    )
-    fig.add_artist(
-        Line2D([1.0, 1.0], [0.0, 1.0], transform=fig.transFigure, color="none")
-    )
 
 
 def default_scatter_fractions(summary):
@@ -116,22 +88,6 @@ def default_scatter_fractions(summary):
     near = float((normalised - 0.5).abs().idxmin())
     below = fractions[0]
     return [above, near, below]
-
-
-def dimensionality_markers(ax, dimensionality):
-    """Mark the teacher's dimensionality, and return the legend handle.
-
-    The PCs carrying 90% of the variance, as a fraction of the 5000 neurons: it lands
-    where the fit breaks down, which is the point of the panel, so it is named in the
-    legend rather than annotated in the plot. The participation ratio (41 neurons, 0.8%)
-    is not marked -- it sits below everything tested and would imply the opposite.
-    """
-    fraction = dimensionality["n_pcs_90pct_var"] / N_NEURONS
-    ax.axvline(fraction, color=REFERENCE_GREY, linewidth=1.6, alpha=0.9)
-    label = (
-        f"90% of Teacher Variance\n({dimensionality['n_pcs_90pct_var']:.0f} Neurons)"
-    )
-    return [Line2D([], [], color=REFERENCE_GREY, linewidth=1.6, label=label)]
 
 
 def observed_axis(ax, fractions):
@@ -173,9 +129,9 @@ def limits(summary):
     )
 
 
-def curve(summary, dimensionality, ylim):
+def curve(summary, ylim):
     """(a) Fluctuation R² against observed fraction, observed and unobserved."""
-    fig, ax = plt.subplots(figsize=SWEEP_SIZE)
+    fig, ax = sweep_panel()
     for group, (_, color) in GROUPS.items():
         rows = summary[
             (summary["group"] == group) & (summary["metric"] == "fluctuation_r2")
@@ -197,7 +153,6 @@ def curve(summary, dimensionality, ylim):
             "obs_fraction",
             color,
         )
-    markers = dimensionality_markers(ax, dimensionality)
     # Decreasing left to right (2026-09-21): the slide reads as neurons being taken away,
     # ending at the hard end of the sweep.
     ax.set_title(HELD_OUT_TITLE)
@@ -208,7 +163,6 @@ def curve(summary, dimensionality, ylim):
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
-        extra=markers,
         loc="upper left",
         bbox_to_anchor=(1.02, 1.0),
         fontsize=TICK_SIZE - 2,
@@ -242,7 +196,7 @@ def scatters(summary, rates, fractions, seed):
     return fig
 
 
-def delta_sweep(summary, metric, dimensionality, ylim):
+def delta_sweep(summary, metric, ylim):
     """(c) Perturbation Δ R² against observed fraction, cell types pooled.
 
     Built like panel (a) -- same reversed percentage axis, individual seeds, no error
@@ -256,7 +210,7 @@ def delta_sweep(summary, metric, dimensionality, ylim):
         & (summary["group"] == "unobserved")
     ]
     pooled = pool_populations(rows, ["obs_fraction", "seed"])
-    fig, ax = plt.subplots(figsize=SWEEP_SIZE)
+    fig, ax = sweep_panel()
     sweep_series(
         ax,
         pooled,
@@ -267,7 +221,6 @@ def delta_sweep(summary, metric, dimensionality, ylim):
         errorbars=False,
     )
     ceiling(ax, pooled, "obs_fraction", UNOBSERVED)
-    markers = dimensionality_markers(ax, dimensionality)
     ax.set_title(PERTURBATION_TITLE)
     observed_axis(ax, pooled["obs_fraction"].unique())
     performance_axis(ax, ylim)  # shared with panel (a)
@@ -279,11 +232,10 @@ def delta_sweep(summary, metric, dimensionality, ylim):
                 [],
                 color=UNOBSERVED,
                 linewidth=6,
-                label=PERTURBATION_LABEL,
+                label=PERTURBATION_LEGEND_LABEL,
             ),
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
-        ]
-        + markers,
+        ],
         loc="upper left",
         bbox_to_anchor=(1.02, 1.0),
         frameon=True,
@@ -301,10 +253,6 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig03_summary.csv")
     rates = pd.read_csv(data_dir / "fig03_rates.csv")
-    estimated = data_dir / DIMENSIONALITY_CSV
-    dimensionality = pd.read_csv(
-        estimated if estimated.exists() else TEACHER_DIMENSIONALITY
-    ).iloc[0]
 
     def output(fig, letter, slug, raster=False):
         save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
@@ -313,7 +261,7 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     if "evaluation" in summary:
         held_out = summary[summary["evaluation"] == "held_out"]
     ylim = limits(summary)
-    output(curve(held_out, dimensionality, ylim), "a", "curve")
+    output(curve(held_out, ylim), "a", "curve")
 
     fractions = scatter_fractions or default_scatter_fractions(held_out)
     seed = int(rates["seed"].min())
@@ -323,7 +271,7 @@ def main(data_dir, out_dir, scatter_fractions=None, decorate=None, suffix=""):
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
-            delta_sweep(summary, "delta_fluctuation_r2", dimensionality, ylim),
+            delta_sweep(summary, "delta_fluctuation_r2", ylim),
             "c",
             "delta-fluctuation",
         )

@@ -52,6 +52,9 @@ PERTURBATION_TITLE = "Perturbation Accuracy"
 #: differ only in their per-axes subtitles.
 SCATTER_TITLE = "Firing Rates, Held-Out Stimulus"
 PERTURBATION_LABEL = "Unobserved, Not Targeted"
+#: The same label wrapped for a legend, where one long line made the legend band wider
+#: than the panel could spare (2026-09-23).
+PERTURBATION_LEGEND_LABEL = PERTURBATION_LABEL.replace(", ", ",\n")
 
 
 def use_talk_style():

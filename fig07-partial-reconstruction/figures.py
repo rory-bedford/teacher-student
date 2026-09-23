@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LABEL,
+    PERTURBATION_LEGEND_LABEL,
     PERTURBATION_TITLE,
     SCATTER_TITLE,
     pool_populations,
@@ -39,7 +39,6 @@ from common.style import (
     LEGEND_GREY,
     OBSERVED,
     PAIR,
-    SINGLE,
     TICK_SIZE,
     UNOBSERVED,
     apply_style,
@@ -49,7 +48,9 @@ from common.style import (
     performance_limits,
     rate_scatter,
     save,
+    sweep_layout,
     sweep_legend,
+    sweep_panel,
     sweep_series,
     tighten_pair,
 )
@@ -128,7 +129,7 @@ def curve(sweep, ylim):
     rows = held_out(sweep)
     # SINGLE, exactly as the perturbation panel: the two share a y axis and belong side
     # by side on a slide, so their canvases and their text must come out the same size.
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     for group, (_, color) in GROUPS.items():
         sweep_series(
             ax,
@@ -166,14 +167,12 @@ def curve(sweep, ylim):
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     # The free-parameter counts used to be annotated along the axis (2026-09-21): they
     # hardly vary across the sweep, so they were clutter. They are in fig07_summary.csv.
     ax.set_title(HELD_OUT_TITLE, pad=18)
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 
@@ -193,7 +192,7 @@ def perturbation(sweep, metric, ylim):
     ]
     pooled = pool_populations(rows, ["reconstructed_fraction", "seed"])
     base_metric = metric.replace("delta_", "")
-    fig, ax = plt.subplots(figsize=SINGLE)
+    fig, ax = sweep_panel()
     sweep_series(
         ax,
         pooled,
@@ -210,14 +209,12 @@ def perturbation(sweep, metric, ylim):
     performance_axis(ax, ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LABEL: UNOBSERVED},
+        {PERTURBATION_LEGEND_LABEL: UNOBSERVED},
         metrics=False,
-        loc="lower left",
-        bbox_to_anchor=None,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(PERTURBATION_TITLE)
-    fig.tight_layout()
+    sweep_layout(fig)
     return fig
 
 

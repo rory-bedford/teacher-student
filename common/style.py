@@ -84,6 +84,46 @@ PAIR = (11.0, 5.2)
 TRIPLE = (13.0, 4.8)
 WIDE = (11.0, 3.6)
 
+#: Every sweep panel -- a performance or perturbation metric against a swept quantity --
+#: is laid out this way (2026-09-23). The legend sat inside the axes and covered the data,
+#: so it now hangs in a band to the right; the axes box is fixed in inches, so a figure's
+#: held-out and perturbation panels come out exactly the same size as each other however
+#: wide their legends are.
+SWEEP_AXES = (5.9, 3.1)
+SWEEP_MARGIN_LEFT = 1.0
+SWEEP_MARGIN_BOTTOM = 0.75
+#: Room for the panel title, and for a secondary axis above it where a figure has one.
+SWEEP_MARGIN_TOP = 1.0
+SWEEP_LEGEND_BAND = 1.9
+SWEEP_SIZE = (
+    SWEEP_MARGIN_LEFT + SWEEP_AXES[0] + SWEEP_LEGEND_BAND,
+    SWEEP_MARGIN_TOP + SWEEP_AXES[1] + SWEEP_MARGIN_BOTTOM,
+)
+
+
+def sweep_panel():
+    """A figure and axes sized for :func:`sweep_layout`."""
+    return plt.subplots(figsize=SWEEP_SIZE)
+
+
+def sweep_layout(fig):
+    """Place the axes in inches and hold the canvas open across the legend band.
+
+    The invisible line at the right edge is what makes ``bbox_inches="tight"`` crop two
+    panels at the same place when their legends differ in width.
+    """
+    width, height = SWEEP_SIZE
+    fig.subplots_adjust(
+        left=SWEEP_MARGIN_LEFT / width,
+        right=(SWEEP_MARGIN_LEFT + SWEEP_AXES[0]) / width,
+        bottom=SWEEP_MARGIN_BOTTOM / height,
+        top=(SWEEP_MARGIN_TOP + SWEEP_AXES[1]) / height,
+    )
+    fig.add_artist(
+        Line2D([1.0, 1.0], [0.0, 1.0], transform=fig.transFigure, color="none")
+    )
+
+
 METRIC_STYLES = {  # archived sweep curves: Activity o-, Fluctuation s--
     "activity_r2": ("o", "-", "Activity"),
     "fluctuation_r2": ("s", "--", "Fluctuation"),
