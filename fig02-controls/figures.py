@@ -134,7 +134,11 @@ def limits(summary):
 
 
 def subpanel(ax, summary, metric, group, cell_type, title):
-    """One population: a bar per variant, per-seed dots, dotted ceiling, no legend."""
+    """One population: a bar per variant, the three seeds as dots, dotted ceiling.
+
+    No error bars (2026-09-23): with three seeds the points are the distribution, and a
+    whisker over three values implies a spread the data cannot support.
+    """
     for position, (variant, rows) in enumerate(
         panel_rows(summary, metric, group, cell_type)
     ):
@@ -147,14 +151,6 @@ def subpanel(ax, summary, metric, group, cell_type, title):
             color=VARIANT_COLORS[variant],
             edgecolor="white",
             linewidth=0.5,
-        )
-        ax.errorbar(
-            position,
-            rows["value"].mean(),
-            yerr=rows["value"].std() if len(rows) > 1 else 0,
-            color="k",
-            capsize=3,
-            linewidth=1,
         )
         ax.scatter(
             np.full(len(rows), position), rows["value"], s=8, color="k", zorder=3

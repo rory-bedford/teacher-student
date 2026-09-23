@@ -96,7 +96,11 @@ def main(runs_dir, out_dir, fully_observed_dir=None):
     summary += delta_summary
 
     first = evaluate_run(runs[0], device)
-    neurons = pick_raster_neurons(first, N_RASTER_OBSERVED, N_RASTER_UNOBSERVED)
+    # min_hz 5 rather than the default 2 (2026-09-23): at 2 Hz a chosen neuron can fall
+    # silent across the whole RASTER_SECONDS window, which drew an empty row.
+    neurons = pick_raster_neurons(
+        first, N_RASTER_OBSERVED, N_RASTER_UNOBSERVED, min_hz=5.0
+    )
     spikes = spike_rows(first, neurons)
 
     out_dir.mkdir(parents=True, exist_ok=True)

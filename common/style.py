@@ -21,6 +21,7 @@ from connectome_snns.visualization import (
     SLIDE_RED,
     use_project_style,
 )
+from matplotlib import font_manager as fm
 from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 
@@ -79,11 +80,32 @@ METRIC_STYLES = {  # archived sweep curves: Activity o-, Fluctuation s--
 }
 
 
+#: The deck's typeface. The files live in the repo and are registered with matplotlib at
+#: import, so a panel looks the same on any machine without installing anything system
+#: wide. Adobe's Source Sans 3 is the current release of Source Sans Pro; matplotlib reads
+#: it as one family with weights 400 / 600 / 900. Labels and ticks take Regular; titles take
+#: Semibold (600). Black (900) was tried for titles on 2026-09-23 and was too heavy at panel
+#: size -- it is a display weight, right for slide headings and clumsy on a 14 pt panel title.
+FONT_FAMILY = "Source Sans 3"
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+TITLE_WEIGHT = 600
+
+
+def register_fonts():
+    """Add the bundled typeface, returning the family to use (Arial if it is missing)."""
+    for path in sorted(FONT_DIR.glob("*.ttf")):
+        fm.fontManager.addfont(str(path))
+    available = {f.name for f in fm.fontManager.ttflist}
+    return FONT_FAMILY if FONT_FAMILY in available else "Arial"
+
+
 def apply_style():
     use_project_style()
     plt.rcParams.update(
         {
-            "font.family": "Arial",
+            "font.family": register_fonts(),
+            "axes.titleweight": TITLE_WEIGHT,
+            "figure.titleweight": TITLE_WEIGHT,
             "font.size": LABEL_SIZE,
             "axes.titlesize": LABEL_SIZE,
             "axes.labelsize": LABEL_SIZE,

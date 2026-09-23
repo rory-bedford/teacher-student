@@ -17,8 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.grid import skip_completed
 
-CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
-SEEDS = [44, 45, 46]
+CUDA_VISIBLE_DEVICES = [0]  # Edit with available GPU IDs
+SEEDS = [46]  # 44 and 45 are on the cluster (slurm/20260923-133124); local run does 46
 
 
 def custom_config_generator(base_params):

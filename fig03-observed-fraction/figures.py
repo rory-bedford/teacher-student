@@ -35,7 +35,6 @@ from common.plotting import (
     METRIC_LABELS,
     PERTURBATION_LABEL,
     pool_populations,
-    r2_title,
 )
 from common.style import (
     LEGEND_GREY,
@@ -181,11 +180,7 @@ def scatters(summary, rates, fractions, seed):
         rate_scatter(
             ax,
             subset,
-            r2_title(
-                f"{fraction * 100:g}% Observed ({n_observed} Neurons)",
-                rows,
-                "unobserved",
-            ),
+            f"{fraction * 100:g}% Observed ({n_observed} Neurons)",
         )
         ax.title.set_fontsize(TICK_SIZE)
     fig.suptitle("Unobserved Neurons, Student vs Teacher Activity")

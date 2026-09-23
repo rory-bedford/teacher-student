@@ -31,7 +31,6 @@ from common.plotting import (
     METRIC_LABELS,
     PERTURBATION_LABEL,
     pool_populations,
-    r2_title,
     rate_scatter,
 )
 from common.style import (
@@ -72,7 +71,10 @@ def limits(summary):
 
 
 def subpanel(ax, summary, metric, group, title):
-    """One population: a bar per condition, per-seed dots, dotted noise ceiling."""
+    """One population: a bar per condition, the three seeds as dots, dotted ceiling.
+
+    No error bars (2026-09-23): with three seeds the points are the distribution.
+    """
     for position, variant in enumerate(VARIANTS):
         rows = summary[
             (summary["metric"] == metric)
@@ -88,14 +90,6 @@ def subpanel(ax, summary, metric, group, title):
             color=VARIANT_COLORS[variant],
             edgecolor="white",
             linewidth=0.5,
-        )
-        ax.errorbar(
-            position,
-            rows["value"].mean(),
-            yerr=rows["value"].std() if len(rows) > 1 else 0,
-            color="k",
-            capsize=3,
-            linewidth=1,
         )
         ax.scatter(
             np.full(len(rows), position), rows["value"], s=8, color="k", zorder=3
@@ -155,8 +149,7 @@ def scatters(rates, summary):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, title) in zip(axes, POPULATIONS, strict=True):
         rows = subset[subset["observed"] == int(group == "observed")]
-        learnt = summary[summary["variant"] == "learnt_feedforward"]
-        rate_scatter(ax, rows, r2_title(title, learnt, group, seed=seed))
+        rate_scatter(ax, rows, title)
         ax.title.set_fontsize(TICK_SIZE)
     fig.suptitle("Firing Rates, Student vs Teacher, Input Learnt, Held-Out Stimulus")
     fig.tight_layout()

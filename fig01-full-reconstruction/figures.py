@@ -32,7 +32,6 @@ from common.plotting import (
     DELTA_MARKER_SIZE,
     PERTURBATION_TITLE,
     delta_rate_scatter,
-    r2_title,
 )
 from common.style import (
     EXCITATORY,
@@ -65,6 +64,22 @@ GROUPS = {"observed": "Observed", "unobserved": "Unobserved"}
 CONDITIONS = (("full", True), ("partial", False))
 
 
+def group_labels(observed):
+    """One label per run of rows, centred on it, instead of repeating it per neuron.
+
+    ``spike_raster`` puts a tick beside every row, so passing the group name six times
+    printed "Observed" three times and "Unobserved" three times (2026-09-23).
+    """
+    labels = [""] * len(observed)
+    for flag in (1, 0):
+        rows = [i for i, o in enumerate(observed) if o == flag]
+        if rows:
+            labels[rows[len(rows) // 2]] = (
+                GROUPS["observed"] if flag else GROUPS["unobserved"]
+            )
+    return labels
+
+
 def raster(spikes):
     """(a) teacher and student spikes of a few neurons on a held-out stimulus."""
     neurons = (
@@ -78,10 +93,7 @@ def raster(spikes):
         spikes[spikes["time_s"] <= RASTER_SECONDS],
         list(neurons["neuron_id"]),
         RASTER_SECONDS,
-        [
-            GROUPS["observed"] if o else GROUPS["unobserved"]
-            for o in neurons["observed"]
-        ],
+        group_labels(list(neurons["observed"])),
     )
     ax.set_title("Observed and Unobserved Spikes, Held-Out Stimulus")
     fig.tight_layout()
@@ -93,7 +105,7 @@ def scatters(rates, held_out):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, label) in zip(axes, GROUPS.items()):
         subset = rates[rates["observed"] == int(group == "observed")]
-        rate_scatter(ax, subset, r2_title(label, held_out, group))
+        rate_scatter(ax, subset, label)
         ax.title.set_fontsize(TICK_SIZE)
     fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
     fig.tight_layout()

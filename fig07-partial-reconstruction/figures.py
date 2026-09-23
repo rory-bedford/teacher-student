@@ -87,7 +87,6 @@ def scatters(sweep, rates, fraction, seed):
     Reinstated on 2026-09-21 at 50% reconstructed: the sweep has separated there
     (observed 0.68, unobserved 0.14 on Fluctuation R²) while the student still tracks the
     stimulus, so the two panels show what that separation looks like per neuron. The R²
-    quoted is Activity, the metric a rate scatter reports.
     """
     level = rates[
         np.isclose(rates["reconstructed_fraction"], fraction)
@@ -96,14 +95,7 @@ def scatters(sweep, rates, fraction, seed):
     ]
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
-        r2 = group_rows(
-            sweep[np.isclose(sweep["reconstructed_fraction"], fraction)],
-            group,
-            "activity_r2",
-        )["value"].mean()
-        rate_scatter(
-            ax, level[level["group"] == group], f"{label} (Activity R² = {r2:.2f})"
-        )
+        rate_scatter(ax, level[level["group"] == group], label)
     fig.suptitle(
         f"Firing Rates, Student vs Teacher, {fraction:.0%} of the Network Reconstructed"
     )
