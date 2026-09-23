@@ -20,7 +20,10 @@ from common.grid import skip_completed
 
 CUDA_VISIBLE_DEVICES = [0, 1]  # Edit with available GPU IDs
 SEEDS = [44, 45, 46]
-NOISE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5]
+#: 0.6 and 0.7 added on 2026-09-23 so the sweep reaches the precision of a real
+#: reconstruction: r = 0.81 between teacher and student weights at 0.7, against the
+#: measured weight-volume correlation of Holler et al.
+NOISE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
 
 
 def custom_config_generator(base_params):
