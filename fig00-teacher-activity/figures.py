@@ -29,6 +29,7 @@ is the archived paper figures (``common/style.py``), sized to drop into the talk
 
 import argparse
 import sys
+import tomllib
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -48,8 +49,10 @@ from common.style import (
     EXCITATORY,
     INHIBITORY,
     INK,
+    LEGEND_GREY,
     REFERENCE_GREY,
     SINGLE,
+    STUDENT,
     TEACHER,
     TICK_SIZE,
     apply_style,
@@ -586,6 +589,169 @@ def assembly_rastermap(data):
     return fig
 
 
+#: The loss kernel panel reads its time constants from the figure that trains with them,
+#: so the illustration cannot drift from the runs (2026-09-24).
+LOSS_PARAMETERS = HERE.parent / "fig01-full-reconstruction" / "parameters.toml"
+#: Milliseconds of kernel to draw, and of the worked example beside it.
+KERNEL_MS = 500.0
+EXAMPLE_MS = 500.0
+#: Illustrative spike times (ms). The student fires late on the first, misses the second
+#: altogether and adds one of its own at 410 -- the three ways it can be wrong.
+TEACHER_SPIKES_MS = (40.0, 150.0, 300.0)
+STUDENT_SPIKES_MS = (55.0, 300.0, 410.0)
+
+
+def loss_taus():
+    """(tau_rise, tau_decay) in ms, from the training configuration."""
+    with open(LOSS_PARAMETERS, "rb") as handle:
+        loss = tomllib.load(handle)["loss"]
+    return loss["van_rossum_tau_rise"], loss["van_rossum_tau_decay"]
+
+
+def kernel_peak_ms(tau_rise, tau_decay):
+    """Where the double exponential peaks, in ms."""
+    return (
+        (tau_rise * tau_decay) / (tau_decay - tau_rise) * np.log(tau_decay / tau_rise)
+    )
+
+
+def filtered(spikes_ms, t_ms, tau_rise, tau_decay):
+    """Spike times through the loss's kernel, scaled so one spike peaks at 1.
+
+    ``VanRossumLoss`` filters twice in series -- once with exp(-t/tau_rise), then with
+    exp(-t/tau_decay) -- so the effective kernel is their convolution, the difference of
+    the two exponentials. Writing that closed form here keeps the illustration exactly
+    the filter the runs apply.
+    """
+    trace = np.zeros_like(t_ms)
+    for spike in spikes_ms:
+        lag = t_ms - spike
+        active = lag >= 0
+        trace[active] += np.exp(-lag[active] / tau_decay) - np.exp(
+            -lag[active] / tau_rise
+        )
+    peak_t = kernel_peak_ms(tau_rise, tau_decay)
+    peak = np.exp(-peak_t / tau_decay) - np.exp(-peak_t / tau_rise)
+    return trace / peak
+
+
+#: One axis for both halves of (g): the same limits and the same ticks.
+KERNEL_XLIM = (-25.0, 505.0)
+KERNEL_YLIM = (-0.5, 1.7)
+KERNEL_XTICK_MS = 100.0
+
+
+def kernel_axis(ax):
+    """The shared axis of both halves of the loss panel."""
+    ax.set_xlim(*KERNEL_XLIM)
+    ax.set_ylim(*KERNEL_YLIM)
+    ax.set_yticks([0, 0.5, 1.0, 1.5])
+    ax.xaxis.set_major_locator(MultipleLocator(KERNEL_XTICK_MS))
+
+
+def loss_kernel():
+    """(g) The loss's kernel, and the difference it is used to take.
+
+    Left: what one spike leaves behind -- the calcium-like kernel the van Rossum loss
+    convolves spike trains with. Right: two spike trains that differ, each through that
+    kernel, with the gap between them shaded. The loss squares that gap and averages it
+    over every neuron and timestep, which is what makes it a van Rossum distance rather
+    than a spike-count or a rate error.
+
+    Spike times are illustrative; the time constants are the ones the runs train with.
+    """
+    tau_rise, tau_decay = loss_taus()
+    # Equal axes with one set of ticks, so the two halves read as the same time axis.
+    fig, axes = plt.subplots(1, 2, figsize=(PANEL_WIDTH, TRACE_PANEL_HEIGHT * 0.5))
+
+    t = np.arange(0.0, KERNEL_MS, 0.5)
+    kernel = filtered((0.0,), t, tau_rise, tau_decay)
+    ax = axes[0]
+    ax.plot(t, kernel, color=INK, linewidth=2)
+    ax.fill_between(t, 0, kernel, color=INK, alpha=0.12)
+    peak_t = kernel_peak_ms(tau_rise, tau_decay)
+    ax.annotate(
+        f"rise {tau_rise:g} ms",
+        xy=(
+            peak_t * 0.4,
+            filtered((0.0,), np.array([peak_t * 0.4]), tau_rise, tau_decay)[0],
+        ),
+        xytext=(peak_t + 75, 1.12),
+        fontsize=TICK_SIZE * 0.9,
+        arrowprops={"arrowstyle": "->", "color": LEGEND_GREY},
+    )
+    ax.annotate(
+        f"decay {tau_decay:g} ms",
+        xy=(
+            tau_decay + peak_t,
+            filtered((0.0,), np.array([tau_decay + peak_t]), tau_rise, tau_decay)[0],
+        ),
+        xytext=(tau_decay + peak_t + 45, 0.62),
+        fontsize=TICK_SIZE * 0.9,
+        arrowprops={"arrowstyle": "->", "color": LEGEND_GREY},
+    )
+    ax.eventplot([0.0], lineoffsets=-0.1, linelengths=0.13, colors=INK, linewidths=2)
+    ax.text(
+        16, -0.1, "one spike", fontsize=TICK_SIZE * 0.9, va="center", color=LEGEND_GREY
+    )
+    kernel_axis(ax)
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Kernel")
+    ax.set_title("Calcium-like Kernel")
+
+    t = np.arange(0.0, EXAMPLE_MS, 0.5)
+    teacher = filtered(TEACHER_SPIKES_MS, t, tau_rise, tau_decay)
+    student = filtered(STUDENT_SPIKES_MS, t, tau_rise, tau_decay)
+    ax = axes[1]
+    # The shading is the difference itself, not its square: the loss squares it and then
+    # averages, so labelling this band "squared difference" would be wrong.
+    ax.fill_between(t, teacher, student, color=REFERENCE_GREY, alpha=0.45, linewidth=0)
+    ax.plot(t, teacher, color=TEACHER, linewidth=2)
+    ax.plot(t, student, color=STUDENT, linewidth=2)
+    ax.eventplot(
+        TEACHER_SPIKES_MS,
+        lineoffsets=-0.17,
+        linelengths=0.15,
+        colors=TEACHER,
+        linewidths=2,
+    )
+    ax.eventplot(
+        STUDENT_SPIKES_MS,
+        lineoffsets=-0.36,
+        linelengths=0.15,
+        colors=STUDENT,
+        linewidths=2,
+    )
+    # Labelled on the curves: a legend box sat on the traces in every corner of a panel
+    # this short (2026-09-24).
+    ax.text(92, 1.19, "Teacher", color=TEACHER, fontsize=TICK_SIZE * 0.95, ha="center")
+    ax.text(452, 1.42, "Student", color=STUDENT, fontsize=TICK_SIZE * 0.95, ha="center")
+    ax.annotate(
+        "difference",
+        xy=(250, 0.78),
+        xytext=(330, 0.12),
+        fontsize=TICK_SIZE * 0.9,
+        color=LEGEND_GREY,
+        arrowprops={"arrowstyle": "->", "color": LEGEND_GREY},
+    )
+    ax.text(
+        0.02,
+        0.97,
+        "L = ⟨(teacher − student)²⟩",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=TICK_SIZE * 0.95,
+        color=INK,
+    )
+    kernel_axis(ax)
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Filtered Spikes")
+    ax.set_title("Loss = Mean Squared Difference")
+    fig.tight_layout()
+    return fig
+
+
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
@@ -609,6 +775,8 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
 
     raster = np.load(data_dir / "fig00_assembly_raster.npz")
     output(assembly_rastermap(raster), "f", "assembly-rastermap", raster=True)
+
+    output(loss_kernel(), "g", "loss-kernel")
 
 
 if __name__ == "__main__":
