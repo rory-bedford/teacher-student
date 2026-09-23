@@ -76,13 +76,12 @@ def weight_perturbation(table):
     """(a) Single synapses before and after the noise, one panel per level.
 
     A recreation of the old repository's ``weight_perturbation.svg``: the perturbed weight
-    against the original, the identity dashed, and the mean and SD before and after --
-    which the noise preserves exactly, by construction -- beside R², which is what
-    actually degrades. All three are over the whole non-zero population, not the plotted
-    sample: a few hundred synapses do not show the SD being preserved, since their own SD
-    moves with whichever outliers the draw contains. The points are a random sample, and
-    the axes stop at the PERTURBATION_PERCENTILE of the weights, since a handful of
-    synapses run two orders of magnitude further out.
+    against the original, the identity dashed, and R², which is what degrades. The mean and
+    SD are not quoted (2026-09-23): the noise preserves them exactly by construction, so
+    they said nothing the panel needed. They remain in fig05_weight_perturbation.csv, over
+    the whole non-zero population. R² is over that population too; the points are a random
+    sample of it, and the axes stop at the PERTURBATION_PERCENTILE of the weights, since a
+    handful of synapses run two orders of magnitude further out.
     """
     levels = sorted(table["weight_noise"].unique())
     limit = float(
@@ -103,6 +102,7 @@ def weight_perturbation(table):
             linewidths=0,
             rasterized=True,
         )
+        ax.tick_params(labelleft=True)  # both panels keep their y ticks, despite sharey
         ax.set_xlim(0, limit)
         ax.set_ylim(0, limit)
         ax.set_aspect("equal")
@@ -113,10 +113,6 @@ def weight_perturbation(table):
         ax.text(
             0.04,
             0.96,
-            f"μ {rows['population_mean'].iloc[0]:.4f} → "
-            f"{rows['population_mean_noisy'].iloc[0]:.4f}\n"
-            f"σ {rows['population_sd'].iloc[0]:.4f} → "
-            f"{rows['population_sd_noisy'].iloc[0]:.4f}\n"
             f"R² = {rows['correlation'].iloc[0] ** 2:.3f}",
             transform=ax.transAxes,
             ha="left",
