@@ -103,7 +103,7 @@ FIGURES = (
     ),
 )
 #: Every subpanel is this size in both figures, so they tile on one slide.
-SUBPANEL_SIZE = (4.4, 4.0)
+SUBPANEL_SIZE = (3.2, 4.4)  # narrow and tall: bars close together, axes not squat
 
 
 def plotted_epochs(summary):

@@ -59,7 +59,7 @@ VARIANT_LABELS = {
 VARIANT_COLORS = {"known_input": TRUTH, "learnt_feedforward": MODEL}
 #: Both bar figures use this subpanel size, so held-out (two populations) and perturbation
 #: (one) tile on a slide with every subpanel the same size.
-SUBPANEL_SIZE = (4.4, 4.0)
+SUBPANEL_SIZE = (3.2, 4.4)  # as Figure 2: narrow and tall
 POPULATIONS = [("observed", "Observed Neurons"), ("unobserved", "Unobserved Neurons")]
 
 
@@ -156,7 +156,7 @@ def scatters(rates, summary):
         rows = subset[subset["observed"] == int(group == "observed")]
         rate_scatter(ax, rows, title)
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Firing Rates, Student vs Teacher, Input Learnt, Held-Out Stimulus")
+    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
     fig.tight_layout()
     return fig
 

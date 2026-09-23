@@ -200,7 +200,7 @@ def scatters(summary, rates, fractions, seed):
             f"{fraction * 100:g}% Observed ({n_observed} Neurons)",
         )
         ax.title.set_fontsize(TICK_SIZE)
-    fig.suptitle("Unobserved Neurons, Student vs Teacher Activity")
+    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
     fig.tight_layout()
     return fig
 

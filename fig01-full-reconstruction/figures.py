@@ -30,7 +30,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
     DELTA_MARKER_SIZE,
-    PERTURBATION_TITLE,
     delta_rate_scatter,
 )
 from common.style import (
@@ -227,10 +226,9 @@ def delta_scatter(summary, deltas):
     fig, ax = plt.subplots(figsize=(PAIR[0] / 2, PAIR[1]))
     delta_rate_scatter(ax, deltas)
     scatter_legend(ax, DELTA_MARKER_SIZE)
-    ax.set_title(
-        PERTURBATION_TITLE + "\n" + "\n".join(delta_scores(summary)),
-        fontsize=TICK_SIZE,
-    )
+    # No R² stack (2026-09-23): the numbers are in the CSVs and on the bar panels, and
+    # three dense lines of them crowded the scatter they sat above.
+    ax.set_title("Rate Change, Student vs Teacher, Perturbation")
     fig.tight_layout()
     return fig
 

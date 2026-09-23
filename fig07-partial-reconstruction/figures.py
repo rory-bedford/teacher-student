@@ -99,9 +99,7 @@ def scatters(sweep, rates, fraction, seed):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
         rate_scatter(ax, level[level["group"] == group], label)
-    fig.suptitle(
-        f"Firing Rates, Student vs Teacher, {fraction:.0%} of the Network Reconstructed"
-    )
+    fig.suptitle("Firing Rates, Student vs Teacher, Held-Out Stimulus")
     fig.tight_layout()
     return fig
 
