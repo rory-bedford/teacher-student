@@ -25,6 +25,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import MultipleLocator
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -63,6 +64,8 @@ GROUPS = {
 #: teacher's weights are log-normal with a long tail (a handful reach 65), so plotting
 #: the full range would put every point in one corner.
 PERTURBATION_PERCENTILE = 99.0
+#: Both weight axes carry the same ticks, so the identity line reads as the diagonal it is.
+PERTURBATION_TICK = 0.1
 
 
 def weight_perturbation(table):
@@ -99,6 +102,8 @@ def weight_perturbation(table):
         ax.set_xlim(0, limit)
         ax.set_ylim(0, limit)
         ax.set_aspect("equal")
+        ax.xaxis.set_major_locator(MultipleLocator(PERTURBATION_TICK))
+        ax.yaxis.set_major_locator(MultipleLocator(PERTURBATION_TICK))
         ax.set_xlabel("Teacher Weight (nS)")
         ax.set_title(f"Weight Noise {noise:g}")
         ax.text(
