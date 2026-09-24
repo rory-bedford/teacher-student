@@ -34,7 +34,6 @@ from common.plotting import (
     PERTURBATION_TITLE,
     SCATTER_TITLE,
     pool_populations,
-    rate_scatter,
 )
 from common.style import (
     LEGEND_GREY,
@@ -48,6 +47,7 @@ from common.style import (
     clear_panels,
     performance_axis,
     performance_limits,
+    rate_scatter,
     save,
     tighten_pair,
 )

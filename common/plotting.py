@@ -88,37 +88,6 @@ def panel_label(ax, label):
     )
 
 
-def rate_scatter(ax, rates, title, max_rate=None):
-    """Teacher vs student firing rate, one point per neuron, coloured by E/I."""
-    if max_rate is None:
-        max_rate = (
-            float(np.nanpercentile(rates[["teacher_rate_hz", "student_rate_hz"]], 99.5))
-            * 1.05
-        )
-    for cell_type, color, label in (
-        ("inhibitory", INHIBITORY_COLOR, "I"),
-        ("excitatory", EXCITATORY_COLOR, "E"),
-    ):
-        subset = rates[rates["cell_type"] == cell_type]
-        ax.scatter(
-            subset["teacher_rate_hz"],
-            subset["student_rate_hz"],
-            s=2,
-            alpha=0.5,
-            color=color,
-            label=label,
-            linewidths=0,
-            rasterized=True,
-        )
-    ax.plot([0, max_rate], [0, max_rate], "k--", linewidth=0.6, alpha=0.5)
-    ax.set_xlim(0, max_rate)
-    ax.set_ylim(0, max_rate)
-    ax.set_aspect("equal")
-    ax.set_xlabel("Teacher rate (Hz)")
-    ax.set_ylabel("Student rate (Hz)")
-    ax.set_title(title, fontsize=6)
-
-
 def r2_title(label, summary, group, seed=None):
     """``label`` with Fluctuation/Activity R² and ceiling (one seed, or the mean)."""
     rows = summary[summary["group"] == group]
