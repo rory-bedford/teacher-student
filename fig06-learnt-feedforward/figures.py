@@ -1,4 +1,4 @@
-"""Figure 6 — one SVG or PNG per panel from the CSVs written by analysis.py.
+"""Figure 6 — one SVG per panel from the CSVs written by analysis.py.
 
     uv run python fig06-learnt-feedforward/figures.py
 

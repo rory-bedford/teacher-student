@@ -97,7 +97,7 @@ fig05-weight-noise/
   fig05_rates.csv
   fig05_summary.csv
   fig05_weight_perturbation.csv
-  fig05-a-weight-perturbation.png
+  fig05-a-weight-perturbation.svg
   fig05-b-curve.svg
   fig05-c-delta-fluctuation.svg
 ```

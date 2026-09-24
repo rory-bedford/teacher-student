@@ -66,7 +66,7 @@ rank-1 run at 1e-3, archived and ours, left the feedforward matrix at chance (co
   types pooled, sharing (a)'s y range.
 - **(c)** `fig06-c-legend` — the shared legend, its own file.
 - **(d)** `fig06-d-scatter` — teacher vs student firing rate, Observed | Unobserved, learnt
-  condition, 400 dpi PNG.
+  condition, data embedded as a 400 dpi raster.
 
 The claim is the gap between the two bars *within* the unobserved panel of (a), against
 Figure 1 where both populations sit near the ceiling.
@@ -79,7 +79,7 @@ fig06-learnt-feedforward/
   experiment.toml  parameters.toml  README.md
   fig06_summary.csv  fig06_rates.csv
   fig06-a-bars-held-out.svg  fig06-b-bars-perturbation.svg
-  fig06-c-legend.svg  fig06-d-scatter.png
+  fig06-c-legend.svg  fig06-d-scatter.svg
 ```
 
 ## How to run

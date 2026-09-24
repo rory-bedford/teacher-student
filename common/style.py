@@ -22,6 +22,8 @@ from connectome_snns.visualization import (
     use_project_style,
 )
 from matplotlib import font_manager as fm
+from matplotlib.collections import Collection
+from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path as Path_
@@ -188,20 +190,44 @@ def clear_panels(out_dir, figure, suffix=""):
             path.unlink()
 
 
-#: Dots per inch for panels saved as PNG. At the panel sizes here (~6.5 in wide) this is
-#: ~2600 px across, well past what a projector or a print resolves, so the panel can be
+#: Dots per inch of the raster embedded in ``raster=True`` panels. At the panel sizes
+#: here (~6.5 in wide) this is ~2600 px across, well past what a projector or a print resolves, so the panel can be
 #: enlarged on a slide without softening.
 RASTER_DPI = 400
+
+#: An artist with at least this many points (markers or line vertices) counts as dense
+#: data and is rasterized in a ``raster=True`` panel; sparser ones -- identity lines,
+#: zero lines, legend handles -- stay vector.
+DENSE_POINTS = 200
+
+
+def _point_count(artist):
+    if isinstance(artist, Line2D):
+        return len(artist.get_xydata())
+    if isinstance(artist, Collection):
+        offsets = len(artist.get_offsets())
+        vertices = sum(len(path.vertices) for path in artist.get_paths())
+        return max(offsets, vertices)
+    return 0
+
+
+def rasterize_dense(fig):
+    """Mark every image and every artist of :data:`DENSE_POINTS` or more as rasterized."""
+    for ax in fig.axes:
+        for artist in ax.get_children():
+            if isinstance(artist, AxesImage) or _point_count(artist) >= DENSE_POINTS:
+                artist.set_rasterized(True)
 
 
 def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None, raster=False):
     """``<out_dir>/<figure>-<letter>-<slug><suffix>.svg``, e.g. fig01-a-raster.svg.
 
-    ``raster=True`` writes a ``.png`` at :data:`RASTER_DPI` instead. Panels whose ink is
-    thousands of points or a dense trace -- every rate scatter, every spike raster, the
-    membrane and conductance traces -- go out as PNG: as SVG each one carries every point
-    as its own element, which makes a deck slow to open and to page through. Everything
-    else stays vector, so axes and labels stay sharp and editable.
+    ``raster=True`` keeps the SVG but embeds the dense data as a PNG at
+    :data:`RASTER_DPI` inside it (2026-09-24; it was a whole-panel PNG before, which could
+    not be edited). Panels whose ink is thousands of points or a dense trace -- every
+    rate scatter, every spike raster, the membrane and conductance traces -- would
+    otherwise carry every point as its own element, which makes a deck slow to open and
+    to page through. The axes, ticks, labels and sparse lines stay vector and editable.
 
     ``decorate`` is called with the figure just before saving and ``suffix`` is appended
     to the file name, so a caller can emit a marked-up variant of a panel (a draft
@@ -209,8 +235,9 @@ def save(fig, out_dir, figure, letter, slug, suffix="", decorate=None, raster=Fa
     """
     if decorate is not None:
         decorate(fig)
-    extension = "png" if raster else "svg"
-    path = Path(out_dir) / f"{figure}-{letter}-{slug}{suffix}.{extension}"
+    if raster:
+        rasterize_dense(fig)
+    path = Path(out_dir) / f"{figure}-{letter}-{slug}{suffix}.svg"
     fig.savefig(path, bbox_inches="tight", dpi=RASTER_DPI if raster else None)
     plt.close(fig)
     print(f"Saved {path}")
