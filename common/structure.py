@@ -13,6 +13,8 @@ all read from the ``[student]`` table of ``parameters.toml``:
     recorded_pool_fraction    fixed recorded pool over the 5000 recurrent neurons (Fig 6)
     learnt_feedforward        every mitral weight learnt, the whole recurrent connectome
                               known, every neuron modelled (Fig 7)
+    threshold_heterogeneity   SD in mV of an independent, mean-zero Gaussian offset to each
+                              student neuron's spike threshold (Fig 8)
 
 The result is saved as ``student_structure.npz`` in the run directory, so that
 evaluation rebuilds exactly the network that was trained rather than re-deriving it.
@@ -50,6 +52,7 @@ _STREAM_DROPOUT = 4
 _STREAM_NOISE = 5
 _STREAM_SEGMENT = 6
 _STREAM_POOL = 7
+_STREAM_THRESHOLD = 8
 
 
 def _rng(seed, stream):
@@ -222,6 +225,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
     dropout = float(student_cfg.get("synapse_dropout_fraction", 0.0))
     noise = float(student_cfg.get("weight_noise", 0.0))
     reconstructed = student_cfg.get("reconstructed_fraction")
+    threshold_heterogeneity = float(student_cfg.get("threshold_heterogeneity", 0.0))
     learnt_feedforward = bool(student_cfg.get("learnt_feedforward", False))
     if learnt_feedforward and reconstructed is not None:
         raise ValueError(
@@ -333,6 +337,18 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
                 n_noise_weights += int((values != 0).sum())
         ff, rec = combined[:n_ff], combined[n_ff:]
 
+    # --- Model mismatch (Fig 8): each student neuron's spike threshold is offset from
+    # the teacher's by an independent draw, centred within each cell type so that every
+    # population's mean threshold stays exactly the teacher's -- heterogeneity only.
+    theta_offset = np.zeros(n_rec)
+    if threshold_heterogeneity > 0:
+        theta_offset = threshold_heterogeneity * _rng(
+            seed, _STREAM_THRESHOLD
+        ).standard_normal(n_rec)
+        for cell_type in range(n_rec_types):
+            members = ct == cell_type
+            theta_offset[members] -= theta_offset[members].mean()
+
     return {
         "cell_type_indices": ct,
         "ff_cell_type_indices": ff_ct,
@@ -350,6 +366,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
         "inject_unreconstructed": np.array(
             reconstructed is not None or learnt_feedforward
         ),
+        "theta_offset": theta_offset.astype(np.float32),
         "noise_clipped_fraction": np.array(
             n_noise_clipped / n_noise_weights if n_noise_weights else 0.0
         ),

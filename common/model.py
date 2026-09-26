@@ -457,6 +457,14 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
         )
         model = TwoLayerSNN(layer1, layer2, n_ff=n_ff, return_hidden_spikes=True)
 
+    # Model mismatch (Fig 8): per-neuron threshold offsets, in mV, relative to the
+    # teacher's physiology. Structures saved before 2026-09-26 have none.
+    theta_offset = structure.get("theta_offset")
+    if theta_offset is not None:
+        layer2.theta += torch.as_tensor(theta_offset[observed])
+        if unobserved.size:
+            model.layer1.theta += torch.as_tensor(theta_offset[unobserved])
+
     model.student_parameters = parameters
     return model, parameters
 

@@ -164,9 +164,9 @@ def held_out_trial(run_dir, device):
 def perfect_structure(structure, teacher):
     """The perfectly specified student for ``structure``.
 
-    Teacher weights, no perturbation, and teacher forcing on exactly the sources the
-    run injects (its observed neurons and any unreconstructed units); every other
-    neuron, including any the run removed, is simulated.
+    Teacher weights and thresholds, no perturbation, and teacher forcing on exactly the
+    sources the run injects (its observed neurons and any unreconstructed units); every
+    other neuron, including any the run removed, is simulated.
     """
     sets = neuron_sets(structure)
     forced = np.zeros_like(structure["modelled"])
@@ -182,6 +182,7 @@ def perfect_structure(structure, teacher):
         "known_ff": np.ones_like(structure["known_ff"]),
         "inject_unreconstructed": np.array(False),
         "recurrent_model": "connectome",
+        "theta_offset": np.zeros(structure["modelled"].size, dtype=np.float32),
     }
 
 

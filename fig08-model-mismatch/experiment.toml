@@ -1,0 +1,24 @@
+script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig08-model-mismatch/train.py"
+output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig08-model-mismatch"
+parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig08-model-mismatch/parameters.toml"
+log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
+description = "Figure 8: model mismatch -- heterogeneous (mean-zero, per-neuron) student spike thresholds, 50% observed, full reconstruction."
+
+[data]
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/network_structure.npz"
+strategy = "symlink"
+
+[[data.inputs]]
+path = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/teacher-activity/results/spike_data.zarr"
+strategy = "symlink"
+
+[wandb]
+enabled = true
+project = "bernstein"
+name = ""
+entity = ""
+group = "fig08-model-mismatch"
+tags = ["fig08", "model-mismatch", "threshold", "ff-known", "obs-50", "recur-100"]
+notes = "Threshold-heterogeneity sweep."

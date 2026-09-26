@@ -181,6 +181,12 @@ def train_student(
         f"{int((~structure['modelled']).sum()) - sets['unreconstructed'].size} removed; "
         f"recurrent model: {structure['recurrent_model']}"
     )
+    theta_offset = structure["theta_offset"]
+    if theta_offset.any():
+        print(
+            f"Threshold mismatch: mean {theta_offset.mean():+.2f} mV, "
+            f"SD {theta_offset.std():.2f} mV over {theta_offset.size} neurons"
+        )
 
     dataset = ExactFFDataset(
         spike_data_path=input_dir / "spike_data.zarr",

@@ -25,6 +25,7 @@ dependency. Data is **not** stored here — it lives in `../bernstein`.
 | `fig05-weight-noise/` | Weight-noise sweep, 0 → 0.5 |
 | `fig06-learnt-feedforward/` | The whole recurrent connectome given, every feedforward weight learnt (full rank), 50% observed |
 | `fig07-partial-reconstruction/` | Partial reconstruction: unreconstructed units injected through learnt weights, reconstructed fraction 100% → 10% |
+| `fig08-model-mismatch/` | Model mismatch: heterogeneous student spike thresholds (mean zero, SD 1, 2, 4 mV), connectome perfect |
 
 Each figure folder holds `README.md` (its claim, configuration and recipe as run),
 `experiment.toml`, `parameters.toml`, `train.py`, `run_grid_search.py`, `analysis.py`,
