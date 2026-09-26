@@ -7,8 +7,8 @@ all read from the ``[student]`` table of ``parameters.toml``:
     neuron_removal_fraction   neurons deleted from the student entirely (Fig 4a)
     synapse_dropout_fraction  recurrent synapses deleted, every neuron kept (Fig 4b)
     weight_noise              archived multiplicative log-normal noise, per cell-type pair (Fig 5)
-    recurrent_model           "connectome" | "learnt" | "shuffle_weights" | "shuffle_inputs" |
-                              "configuration_model" (Fig 2)
+    recurrent_model           "connectome" | "learnt" | "fixed_topology" | "shuffle_weights" |
+                              "shuffle_inputs" | "configuration_model" (Fig 2)
     reconstructed_fraction    fraction of the 6500 pooled units in the reconstructed segment S (Fig 6)
     recorded_pool_fraction    fixed recorded pool over the 5000 recurrent neurons (Fig 6)
     learnt_feedforward        every mitral weight learnt, the whole recurrent connectome
@@ -29,9 +29,12 @@ import numpy as np
 #: "shuffle_weights" (permute a block's values over all its synapses) is superseded by
 #: "shuffle_inputs" as Figure 2's weight control; it is kept so the runs already on disk
 #: stay reproducible.
+#: "fixed_topology" keeps the true recurrent weights here: the model uses only their
+#: non-zero pattern, and learns one free weight per synapse.
 RECURRENT_MODELS = (
     "connectome",
     "learnt",
+    "fixed_topology",
     "shuffle_weights",
     "shuffle_inputs",
     "configuration_model",

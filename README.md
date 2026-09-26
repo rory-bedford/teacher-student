@@ -19,7 +19,7 @@ dependency. Data is **not** stored here — it lives in `../bernstein`.
 | `fig00-teacher-activity/` | The teacher network + spike data → `bernstein/teacher-activity/` |
 | `common/` | Student construction, training, held-out evaluation, perturbation and plotting shared by all figures |
 | `fig01-full-reconstruction/` | Full reconstruction, 50% observed (the baseline for Figs 2–5) |
-| `fig02-controls/` | Learnt recurrence, shuffled weights, shuffled topology |
+| `fig02-controls/` | Fixed topology (learnt weights), unconstrained recurrence, shuffled weights, shuffled topology |
 | `fig03-observed-fraction/` | Observed-fraction sweep, 50% → 1% |
 | `fig04-reconstruction-errors/` | Neuron removal vs synapse dropout |
 | `fig05-weight-noise/` | Weight-noise sweep, 0 → 0.5 |

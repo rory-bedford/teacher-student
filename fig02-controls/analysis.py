@@ -39,7 +39,8 @@ BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
 #: can never be confused; the keys on the left are what the finished runs already record.
 VARIANT_NAMES = {
     "connectome": "full_connectome",
-    "learnt": "learnt_recurrence",
+    "learnt": "unconstrained",
+    "fixed_topology": "fixed_topology",
     "shuffle_inputs": "shuffle_weights",
     "shuffle_weights": "shuffle_weights_global",
     "configuration_model": "configuration_model",

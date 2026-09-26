@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from connectome_snns.visualization import (
     CONFIGURATION_MODEL_COLOR,
+    FIXED_TOPOLOGY_COLOR,
     LEARNT_RECURRENCE_COLOR,
     SHUFFLE_WEIGHTS_COLOR,
 )
@@ -62,20 +63,26 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig02"
-#: Epoch budget plotted for the learnt-recurrence bars (2026-09-21). The 50-epoch runs
+#: Epoch budget plotted for the unconstrained bars (2026-09-21). The 50-epoch runs
 #: and the 100-epoch reruns coexist in the grid, so this switches the figure between them:
 #: set it to 100 once ``learnt-100ep__seed-*`` have finished. Variants with a single
 #: budget are unaffected.
 LEARNT_EPOCHS = 100
+#: The variants LEARNT_EPOCHS applies to.
+LEARNT_VARIANTS = ["unconstrained", "fixed_topology"]
+#: Fixed topology sits beside the full connectome: the same synapses, their weights
+#: learnt rather than measured (2026-09-26).
 PLOTTED_VARIANTS = [
     "full_connectome",
-    "learnt_recurrence",
+    "fixed_topology",
+    "unconstrained",
     "shuffle_weights",
     "configuration_model",
 ]
 VARIANT_LABELS = {
     "full_connectome": "Full Connectome",
-    "learnt_recurrence": "Learnt Recurrence",
+    "unconstrained": "Unconstrained",
+    "fixed_topology": "Fixed Topology",
     "shuffle_weights": "Shuffled Weights",
     "shuffle_weights_global": "Shuffled Weights (Whole Connectome)",
     "configuration_model": "Shuffled Topology",
@@ -84,7 +91,8 @@ VARIANT_LABELS = {
 #: teacher's steel blue: it is the teacher's connectivity, and it is the first bar.
 VARIANT_COLORS = {
     "full_connectome": TRUTH,
-    "learnt_recurrence": LEARNT_RECURRENCE_COLOR,
+    "unconstrained": LEARNT_RECURRENCE_COLOR,
+    "fixed_topology": FIXED_TOPOLOGY_COLOR,
     "shuffle_weights": SHUFFLE_WEIGHTS_COLOR,
     "shuffle_weights_global": SHUFFLE_WEIGHTS_COLOR,
     "configuration_model": CONFIGURATION_MODEL_COLOR,
@@ -109,10 +117,10 @@ SUBPANEL_SIZE = (3.2, 4.4)  # narrow and tall: bars close together, axes not squ
 
 
 def plotted_epochs(summary):
-    """Keep one epoch budget per variant: LEARNT_EPOCHS for learnt recurrence."""
+    """Keep one epoch budget per variant: LEARNT_EPOCHS for the learnt variants."""
     if "total_epochs" not in summary:  # CSVs written before 2026-09-21
         return summary
-    learnt = summary["variant"] == "learnt_recurrence"
+    learnt = summary["variant"].isin(LEARNT_VARIANTS)
     return summary[~learnt | (summary["total_epochs"] == LEARNT_EPOCHS)]
 
 

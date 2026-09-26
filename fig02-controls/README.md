@@ -40,15 +40,23 @@ Identical to Figure 1 in every respect except the connectivity given to the stud
 | Variant | What the student gets | Free parameters |
 |---|---|---|
 | **Full connectome** | true topology and weights | **6** (FF→E, FF→I, E→E, E→I, I→E, I→I scalings) |
-| **Learnt recurrence** | no connectome; all recurrent weights free | ~5000² = **25 M** |
+| **Fixed topology** | true topology; every synapse's weight free | ~1.6 M (one per synapse) |
+| **Unconstrained** | no connectome; all recurrent weights free | ~5000² = **25 M** |
 | **Shuffled weights** | true topology, each neuron's input weights permuted among its own presynaptic partners, so its total input weight is preserved exactly | 6 |
 | **Shuffled topology** (configuration-model rewire) | rewired **within each block** (E→E, E→I, …) preserving in/out degree sequences and the within-block weight distribution | 6 |
 
 **Why the configuration model rather than a random within-block rewire.** A fully random rewire destroys degree heterogeneity as well as specific wiring, so a failure is attributable to either. The configuration model preserves block statistics *and* degree and destroys only the specific wiring — the stringent null. If the full connectome still wins against it, that is the strong claim.
 
+**Why fixed topology (2026-09-26).** It is the other half of the weight shuffle: topology
+given, weight values not given at all but learnt freely, synapse by synapse. Between the full
+connectome (6 parameters) and unconstrained (25 M) it asks whether the wiring diagram alone,
+with a data-driven fit of every weight, is enough — i.e. how much of the win is topology.
+(Until 2026-09-26 "unconstrained" was called "learnt recurrence"; the runs on disk still
+record `recurrent_model = "learnt"`.)
+
 **Why the weight shuffle stays.** It tests whether the *weight values* carry information given correct topology — which in the real pipeline is exactly the question of whether synapse volumes are informative. It is the control closest to the assumption the Dp model rests on.
 
-The configuration model **replaces** the naive random within-block rewire; it is not an extra bar. Four variants total.
+The configuration model **replaces** the naive random within-block rewire; it is not an extra bar. Five variants total (fixed topology added 2026-09-26).
 
 ## Evaluation
 
@@ -57,7 +65,7 @@ The configuration model **replaces** the naive random within-block rewire; it is
 - Reported separately for **observed** and **unobserved** neurons. Unobserved is the discriminative group — every variant can fit what it is shown.
 - **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted — the shuffled-identity floor was dropped on 2026-09-17.
 - **As built** (three seeds, held-out Fluctuation R², observed / unobserved): full
-  connectome 0.97 / 0.97, learnt recurrence 0.73 / -0.30, shuffled weights -0.15 / -0.18,
+  connectome 0.97 / 0.97, unconstrained 0.73 / -0.30, shuffled weights -0.15 / -0.18,
   shuffled topology -0.19 / -0.20.
 
 ## Panels
@@ -96,11 +104,11 @@ fig02-controls/
 ## Notes
 
 - Activity R² barely separates the variants on the **observed** neurons (full connectome
-  0.99, learnt recurrence 0.96): mean rates of neurons the student is shown are easy to
+  0.99, unconstrained 0.96): mean rates of neurons the student is shown are easy to
   match. It is the unobserved population, and the fluctuations, on which the connectome
-  earns its place — learnt recurrence goes from 0.96 observed to -0.46 unobserved on the
+  earns its place — unconstrained goes from 0.96 observed to -0.46 unobserved on the
   same metric.
-- Learnt recurrence is the control people will ask about — it is the standard
+- Unconstrained is the control people will ask about — it is the standard
   data-constrained RNN. Put its parameter count beside the constrained model's 6 on the
   slide.
 - **There is no graded version of the wrong-connectome controls, and that is a property of
@@ -115,7 +123,7 @@ fig02-controls/
 ### How to run
 
 ```bash
-./run --grid fig02-controls/experiment.toml   # 3 controls x 3 seeds, plus the fully observed check -> bernstein/fig02-controls/
+./run --grid fig02-controls/experiment.toml   # 4 controls x 3 seeds, plus the fully observed check -> bernstein/fig02-controls/
 uv run python fig02-controls/analysis.py       # reads Figure 1's runs too; fig02_summary.csv, fig02_rates.csv
 uv run python fig02-controls/figures.py        # fig02-a … fig02-c SVGs
 ```
@@ -124,7 +132,7 @@ uv run python fig02-controls/figures.py        # fig02-a … fig02-c SVGs
 Everything else — student, observed split per seed, perturbation, recipe, evaluation — is
 Figure 1's (see its README); only `[student].recurrent_model` changes. Runs are ordered seed
 by seed, so all controls get one seed before any gets a second. Cost ≈ 3.6 h per run as
-Figure 1 for the two six-parameter controls (learnt recurrence: see below).
+Figure 1 for the two six-parameter controls (unconstrained: see below).
 
 The grid also trains one **fully observed** full-connectome run per seed
 (`connectome-fully-observed__seed-*`). It is no bar in this figure: with every neuron
@@ -137,7 +145,8 @@ check, read by Figure 1's `analysis.py` for its scaling-factor panel.
 | Variant | Implementation | Free parameters |
 |---|---|---|
 | Full connectome | Figure 1 | 6 |
-| Learnt recurrence | every recurrent block replaced by a dense, full-rank matrix of free log-weights, shared across the two layers; true feedforward pattern and its 2 scaling factors kept (see below) | **25,000,002** (5000² + 2) |
+| Unconstrained | every recurrent block replaced by a dense, full-rank matrix of free log-weights, shared across the two layers; true feedforward pattern and its 2 scaling factors kept (see below) | **25,000,002** (5000² + 2) |
+| Fixed topology | every recurrent block a free log-weight per true synapse (`exp(W) * topology`, the same shared matrices as unconstrained, masked to the teacher's non-zero pattern; absent synapses get no gradient); feedforward pattern and its 2 scaling factors as for every variant (`recurrent_model = "fixed_topology"`) | **1,582,452** (1,582,450 synapses + 2) |
 | Shuffled weights | each neuron's non-zero input weights permuted among its own presynaptic partners, within cell type; topology and total input untouched (`recurrent_model = "shuffle_inputs"`) | 6 |
 | Shuffled topology | within each block, in-stubs randomly re-paired with out-stubs; self-connections and duplicate synapses repaired by swapping targets with random distinct edges; the block's weights then randomly reassigned | 6 |
 
@@ -151,7 +160,7 @@ across the whole matrix, one seed) is kept under the distinct name `shuffle_weig
 in the CSVs so the two can never be confused; the per-neuron shuffle is the weight control
 (2026-09-21).
 
-### What the learnt-recurrence control is — state this on the slide
+### What the unconstrained control is — state this on the slide
 
 It isolates the **recurrent** connectome and nothing else. Exactly like every other variant
 (and Figure 1), the student is given:
@@ -166,14 +175,14 @@ What it does **not** get is the recurrent connectome: every recurrent block (E->
 I->I) is a **dense, fully connected, full-rank matrix of free weights** — 5000² = 25,000,000
 parameters, shared between the simulated unobserved population and the observed neurons — with no
 scaling factors on top. Total free parameters: **25,000,002** (vs 6 with the connectome). Suggested
-slide wording: *"learnt recurrence: all 25M recurrent weights free; feedforward pattern and
+slide wording: *"unconstrained: all 25M recurrent weights free; feedforward pattern and
 recordings as for the connectome model"*.
 
 Because it is handed the feedforward pattern, this control is **conservative** — it starts with
 more of the true circuit than a generic data-constrained RNN would. A version that also learns the
 feedforward weights was considered and not included.
 
-### Learnt recurrence — settings
+### Unconstrained — settings
 
 | Setting | Value | Why |
 |---|---|---|
@@ -192,8 +201,17 @@ initialisation, so the initialisation and learning rate were changed as above be
 grid was run. That run is kept at
 `bernstein/_superseded/lr8e-3-vr-only/fig02-controls__learnt-meannonzero-init__seed-44/`.
 
+### Fixed topology — settings
+
+Same optimiser, learning rates, clip and budget (100 epochs, `fixed_topology-100ep__seed-*`)
+as unconstrained. Each block's synapses start at the block's **mean non-zero weight** ×
+perturbation: the topology is given and its weights are not, and every neuron starts with its
+true in-degree times the mean synapse, so the block's total drive is the teacher's exactly
+(verified, seed 44). The four recurrent scaling factors are dropped; the two feedforward ones
+stay.
+
 **Epoch budget.** The six-parameter controls run 50 epochs, where they have long since
-converged. Learnt recurrence fits 25M weights and was still descending at 50 epochs (van
+converged. Unconstrained fits 25M weights and was still descending at 50 epochs (van
 Rossum 145 -> 141 over the final tenth), so `run_grid_search.py` also submits it at 100
 epochs — the budget every other learnt-weights model in this project gets — into its own
 `learnt-100ep__seed-*` directories. The plotted bars are the 50-epoch runs; `LEARNT_EPOCHS`

@@ -2,7 +2,7 @@ script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig02-controls
 output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig02-controls"
 parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig02-controls/parameters.toml"
 log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
-description = "Figure 2: connectivity controls (learnt recurrence, shuffle weights, configuration-model rewire) at the Figure 1 configuration."
+description = "Figure 2: connectivity controls (unconstrained, fixed topology, shuffle weights, configuration-model rewire) at the Figure 1 configuration."
 
 [data]
 

@@ -4,8 +4,8 @@
 # which run_grid_search.py sweeps over the three controls. The full-connectome variant
 # is Figure 1 itself and is not retrained.
 #
-# The [optimiser] learnt-weight entries apply only to the learnt-recurrence control
-# and are the archived no-connectome control's phase-2 values.
+# The [optimiser] learnt-weight entries apply only to the unconstrained and
+# fixed-topology controls and are the archived no-connectome control's phase-2 values.
 
 [simulation]
 seed = 44                              # overridden per run by run_grid_search.py
@@ -13,7 +13,7 @@ chunk_size = 160
 
 [student]
 observed_fraction = 0.5                # of modelled neurons; drawn at random per seed
-recurrent_model = "shuffle_weights"    # overridden per run: learnt | shuffle_weights | configuration_model
+recurrent_model = "shuffle_weights"    # overridden per run: learnt | fixed_topology | shuffle_inputs | configuration_model
 
 [training]
 total_epochs = 50
@@ -35,8 +35,10 @@ grad_clip_scaling = 5.0
 beta1 = 0.95
 beta2 = 0.999
 eps = 1e-8                             # the archived eps = 1e-4 was never applied
-# Learnt recurrence only: full-rank log weights, fully connected, initialised at each
-# block's mean weight including zeros (density-matched). lr raised from the archived
+# Unconstrained: full-rank log weights, fully connected, initialised at each
+# block's mean weight including zeros (density-matched). Fixed topology: the same
+# optimiser on one log weight per true synapse, initialised at the block's mean
+# non-zero weight. lr raised from the archived
 # 1e-3: weights move ~lr per update in log space, and 50 epochs give ~600 updates.
 lr_weights = 5e-3
 lr_min_weights = 5e-4

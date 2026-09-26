@@ -15,7 +15,8 @@ factor is one parameter per (source type, target type) pair for the whole networ
 A block from source type ``a`` to target type ``b`` is parametrised as
 
     connectome               exp(log_sf[a, b]) * student_weights * perturbation[a, b]
-    learnt recurrence (Fig 2) exp(log_weights[a, b])   — full rank, all pairs, no connectome
+    unconstrained (Fig 2)    exp(log_weights[a, b])   — full rank, all pairs, no connectome
+    fixed topology (Fig 2)   exp(log_weights[a, b]) * topology — one free weight per synapse
     unreconstructed (Fig 6)  exp(U[a, b] @ V[a, b])    — low rank, from sources outside S
 """
 
@@ -90,20 +91,29 @@ def physiology(params):
 
 
 class SlicedFullRankProjection(FullRankProjection):
-    """Rows/columns of a shared full-rank log-weight matrix (learnt recurrence)."""
+    """Rows/columns of a shared full-rank log-weight matrix (unconstrained).
 
-    def __init__(self, log_weights, rows, cols):
+    ``topology`` masks the shared matrix to the synapses that exist (fixed topology);
+    entries outside it get no gradient. Without it every pair is connected.
+    """
+
+    def __init__(self, log_weights, rows, cols, topology=None):
         Projection.__init__(self, len(rows), len(cols))
         object.__setattr__(self, "shared_log_weights", log_weights)
         self.register_buffer("rows", torch.as_tensor(rows, dtype=torch.long))
         self.register_buffer("cols", torch.as_tensor(cols, dtype=torch.long))
-        self.register_buffer("mask", torch.ones(len(rows), len(cols)))
+        mask = (
+            torch.ones(len(rows), len(cols))
+            if topology is None
+            else torch.as_tensor(topology[np.ix_(rows, cols)], dtype=torch.float32)
+        )
+        self.register_buffer("mask", mask)
 
     # Called once per chunk, not per timestep; compiling it per block shape only
     # exhausts torch.compile's recompile limit.
     @torch.compiler.disable
     def forward(self):
-        return torch.exp(self.shared_log_weights[self.rows][:, self.cols])
+        return torch.exp(self.shared_log_weights[self.rows][:, self.cols]) * self.mask
 
 
 class MixedProjection(LowRankProjection):
@@ -164,6 +174,9 @@ class StudentParameters(nn.Module):
         super().__init__()
         self.log_sf = nn.ParameterDict()
         self.log_weights = nn.ParameterDict()
+        #: Topology of a masked ``log_weights`` entry (fixed topology): the entries
+        #: outside it never receive a gradient and are not free parameters.
+        self.topology = {}
         self.U = nn.ParameterDict()
         self.V = nn.ParameterDict()
 
@@ -269,7 +282,8 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
     n_ff = ff_ct.size
     known_ff = structure["known_ff"]
     perturbation = structure["perturbation"]
-    learnt_recurrence = structure["recurrent_model"] == "learnt"
+    learnt_recurrence = structure["recurrent_model"] in ("learnt", "fixed_topology")
+    fixed_topology = structure["recurrent_model"] == "fixed_topology"
     sets = neuron_sets(structure)
     observed, unobserved, unreconstructed = (
         sets["observed"],
@@ -302,16 +316,23 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
     def learnt_recurrence_block(a, b, source_ids, target_ids):
         key = f"{combined_names[a]}__{rec_names[b]}"
         if key not in parameters.log_weights:
-            # Density-matched init: fully connected at the block's mean weight
-            # *including* absent synapses, so each neuron starts with the teacher's
-            # total recurrent drive per block. (The archived no-connectome control used
-            # the mean non-zero weight, ~16x too much drive at this connection density;
-            # it could not recover within 50 epochs.)
             src = modelled[ct[modelled] == a - n_ff_types]
             tgt = modelled[ct[modelled] == b]
             block = structure["rec_weights"][np.ix_(src, tgt)]
-            mean = max(float(block.mean()), 1e-8)
-            init = np.log(mean * perturbation[a, b])
+            if fixed_topology:
+                # The true synapses, every one at the block's mean non-zero weight:
+                # the topology is given, its weights are not, and each neuron starts
+                # with its true in-degree times the mean synapse.
+                parameters.topology[key] = block != 0
+                mean = float(block[block != 0].mean()) if block.any() else 1e-8
+            else:
+                # Density-matched init: fully connected at the block's mean weight
+                # *including* absent synapses, so each neuron starts with the teacher's
+                # total recurrent drive per block. (The archived no-connectome control
+                # used the mean non-zero weight, ~16x too much drive at this connection
+                # density; it could not recover within 50 epochs.)
+                mean = float(block.mean())
+            init = np.log(max(mean, 1e-8) * perturbation[a, b])
             parameters.log_weights[key] = nn.Parameter(
                 torch.full((src.size, tgt.size), init, dtype=torch.float32)
             )
@@ -319,6 +340,7 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
             parameters.log_weights[key],
             type_position[source_ids],
             type_position[target_ids],
+            parameters.topology.get(key),
         )
 
     # Learnt sources of each type, and their positions (rows of U).
@@ -440,7 +462,12 @@ def build_student(structure, params, *, batch_size, dt, surrgrad_scale, low_rank
 
 
 def count_free_parameters(parameters):
-    return int(sum(p.numel() for p in parameters.parameters()))
+    """Trainable entries; a masked log-weight matrix counts only its synapses."""
+    masked = {
+        id(parameters.log_weights[key]): int(topology.sum())
+        for key, topology in parameters.topology.items()
+    }
+    return int(sum(masked.get(id(p), p.numel()) for p in parameters.parameters()))
 
 
 def scaling_factors_relative_to_target(parameters, structure, params):
