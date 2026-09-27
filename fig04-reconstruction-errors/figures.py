@@ -43,6 +43,7 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    estimate_band,
     performance_axis,
     performance_limits,
     save,
@@ -60,6 +61,9 @@ MODELS = {
     "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR, "--"),
     "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR, "--"),
 }
+#: Our estimate for the real dataset (2026-09-27): about 15% of recurrent input lost to
+#: reconstruction errors.
+REAL_DATA_ESTIMATE = (0.125, 0.175)
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
 
@@ -110,10 +114,12 @@ def curve(summary, ylim):
     performance_axis(ax, ylim)
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(f"{METRIC_LABELS['fluctuation_r2']} (Unobserved)")
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {},
         metrics=False,
+        estimate=True,
         extra=[
             Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
             for label, color, linestyle in MODELS.values()
@@ -174,10 +180,12 @@ def delta_sweep(summary, metric, ylim, group="unobserved"):
     ax.set_xlabel(X_LABEL)
     ax.set_ylabel(f"{METRIC_LABELS[metric]} ({group.capitalize()})")
     performance_axis(ax, ylim)
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {},
         metrics=False,
+        estimate=True,
         extra=handles,
         fontsize=TICK_SIZE - 2,
     )

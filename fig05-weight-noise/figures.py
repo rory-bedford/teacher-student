@@ -48,6 +48,7 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    estimate_band,
     performance_axis,
     performance_limits,
     save,
@@ -59,6 +60,9 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig05"
+#: Our estimate for the real dataset (2026-09-27): weight noise about 0.7 (r = 0.81 with
+#: the teacher's weights, the Holler et al. weight-volume correlation).
+REAL_DATA_ESTIMATE = (0.65, 0.75)
 GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
@@ -189,10 +193,12 @@ def curve(summary, clipped, ylim):
     performance_axis(ax, ylim)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
+        estimate=True,
         fontsize=TICK_SIZE - 2,
     )
     # The mean/SD-preserving perturbation clips a few weights at zero (1.5-4.5% across
@@ -237,6 +243,7 @@ def perturbation(summary, metric, ylim):
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
     performance_axis(ax, ylim)
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {
@@ -244,6 +251,7 @@ def perturbation(summary, metric, ylim):
             for group, (_, color) in GROUPS.items()
         },
         metrics=False,
+        estimate=True,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(PERTURBATION_TITLE)

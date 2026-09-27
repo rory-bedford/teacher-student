@@ -25,7 +25,7 @@ from matplotlib import font_manager as fm
 from matplotlib.collections import Collection
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
-from matplotlib.patches import PathPatch
+from matplotlib.patches import Patch, PathPatch
 from matplotlib.path import Path as Path_
 from matplotlib.ticker import MultipleLocator
 from matplotlib.transforms import blended_transform_factory
@@ -621,11 +621,28 @@ def ceiling(ax, rows, x_column, color, x_group=None):
     )
 
 
+#: Where our estimate for the real dataset sits on a degradation sweep (2026-09-27): a
+#: grey vertical band behind the data, one per figure, its range set by the figure.
+ESTIMATE_COLOR = REFERENCE_GREY
+ESTIMATE_ALPHA = 0.25
+ESTIMATE_LABEL = "Real Dataset\nEstimate"
+
+
+def estimate_band(ax, band):
+    """Shade ``band`` = (low, high) on the x axis: the real dataset's estimated range."""
+    ax.axvspan(*band, color=ESTIMATE_COLOR, alpha=ESTIMATE_ALPHA, linewidth=0, zorder=0)
+
+
+def estimate_handle():
+    return Patch(color=ESTIMATE_COLOR, alpha=ESTIMATE_ALPHA, label=ESTIMATE_LABEL)
+
+
 def sweep_legend(
     ax,
     series,
     metrics=True,
     ceiling_line=True,
+    estimate=False,
     extra=(),
     loc="upper left",
     bbox_to_anchor=(1.01, 1.0),
@@ -658,6 +675,8 @@ def sweep_legend(
         handles.append(
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling")
         )
+    if estimate:
+        handles.append(estimate_handle())
     handles += list(extra)
     ax.legend(
         handles=handles,

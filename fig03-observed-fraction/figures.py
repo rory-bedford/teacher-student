@@ -49,6 +49,8 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    estimate_band,
+    estimate_handle,
     performance_axis,
     performance_limits,
     rate_scatter,
@@ -70,6 +72,8 @@ TEACHER_DIMENSIONALITY = (
 )
 DIMENSIONALITY_CSV = "fig03_dimensionality.csv"
 N_NEURONS = 5000
+#: Our estimate for the real dataset (2026-09-27): about 15% of neurons observed.
+REAL_DATA_ESTIMATE = (0.13, 0.17)
 GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
@@ -165,10 +169,12 @@ def curve(summary, ylim):
     observed_axis(ax, summary["obs_fraction"].unique())
     performance_axis(ax, ylim)
     ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
+        estimate=True,
         loc="upper left",
         bbox_to_anchor=(1.02, 1.0),
         fontsize=TICK_SIZE - 2,
@@ -235,6 +241,7 @@ def delta_sweep(summary, metric, ylim):
     observed_axis(ax, rows["obs_fraction"].unique())
     performance_axis(ax, ylim)  # shared with panel (a)
     ax.set_ylabel(METRIC_LABELS[metric])
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     ax.legend(
         handles=[
             *[
@@ -248,6 +255,7 @@ def delta_sweep(summary, metric, ylim):
                 for group, (_, color) in GROUPS.items()
             ],
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
+            estimate_handle(),
         ],
         loc="upper left",
         bbox_to_anchor=(1.02, 1.0),

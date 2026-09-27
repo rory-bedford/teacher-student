@@ -43,6 +43,7 @@ from common.style import (
     apply_style,
     ceiling,
     clear_panels,
+    estimate_band,
     performance_axis,
     performance_limits,
     rate_scatter,
@@ -56,6 +57,8 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig07"
+#: Our estimate for the real dataset (2026-09-27): about 10% of units reconstructed.
+REAL_DATA_ESTIMATE = (0.075, 0.125)
 GROUPS = {
     "observed": ("Observed", OBSERVED),
     "heldout": ("Unobserved", UNOBSERVED),
@@ -148,10 +151,12 @@ def curve(sweep, ylim):
     performance_axis(ax, ylim)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},
         metrics=False,
+        estimate=True,
         fontsize=TICK_SIZE - 2,
     )
     # The free-parameter counts used to be annotated along the axis (2026-09-21): they
@@ -194,6 +199,7 @@ def perturbation(sweep, metric, ylim):
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
     performance_axis(ax, ylim)
+    estimate_band(ax, REAL_DATA_ESTIMATE)
     sweep_legend(
         ax,
         {
@@ -203,6 +209,7 @@ def perturbation(sweep, metric, ylim):
             for group, (_, color) in GROUPS.items()
         },
         metrics=False,
+        estimate=True,
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(PERTURBATION_TITLE)
