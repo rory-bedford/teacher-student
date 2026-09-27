@@ -44,6 +44,7 @@ from connectome_snns.visualization import (
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
+    OBSERVED_PERTURBATION_LABEL,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
     plotted_performance_values,
@@ -109,7 +110,10 @@ FIGURES = (
         # every other figure's perturbation panel reports (2026-09-21). The targeted cells
         # and the separate cell types are still scored, in fig02_summary.csv.
         "delta_fluctuation_r2",
-        ((("unobserved"), "pooled", PERTURBATION_LABEL),),
+        (
+            ("observed", "pooled", OBSERVED_PERTURBATION_LABEL),
+            ("unobserved", "pooled", PERTURBATION_LABEL),
+        ),
     ),
 )
 #: Every subpanel is this size in both figures, so they tile on one slide.

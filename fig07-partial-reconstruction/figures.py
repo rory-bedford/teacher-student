@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LEGEND_LABEL,
+    PERTURBATION_GROUP_LABELS,
     PERTURBATION_TITLE,
     SCATTER_TITLE,
     pool_populations,
@@ -108,7 +108,7 @@ def limits(sweep):
     """One y range for the sweep and the perturbation panel, as in Figures 3 to 5."""
     rows = sweep[
         sweep["metric"].isin(["fluctuation_r2", "delta_fluctuation_r2"])
-        & sweep["group"].isin(["unobserved", "heldout"])
+        & sweep["group"].isin(["observed", "unobserved", "heldout"])
     ]
     return performance_limits(rows["value"])
 
@@ -169,32 +169,39 @@ def perturbation(sweep, metric, ylim):
     population is small, so these points are noisy. E and I are pooled (see
     ``common.plotting.pool_populations``).
     """
-    rows = sweep[
-        (sweep["evaluation"] == "perturbation")
-        & (sweep["metric"] == metric)
-        # analysis.py renames the perturbation rows' "unobserved" group to "heldout".
-        & (sweep["group"] == "heldout")
-    ]
-    pooled = pool_populations(rows, ["reconstructed_fraction", "seed"])
+    rows = sweep[(sweep["evaluation"] == "perturbation") & (sweep["metric"] == metric)]
     base_metric = metric.replace("delta_", "")
     fig, ax = sweep_panel()
-    sweep_series(
-        ax,
-        pooled,
-        "reconstructed_fraction",
-        base_metric,
-        UNOBSERVED,
-        seeds=True,
-        errorbars=False,
-    )
-    ceiling(ax, pooled, "reconstructed_fraction", UNOBSERVED)
+    # analysis.py renames the perturbation rows' "unobserved" group to "heldout";
+    # observed beside it since 2026-09-27, as in the held-out panel.
+    for group, (_, color) in GROUPS.items():
+        pooled = pool_populations(
+            rows[rows["group"] == group], ["reconstructed_fraction", "seed"]
+        )
+        if pooled.empty:
+            continue
+        sweep_series(
+            ax,
+            pooled,
+            "reconstructed_fraction",
+            base_metric,
+            color,
+            seeds=True,
+            errorbars=False,
+        )
+        ceiling(ax, pooled, "reconstructed_fraction", color)
     ax.set_xlim(1.05, 0.0)
     ax.set_xlabel("Fraction of Units Reconstructed")
     ax.set_ylabel(METRIC_LABELS[metric])
     performance_axis(ax, ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LEGEND_LABEL: UNOBSERVED},
+        {
+            PERTURBATION_GROUP_LABELS[
+                "unobserved" if group == "heldout" else group
+            ]: color
+            for group, (_, color) in GROUPS.items()
+        },
         metrics=False,
         fontsize=TICK_SIZE - 2,
     )

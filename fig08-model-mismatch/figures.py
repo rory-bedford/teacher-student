@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LEGEND_LABEL,
+    PERTURBATION_GROUP_LABELS,
     PERTURBATION_TITLE,
     plotted_performance_values,
     pool_populations,
@@ -128,25 +128,32 @@ def curve(summary, ylim):
 
 
 def perturbation(summary, ylim):
-    """(b) The intervention's effect against threshold heterogeneity, E and I pooled."""
+    """(b) The intervention's effect against threshold heterogeneity, per population.
+
+    E and I pooled within each; the unobserved series excludes the targeted cells.
+    """
     metric = "delta_fluctuation_r2"
     rows = summary[
-        (summary["evaluation"] == "perturbation")
-        & (summary["metric"] == metric)
-        & (summary["group"] == "unobserved")
+        (summary["evaluation"] == "perturbation") & (summary["metric"] == metric)
     ]
-    pooled = pool_populations(rows, [X, "seed"])
     fig, ax = sweep_panel()
-    sweep_series(
-        ax, pooled, X, "fluctuation_r2", UNOBSERVED, seeds=True, errorbars=False
-    )
-    constant_ceiling(ax, pooled, UNOBSERVED)
+    for group, (_, color) in GROUPS.items():
+        pooled = pool_populations(rows[rows["group"] == group], [X, "seed"])
+        if pooled.empty:
+            continue
+        sweep_series(
+            ax, pooled, X, "fluctuation_r2", color, seeds=True, errorbars=False
+        )
+        constant_ceiling(ax, pooled, color)
     x_axis(ax, rows)
     performance_axis(ax, ylim)
     ax.set_ylabel(METRIC_LABELS[metric])
     sweep_legend(
         ax,
-        {PERTURBATION_LEGEND_LABEL: UNOBSERVED},
+        {
+            PERTURBATION_GROUP_LABELS[group]: color
+            for group, (_, color) in GROUPS.items()
+        },
         metrics=False,
         fontsize=TICK_SIZE - 2,
     )

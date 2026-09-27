@@ -55,6 +55,13 @@ PERTURBATION_LABEL = "Unobserved, Not Targeted"
 #: The same label wrapped for a legend, where one long line made the legend band wider
 #: than the panel could spare (2026-09-23).
 PERTURBATION_LEGEND_LABEL = PERTURBATION_LABEL.replace(", ", ",\n")
+#: Since 2026-09-27 every perturbation panel shows the observed neurons beside the
+#: unobserved ones, as the held-out panels do. None of the observed neurons are targets.
+OBSERVED_PERTURBATION_LABEL = "Observed"
+PERTURBATION_GROUP_LABELS = {
+    "observed": OBSERVED_PERTURBATION_LABEL,
+    "unobserved": PERTURBATION_LEGEND_LABEL,
+}
 
 
 def use_talk_style():

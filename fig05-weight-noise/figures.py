@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LEGEND_LABEL,
+    PERTURBATION_GROUP_LABELS,
     PERTURBATION_TITLE,
     plotted_performance_values,
     pool_populations,
@@ -159,7 +159,13 @@ def group_rows(summary, group, metric, cell_type="all"):
 def limits(summary):
     """One y range for all three panels, as in Figures 3 and 4."""
     return performance_limits(
-        plotted_performance_values(summary, "unobserved", ["weight_noise", "seed"])
+        [
+            value
+            for group in GROUPS
+            for value in plotted_performance_values(
+                summary, group, ["weight_noise", "seed"]
+            )
+        ]
     )
 
 
@@ -205,31 +211,38 @@ def perturbation(summary, metric, ylim):
     0.02 R² at every level, so two series were redundant.
     """
     rows = summary[
-        (summary["evaluation"] == "perturbation")
-        & (summary["metric"] == metric)
-        & (summary["group"] == "unobserved")
+        (summary["evaluation"] == "perturbation") & (summary["metric"] == metric)
     ]
-    pooled = pool_populations(rows, ["weight_noise", "seed"])
     fig, ax = sweep_panel()
     # sweep_series looks its marker/linestyle up by the base metric name, so the delta
     # panels keep the archived Activity o- / Fluctuation s-- convention.
     base_metric = metric.replace("delta_", "")
-    sweep_series(
-        ax,
-        pooled,
-        "weight_noise",
-        base_metric,
-        UNOBSERVED,
-        seeds=True,
-        errorbars=False,
-    )
-    ceiling(ax, pooled, "weight_noise", UNOBSERVED)
+    # Observed beside unobserved, as in panel (b) (2026-09-27).
+    for group, (_, color) in GROUPS.items():
+        pooled = pool_populations(
+            rows[rows["group"] == group], ["weight_noise", "seed"]
+        )
+        if pooled.empty:
+            continue
+        sweep_series(
+            ax,
+            pooled,
+            "weight_noise",
+            base_metric,
+            color,
+            seeds=True,
+            errorbars=False,
+        )
+        ceiling(ax, pooled, "weight_noise", color)
     ax.set_xlabel("Weight Noise Fraction")
     ax.set_ylabel(METRIC_LABELS[metric])
     performance_axis(ax, ylim)
     sweep_legend(
         ax,
-        {PERTURBATION_LEGEND_LABEL: UNOBSERVED},
+        {
+            PERTURBATION_GROUP_LABELS[group]: color
+            for group, (_, color) in GROUPS.items()
+        },
         metrics=False,
         fontsize=TICK_SIZE - 2,
     )

@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
+    OBSERVED_PERTURBATION_LABEL,
     PERTURBATION_LABEL,
     PERTURBATION_TITLE,
     SCATTER_TITLE,
@@ -216,7 +217,10 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
             bars(
                 pooled,
                 "delta_fluctuation_r2",
-                [("unobserved", PERTURBATION_LABEL)],
+                [
+                    ("observed", OBSERVED_PERTURBATION_LABEL),
+                    ("unobserved", PERTURBATION_LABEL),
+                ],
                 ylim,
             ),
             "b",

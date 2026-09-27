@@ -66,9 +66,13 @@ X_LABEL = "Fraction of Recurrent Input Lost"
 def limits(summary):
     """One y range for panels (a) and (b), so the two read on the same scale."""
     return performance_limits(
-        plotted_performance_values(
-            summary, "unobserved", ["error_model", "level", "seed"]
-        )
+        [
+            value
+            for group in ("observed", "unobserved")
+            for value in plotted_performance_values(
+                summary, group, ["error_model", "level", "seed"]
+            )
+        ]
     )
 
 
@@ -120,8 +124,12 @@ def curve(summary, ylim):
     return fig
 
 
-def delta_sweep(summary, metric, ylim):
-    """(b) Δ R² of the intervention against input volume lost, per error model.
+def delta_sweep(summary, metric, ylim, group="unobserved"):
+    """(b, c) Δ R² of the intervention against input volume lost, per error model.
+
+    One panel per population (2026-09-27): (b) the unobserved neurons, (c) the observed
+    ones. The series are already the two error models, so the populations get a panel
+    each rather than sharing one.
 
     The non-targeted unobserved E and I populations are pooled (see
     :func:`pooled_populations`), so the series are the two error models in panel (a)'s
@@ -131,7 +139,7 @@ def delta_sweep(summary, metric, ylim):
     rows = summary[
         (summary["evaluation"] == "perturbation")
         & (summary["metric"] == metric)
-        & (summary["group"] == "unobserved")
+        & (summary["group"] == group)
     ]
     fig, ax = sweep_panel()
     handles = []
@@ -163,7 +171,7 @@ def delta_sweep(summary, metric, ylim):
             Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
         )
     ax.set_xlabel(X_LABEL)
-    ax.set_ylabel(METRIC_LABELS[metric])
+    ax.set_ylabel(f"{METRIC_LABELS[metric]} ({group.capitalize()})")
     performance_axis(ax, ylim)
     sweep_legend(
         ax,
@@ -195,11 +203,20 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     output(curve(held_out, ylim), "a", "curve")
 
     # The perturbation panels are separate files, so dropping them from the talk is
-    # dropping two SVGs.
+    # dropping SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
             delta_sweep(summary, "delta_fluctuation_r2", ylim), "b", "delta-fluctuation"
         )
+        if (
+            (summary["group"] == "observed")
+            & (summary["metric"] == "delta_fluctuation_r2")
+        ).any():
+            output(
+                delta_sweep(summary, "delta_fluctuation_r2", ylim, group="observed"),
+                "c",
+                "delta-fluctuation-observed",
+            )
 
 
 if __name__ == "__main__":

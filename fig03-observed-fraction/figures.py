@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
-    PERTURBATION_LEGEND_LABEL,
+    PERTURBATION_GROUP_LABELS,
     PERTURBATION_TITLE,
     SCATTER_TITLE,
     plotted_performance_values,
@@ -125,7 +125,13 @@ def limits(summary):
     they share a scale (2026-09-23).
     """
     return performance_limits(
-        plotted_performance_values(summary, "unobserved", ["obs_fraction", "seed"])
+        [
+            value
+            for group in GROUPS
+            for value in plotted_performance_values(
+                summary, group, ["obs_fraction", "seed"]
+            )
+        ]
     )
 
 
@@ -205,35 +211,42 @@ def delta_sweep(summary, metric, ylim):
     differ only where both are already near zero.
     """
     rows = summary[
-        (summary["evaluation"] == "perturbation")
-        & (summary["metric"] == metric)
-        & (summary["group"] == "unobserved")
+        (summary["evaluation"] == "perturbation") & (summary["metric"] == metric)
     ]
-    pooled = pool_populations(rows, ["obs_fraction", "seed"])
     fig, ax = sweep_panel()
-    sweep_series(
-        ax,
-        pooled,
-        "obs_fraction",
-        metric,
-        UNOBSERVED,
-        seeds=True,
-        errorbars=False,
-    )
-    ceiling(ax, pooled, "obs_fraction", UNOBSERVED)
+    # Observed beside unobserved, as in panel (a) (2026-09-27).
+    for group, (_, color) in GROUPS.items():
+        pooled = pool_populations(
+            rows[rows["group"] == group], ["obs_fraction", "seed"]
+        )
+        if pooled.empty:
+            continue
+        sweep_series(
+            ax,
+            pooled,
+            "obs_fraction",
+            metric,
+            color,
+            seeds=True,
+            errorbars=False,
+        )
+        ceiling(ax, pooled, "obs_fraction", color)
     ax.set_title(PERTURBATION_TITLE)
-    observed_axis(ax, pooled["obs_fraction"].unique())
+    observed_axis(ax, rows["obs_fraction"].unique())
     performance_axis(ax, ylim)  # shared with panel (a)
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.legend(
         handles=[
-            Line2D(
-                [],
-                [],
-                color=UNOBSERVED,
-                linewidth=6,
-                label=PERTURBATION_LEGEND_LABEL,
-            ),
+            *[
+                Line2D(
+                    [],
+                    [],
+                    color=color,
+                    linewidth=6,
+                    label=PERTURBATION_GROUP_LABELS[group],
+                )
+                for group, (_, color) in GROUPS.items()
+            ],
             Line2D([], [], color=LEGEND_GREY, linestyle=":", label="Noise Ceiling"),
         ],
         loc="upper left",
