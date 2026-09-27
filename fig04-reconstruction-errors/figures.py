@@ -56,8 +56,9 @@ HERE = Path(__file__).resolve().parent
 FIGURE = "fig04"
 #: One fixed accent per error model, as Figure 2 does for its conditions.
 MODELS = {
-    "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR, "-"),
-    "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR, "-"),
+    # Colour tells the models apart; every line joining points is dashed (2026-09-27).
+    "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR, "--"),
+    "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR, "--"),
 }
 X_LABEL = "Fraction of Recurrent Input Lost"
 #: The perturbation's non-targeted unobserved populations (targets scored separately).
@@ -108,7 +109,7 @@ def curve(summary, ylim):
         ceiling(ax, rows, "kappa_snapped", color, x_group="level")
     performance_axis(ax, ylim)
     ax.set_xlabel(X_LABEL)
-    ax.set_ylabel("Fluctuation R² (Unobserved)")
+    ax.set_ylabel(f"{METRIC_LABELS['fluctuation_r2']} (Unobserved)")
     sweep_legend(
         ax,
         {},

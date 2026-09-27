@@ -61,13 +61,13 @@ X = "threshold_heterogeneity"
 X_LABEL = "Threshold Heterogeneity, SD (mV)"
 SHORT_POPULATION = {"mitral": "M", "excitatory": "E", "inhibitory": "I"}
 #: Each factor coloured by its presynaptic population (as Figure 1's panel), and the
-#: target population told apart by line style.
+#: target population told apart by marker; every line joining points is dashed.
 SOURCE_COLORS = {
     "mitral": REFERENCE_GREY,
     "excitatory": EXCITATORY,
     "inhibitory": INHIBITORY,
 }
-TARGET_STYLES = {"excitatory": "-", "inhibitory": "--"}
+TARGET_MARKERS = {"excitatory": "o", "inhibitory": "^"}
 
 
 def group_rows(summary, group, metric, cell_type="all"):
@@ -177,11 +177,11 @@ def scaling_factors(factors):
         ax.plot(
             stats.index,
             stats.values,
-            marker="o",
+            marker=TARGET_MARKERS[target],
             markersize=5,
             linewidth=1.5,
             color=SOURCE_COLORS[source],
-            linestyle=TARGET_STYLES[target],
+            linestyle="--",
             label=f"{SHORT_POPULATION[source]}→{SHORT_POPULATION[target]}",
         )
     ax.axhline(1.0, color="k", linestyle=":", linewidth=1, alpha=0.6)

@@ -147,7 +147,7 @@ def curve(sweep, ylim):
     ax.set_xlim(1.05, 0.0)
     performance_axis(ax, ylim)
     ax.set_xlabel("Fraction of Units Reconstructed")
-    ax.set_ylabel("Fluctuation R²")
+    ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},

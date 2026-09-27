@@ -164,7 +164,7 @@ def curve(summary, ylim):
     ax.set_title(HELD_OUT_TITLE)
     observed_axis(ax, summary["obs_fraction"].unique())
     performance_axis(ax, ylim)
-    ax.set_ylabel("Fluctuation R²")
+    ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},

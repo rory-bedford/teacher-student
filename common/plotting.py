@@ -29,11 +29,14 @@ INHIBITORY_COLOR = INHIBITORY
 TARGETED_COLOR = REFERENCE_GREY
 GROUP_COLORS = {"observed": OBSERVED, "unobserved": UNOBSERVED}
 GROUP_LABELS = {"observed": "Observed", "unobserved": "Unobserved"}
+#: Axis labels. The plotted metric is Fluctuation R² throughout, held-out or on the
+#: perturbation's change; the panels say just "R²" (2026-09-27) -- which R² it is lives
+#: in the panel title and the README, not on every axis.
 METRIC_LABELS = {
-    "fluctuation_r2": "Fluctuation R²",
+    "fluctuation_r2": "R²",
     "activity_r2": "Activity R²",
     "delta_activity_r2": "ΔActivity R²",
-    "delta_fluctuation_r2": "ΔFluctuation R²",
+    "delta_fluctuation_r2": "R²",
 }
 #: The perturbation's scored populations: (group, cell type, colour, label).
 PERTURBATION_SERIES = (

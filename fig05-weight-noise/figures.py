@@ -188,7 +188,7 @@ def curve(summary, clipped, ylim):
     # Limits from the data, not fixed: the real sweep runs lower than the estimates.
     performance_axis(ax, ylim)
     ax.set_xlabel("Weight Noise Fraction")
-    ax.set_ylabel("Fluctuation R²")
+    ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
     sweep_legend(
         ax,
         {label: color for label, color in GROUPS.values()},
