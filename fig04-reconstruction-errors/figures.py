@@ -2,19 +2,17 @@
 
     uv run python fig04-reconstruction-errors/figures.py
 
-    fig04-a-curve                unobserved Fluctuation R² vs input volume lost, both models
-    fig04-b-delta-fluctuation    perturbation: ΔFluctuation R² vs input volume lost
+    fig04-a-curve-neuron-removal       held-out Fluctuation R² vs recurrent input lost to
+                                       neuron removal, observed / unobserved
+    fig04-b-curve-synapse-dropout      the same for synapse dropout
+    fig04-c-delta-neuron-removal       perturbation ΔFluctuation R², neuron removal
+    fig04-d-delta-synapse-dropout      perturbation ΔFluctuation R², synapse dropout
 
-The per-neuron panel (per-neuron R² against that neuron's own lost input) was deleted on
-2026-09-21: its premise was that neuron removal would spread per-neuron loss much wider
-than synapse dropout, and the data says the spreads match (SD 0.173 vs 0.178). Panel (a)
-makes the population claim more legibly. It is in the git history if ever wanted.
+One panel per error model, each with observed and unobserved neurons in the colours every
+other sweep uses, so the figure reads like Figures 3, 5, 7 and 8. The four panels share
+their axes, so the two error models can be compared panel against panel.
 
-Activity R² is scored and kept in the CSVs but not plotted (2026-09-18): rates are
-reported by the scatter panels of figures 1 and 3.
-
-Style is the archived paper figures (``common/style.py``), sized to drop into the talk at
-100%: both metrics per error model, Activity ``o-`` and Fluctuation ``s--``.
+Style is the shared slide style (``common/style.py``), sized to drop into the talk at 100%.
 """
 
 import argparse
@@ -22,24 +20,21 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from connectome_snns.visualization import (
-    NEURON_REMOVAL_COLOR,
-    SYNAPSE_DROPOUT_COLOR,
-)
 
 from common.plotting import (
     HELD_OUT_TITLE,
     METRIC_LABELS,
+    PERTURBATION_GROUP_LABELS,
     PERTURBATION_TITLE,
     plotted_performance_values,
     pool_populations,
 )
 from common.style import (
+    OBSERVED,
     TICK_SIZE,
+    UNOBSERVED,
     apply_style,
     ceiling,
     clear_panels,
@@ -55,25 +50,26 @@ from common.style import (
 
 HERE = Path(__file__).resolve().parent
 FIGURE = "fig04"
-#: One fixed accent per error model, as Figure 2 does for its conditions.
+#: Error model -> (x-axis wording, file slug).
 MODELS = {
-    # Colour tells the models apart; every line joining points is dashed (2026-09-27).
-    "neuron_removal": ("Neuron Removal", NEURON_REMOVAL_COLOR, "--"),
-    "synapse_dropout": ("Synapse Dropout", SYNAPSE_DROPOUT_COLOR, "--"),
+    "neuron_removal": ("Neuron Removal", "neuron-removal"),
+    "synapse_dropout": ("Synapse Dropout", "synapse-dropout"),
+}
+GROUPS = {
+    "observed": ("Observed", OBSERVED),
+    "unobserved": ("Unobserved", UNOBSERVED),
 }
 #: Our estimate for the real dataset (2026-09-27): about 15% of recurrent input lost to
 #: reconstruction errors.
 REAL_DATA_ESTIMATE = (0.125, 0.175)
-X_LABEL = "Fraction of Recurrent Input Lost"
-#: The perturbation's non-targeted unobserved populations (targets scored separately).
 
 
 def limits(summary):
-    """One y range for panels (a) and (b), so the two read on the same scale."""
+    """One y range for all four panels, so they read on the same scale."""
     return performance_limits(
         [
             value
-            for group in ("observed", "unobserved")
+            for group in GROUPS
             for value in plotted_performance_values(
                 summary, group, ["error_model", "level", "seed"]
             )
@@ -81,86 +77,82 @@ def limits(summary):
     )
 
 
-def curve(summary, ylim):
-    """(a) unobserved Fluctuation R² against input volume lost, per error model."""
-    unobserved = summary[summary["group"] == "unobserved"]
+def snapped(rows):
+    """x = the input volume actually lost, snapped to the nominal 0.1 grid.
+
+    Plotted against the volume lost rather than the nominal level, since the two error
+    models reach the same fraction at different levels; the realised values sit within
+    0.015 of the grid, so snapping lines the points up without moving them visibly.
+    """
+    return rows.assign(kappa_snapped=(rows["mean_kappa_lost"] * 10).round() / 10)
+
+
+def finish(ax, model, ylim, labels, title):
+    ax.set_xlabel(f"Recurrent Input Lost to {MODELS[model][0]}")
+    performance_axis(ax, ylim)
+    estimate_band(ax, REAL_DATA_ESTIMATE)
+    sweep_legend(
+        ax,
+        {labels[group]: color for group, (_, color) in GROUPS.items()},
+        metrics=False,
+        estimate=True,
+        fontsize=TICK_SIZE - 2,
+    )
+    ax.set_title(title)
+
+
+def curve(summary, model, ylim):
+    """(a, b) Held-out Fluctuation R² against input lost to one error model."""
+    rows = summary[
+        (summary["evaluation"] == "held_out")
+        & (summary["metric"] == "fluctuation_r2")
+        & (summary["cell_type"] == "all")
+        & (summary["error_model"] == model)
+    ]
     fig, ax = sweep_panel()
-    for model, (_, color, linestyle) in MODELS.items():
-        rows = unobserved[
-            (unobserved["error_model"] == model)
-            & (unobserved["metric"] == "fluctuation_r2")
-        ]
-        if rows.empty:
-            continue
-        # Plotted against the volume actually lost, not the nominal level: the two error
-        # models reach the same fraction at different levels. The measured fraction is
-        # snapped to the nearest 0.1 so the two series align -- the realised values sit
-        # within 0.7% of the grid, far below anything this panel claims.
-        rows = rows.assign(
-            kappa_snapped=(rows["mean_kappa_lost"] * 10).round() / 10,
-        )
+    for group, (_, color) in GROUPS.items():
+        series = snapped(rows[rows["group"] == group])
         sweep_series(
             ax,
-            rows,
+            series,
             "kappa_snapped",
             "fluctuation_r2",
             color,
-            linestyle=linestyle,
             seeds=True,
             errorbars=False,
             x_group="level",
         )
-        ceiling(ax, rows, "kappa_snapped", color, x_group="level")
-    performance_axis(ax, ylim)
-    ax.set_xlabel(X_LABEL)
-    ax.set_ylabel(f"{METRIC_LABELS['fluctuation_r2']} (Unobserved)")
-    estimate_band(ax, REAL_DATA_ESTIMATE)
-    sweep_legend(
-        ax,
-        {},
-        metrics=False,
-        estimate=True,
-        extra=[
-            Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
-            for label, color, linestyle in MODELS.values()
-        ],
-        fontsize=TICK_SIZE - 2,
+        ceiling(ax, series, "kappa_snapped", color, x_group="level")
+    ax.set_ylabel(METRIC_LABELS["fluctuation_r2"])
+    finish(
+        ax, model, ylim, {g: label for g, (label, _) in GROUPS.items()}, HELD_OUT_TITLE
     )
-    ax.set_title(HELD_OUT_TITLE)
     sweep_layout(fig)
     return fig
 
 
-def delta_sweep(summary, metric, ylim, group="unobserved"):
-    """(b, c) Δ R² of the intervention against input volume lost, per error model.
+def delta_sweep(summary, model, ylim):
+    """(c, d) Perturbation ΔFluctuation R² against input lost to one error model.
 
-    One panel per population (2026-09-27): (b) the unobserved neurons, (c) the observed
-    ones. The series are already the two error models, so the populations get a panel
-    each rather than sharing one.
-
-    The non-targeted unobserved E and I populations are pooled (see
-    :func:`pooled_populations`), so the series are the two error models in panel (a)'s
-    colours: four series of E and I per model was clutter, and the populations degrade
-    together. Seeds as points, no error bars, panel (a)'s y range.
+    E and I pooled within each population (see ``common.plotting.pool_populations``);
+    the unobserved series excludes the targeted cells.
     """
+    metric = "delta_fluctuation_r2"
     rows = summary[
         (summary["evaluation"] == "perturbation")
         & (summary["metric"] == metric)
-        & (summary["group"] == group)
+        & (summary["error_model"] == model)
     ]
     fig, ax = sweep_panel()
-    handles = []
-    for model, (label, color, linestyle) in MODELS.items():
-        sub = rows[rows["error_model"] == model]
+    for group, (_, color) in GROUPS.items():
+        sub = rows[rows["group"] == group]
         if sub.empty:
             continue
-        pooled = pool_populations(sub, ["level", "seed"]).merge(
-            sub.groupby("level")["mean_kappa_lost"].mean().reset_index(), on="level"
-        )
-        # Snapped to the nominal grid, as in panel (a): the realised fractions sit within
-        # 0.7% of it and the two models would otherwise sit side by side.
-        pooled = pooled.assign(
-            kappa_snapped=(pooled["mean_kappa_lost"] * 10).round() / 10
+        pooled = snapped(
+            pool_populations(sub, ["level", "seed"]).merge(
+                sub.groupby("level")["mean_kappa_lost"].mean().reset_index(),
+                on="level",
+            )
         )
         sweep_series(
             ax,
@@ -168,31 +160,13 @@ def delta_sweep(summary, metric, ylim, group="unobserved"):
             "kappa_snapped",
             metric,
             color,
-            linestyle=linestyle,
             seeds=True,
             errorbars=False,
             x_group="level",
         )
         ceiling(ax, pooled, "kappa_snapped", color, x_group="level")
-        handles.append(
-            Line2D([], [], color=color, linewidth=2, linestyle=linestyle, label=label)
-        )
-    ax.set_xlabel(X_LABEL)
-    ax.set_ylabel(f"{METRIC_LABELS[metric]} ({group.capitalize()})")
-    performance_axis(ax, ylim)
-    estimate_band(ax, REAL_DATA_ESTIMATE)
-    sweep_legend(
-        ax,
-        {},
-        metrics=False,
-        estimate=True,
-        extra=handles,
-        fontsize=TICK_SIZE - 2,
-    )
-    ax.set_title(
-        PERTURBATION_TITLE,
-        fontsize=TICK_SIZE + 1,
-    )
+    ax.set_ylabel(METRIC_LABELS[metric])
+    finish(ax, model, ylim, PERTURBATION_GROUP_LABELS, PERTURBATION_TITLE)
     sweep_layout(fig)
     return fig
 
@@ -201,30 +175,17 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig04_summary.csv")
-    held_out = summary
-    if "evaluation" in summary:
-        held_out = summary[summary["evaluation"] == "held_out"]
 
-    def output(fig, letter, slug, raster=False):
-        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate, raster)
+    def output(fig, letter, slug):
+        save(fig, out_dir, FIGURE, letter, slug, suffix, decorate)
 
     ylim = limits(summary)
-    output(curve(held_out, ylim), "a", "curve")
-
-    # The perturbation panels are separate files, so dropping them from the talk is
-    # dropping SVGs.
+    for letter, model in zip("ab", MODELS):
+        output(curve(summary, model, ylim), letter, f"curve-{MODELS[model][1]}")
     if (summary["metric"] == "delta_fluctuation_r2").any():
-        output(
-            delta_sweep(summary, "delta_fluctuation_r2", ylim), "b", "delta-fluctuation"
-        )
-        if (
-            (summary["group"] == "observed")
-            & (summary["metric"] == "delta_fluctuation_r2")
-        ).any():
+        for letter, model in zip("cd", MODELS):
             output(
-                delta_sweep(summary, "delta_fluctuation_r2", ylim, group="observed"),
-                "c",
-                "delta-fluctuation-observed",
+                delta_sweep(summary, model, ylim), letter, f"delta-{MODELS[model][1]}"
             )
 
 

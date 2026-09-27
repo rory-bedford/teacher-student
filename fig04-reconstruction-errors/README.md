@@ -58,12 +58,16 @@ synapse dropout and falls to 0.90 for neuron removal at half the input lost.
 
 ## Panels
 
-- `fig04-a-curve.svg` — unobserved Fluctuation R² on held-out stimuli against the fraction
-  of recurrent input lost, one series per error model, individual seeds, with the grey band
-  marking the estimated real-dataset level (about 15% of input lost).
-- `fig04-b-delta-fluctuation.svg` — perturbation ΔFluctuation R² of the unobserved neurons
-  against input lost, both error models (E and I pooled, targeted cells excluded).
-- `fig04-c-delta-fluctuation-observed.svg` — the same for the observed neurons.
+One panel per error model, each with observed and unobserved neurons, individual seeds and a
+grey band at the estimated real-dataset level (about 15% of input lost). All four share
+their axes.
+
+- `fig04-a-curve-neuron-removal.svg` — Fluctuation R² on held-out stimuli against the
+  fraction of recurrent input lost to neuron removal.
+- `fig04-b-curve-synapse-dropout.svg` — the same for synapse dropout.
+- `fig04-c-delta-neuron-removal.svg` — perturbation ΔFluctuation R² against input lost to
+  neuron removal (E and I pooled, targeted cells excluded).
+- `fig04-d-delta-synapse-dropout.svg` — the same for synapse dropout.
 
 ## Running
 
@@ -83,5 +87,3 @@ uv run python fig04-reconstruction-errors/figures.py
   together; the number of observed neurons does fall, to 1250 at half the input lost.
 - The input-lost fraction counts recurrent input only, so neuron removal at fraction p
   loses about p of it; including the always-complete mitral input would compress both axes.
-- Observed Fluctuation R² is in the CSV but panel (a) shows only the unobserved neurons,
-  the ones the model has to predict.
