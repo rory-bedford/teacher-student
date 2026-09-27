@@ -27,7 +27,7 @@ unreconstructed neuron's activity is used as input and cannot also be predicted.
 
 Learnt weights reach every modelled neuron, observed and unobserved alike. The block onto
 unobserved neurons is constrained only through their influence on observed ones, which is
-the mechanism of the degeneracy (see [`../METHODS.md`](../METHODS.md#teacher-forcing)).
+the mechanism of the degeneracy (see [`../METHODS.md`](../METHODS.md#model)).
 
 | Setting | Value |
 |---|---|

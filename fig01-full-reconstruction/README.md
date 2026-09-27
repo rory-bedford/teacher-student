@@ -77,7 +77,8 @@ finished for the panel to be complete. One run takes about 3.6 hours on a Quadro
 - In the fully observed runs there are no unobserved neurons, so the rate penalties vanish
   and the loss has its optimum exactly at the true scaling factors. This is the
   identifiability check behind panel (e).
-- Observed and unobserved scores should not be compared within a single seed (see
-  METHODS); the difference averages out over seeds.
+- Observed and unobserved scores should not be compared within a single seed: pooled R²
+  counts the spread of mean rates as explainable variance, and with heavy-tailed rates that
+  depends on which fast cells land in the observed sample. It averages out over seeds.
 - The student runs in fp32: at the correct scaling factors it then reproduces the teacher
   spike for spike before any chaotic divergence.
