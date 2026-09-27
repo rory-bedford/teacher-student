@@ -132,15 +132,16 @@ def panel_rows(summary, metric, group, cell_type):
     """Rows per variant for one population; ``cell_type="pooled"`` pools E and I."""
     rows = summary[(summary["metric"] == metric) & (summary["group"] == group)]
     if cell_type == "pooled":
-        rows = pd.concat(
-            [
-                pool_populations(
-                    rows[rows["variant"] == variant], ["variant", "seed"]
-                ).assign(variant=variant)
-                for variant in PLOTTED_VARIANTS
-                if not rows[rows["variant"] == variant].empty
-            ]
-        )
+        pooled = [
+            pool_populations(
+                rows[rows["variant"] == variant], ["variant", "seed"]
+            ).assign(variant=variant)
+            for variant in PLOTTED_VARIANTS
+            if not rows[rows["variant"] == variant].empty
+        ]
+        # A population with no rows (observed, in CSVs from before 2026-09-27) is an
+        # empty subpanel rather than an error.
+        rows = pd.concat(pooled) if pooled else rows.iloc[0:0]
     else:
         rows = rows[rows["cell_type"] == cell_type]
     return [(v, rows[rows["variant"] == v]) for v in PLOTTED_VARIANTS]
