@@ -48,6 +48,29 @@ runs.
 Structures saved before 2026-09-26 have no `theta_offset`; the model treats that as no
 mismatch, so every earlier run and cached evaluation is unchanged.
 
+## Results (2026-09-27, three seeds per level)
+
+| SD (mV) | Fluct. R² observed | Fluct. R² unobserved | ΔFluct. R² perturbation (unobserved, pooled) |
+|---|---|---|---|
+| 0 (Figure 1) | 0.97 | 0.97 | 0.94 |
+| 1 | 0.95 | 0.94 | 0.90 |
+| 2 | 0.88 | 0.84 | 0.74 |
+| 4 | 0.70 | 0.66 | 0.52 |
+
+Ceiling 0.997 for both populations. Degradation is graceful: 1 mV of threshold heterogeneity
+costs ~0.03, and even at 4 mV the unobserved population keeps two thirds of its explained
+fluctuation variance. The perturbation response degrades faster and spreads more across
+seeds (SD 0.16-0.20 at 2-4 mV). The scaling factors barely move until 4 mV, where they drift
+down 10-27% (I→I most), i.e. the student weakens its inputs slightly rather than
+compensating per neuron, which six shared parameters cannot do.
+
+Two of the 4 mV runs (seeds 44, 45) first crashed out of memory: the library grid runner
+(`connectome_snns.utils.experiment_runners`, `cuda_devices[i % n]`) pre-assigns each task
+a GPU by index while the worker pool hands tasks out dynamically, so a worker that
+finished early started a task on the GPU the other worker was still using. The crashed
+folders are in `bernstein/_superseded/fig08-grid-gpu-double-booking-oom/`; the reruns
+completed normally.
+
 ## Panels
 
 - **(a)** `fig08-a-curve` — held-out Fluctuation R² vs threshold heterogeneity, observed /
