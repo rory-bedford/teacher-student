@@ -4,7 +4,7 @@ script = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-partial-
 output_dir = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/fig06-learnt-feedforward"
 parameters_file = "/tachyon/groups/scratch/gzenke/bedfrory/teacher-student/fig07-partial-reconstruction/parameters.toml"
 log_file = "/tachyon/groups/scratch/gzenke/bedfrory/bernstein/Dp_simulator_log.jsonl"
-description = "Figure 6: reconstructed segment swept from 100% to 10% of pooled units; unreconstructed inputs injected with learnt low-rank weights; fixed 50% recorded pool."
+description = "Figure 7: reconstructed segment swept from 100% to 10% of pooled units; unreconstructed inputs injected with learnt low-rank weights; fixed 50% recorded pool."
 
 [data]
 
@@ -22,5 +22,5 @@ project = "bernstein"
 name = ""
 entity = ""
 group = "fig07-partial-reconstruction"
-tags = ["fig06", "learnt-feedforward", "ff-learnt", "wn-0"]
+tags = ["fig07", "partial-reconstruction", "obs-50", "wn-0"]
 notes = "Reconstructed-fraction sweep with learnt unreconstructed inputs."

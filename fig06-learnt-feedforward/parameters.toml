@@ -1,13 +1,12 @@
-# Figure 6 — unreconstructed inputs with learnt weights.
+# Figure 6 — the recurrent connectome given, every feedforward weight learnt.
 #
-# A random segment S of the 6500 pooled units (1500 feedforward + 5000 recurrent) is
-# reconstructed: its connectivity is known (perturbed, with 6 trainable scaling factors
-# as in Figures 1-5) and its recurrent units are simulated. Every unit outside S keeps
-# its known activity and is injected through learnt low-rank weights onto all modelled
-# neurons. A fixed 50% recorded pool decides which modelled neurons enter the loss.
+# The student is given the whole recurrent connectome, with its tied scaling factors, and
+# the recorded activity of the 1500 mitral units; the mitral -> E/I weights are learnt at
+# full rank instead of given. Everything else is as in Figure 1, whose runs are the
+# known-input control.
 #
 # Training recipe: the archived ff-learnt run (full-inference/hidden-units, surrgrad-10)
-# — optimiser, schedule, epochs, rank, learnt-weight L1 and unobserved-rate penalties.
+# -- optimiser, schedule, learnt-weight L1 and unobserved-rate penalties.
 
 [simulation]
 seed = 44                              # overridden per run by run_grid_search.py

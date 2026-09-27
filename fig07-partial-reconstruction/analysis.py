@@ -1,4 +1,4 @@
-"""Figure 6 — evaluate the reconstructed-fraction sweep on held-out stimuli.
+"""Figure 7 — evaluate the reconstructed-fraction sweep on held-out stimuli.
 
 Run after training:
     uv run python fig07-partial-reconstruction/analysis.py

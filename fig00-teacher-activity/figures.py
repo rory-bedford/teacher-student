@@ -2,24 +2,13 @@
 
     uv run python fig00-teacher-activity/figures.py
 
-    fig00-a-coding-schematic        how an odourant is built: one group up, the rest down
-    fig00-b-rates-odour-repeat      per-neuron rate, odourant 1 against the same
-                                    odourant with a different Poisson seed
-    fig00-c-raster                  spike raster of ten neurons of one trial
-    fig00-d-neuron-traces           one neuron's voltage, its spikes and its currents
-    fig00-e-conductances            the same neuron's conductance per synapse type
-    fig00-f-synaptic-drive          feedforward against recurrent excitatory drive
-    fig00-g-variance-explained      cumulative variance explained per PCA component
-    fig00-h-variance-spectrum       variance fraction per PCA component
-
-Panels run in the order the talk needs them: what the input codes (a), how the network
-responds to it (b), its dynamics and synaptic budget (c-f), and the dimensionality of the
-activity every other figure is fitted to (g, h).
-
-Four panels of the first build were cut on 2026-09-21 as redundant: the input-rate
-histogram (the schematic says it), the odourant-against-baseline scatter (the repeat
-scatter carries the point), the assembly heatmaps, and the per-neuron integrated
-conductance bars. Their analysis steps went with them.
+    fig00-a-ou-trajectories     each odourant's mixing coefficient over one trial
+    fig00-b-assembly-rates      each assembly's excitatory rate over the same trial
+    fig00-c-neuron-traces       one neuron's voltage, spikes, currents and conductances
+    fig00-d-synaptic-drive      feedforward against recurrent excitatory drive
+    fig00-e-variance-spectrum   variance fraction per principal component
+    fig00-f-assembly-rastermap  rates of the trial's two leading assemblies
+    fig00-g-loss-kernel         the van Rossum loss kernel and the difference it squares
 
 Colour follows COLORSCHEME.txt. Synaptic pathways take the presynaptic population's
 colour, as the scaling-factor panels do -- red from excitatory, blue from inhibitory, grey

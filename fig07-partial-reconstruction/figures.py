@@ -1,4 +1,4 @@
-"""Figure 6 — one SVG per panel from the CSVs written by analysis.py.
+"""Figure 7 — one SVG per panel from the CSVs written by analysis.py.
 
     uv run python fig07-partial-reconstruction/figures.py
 
