@@ -360,7 +360,7 @@ wheels = [
 [[package]]
 name = "connectome-snns"
 version = "0.1.0"
-source = { editable = "../connectome-snns" }
+source = { git = "https://github.com/rory-bedford/connectome-snns?rev=308ba43fb133f175d5d094519e2e90c43b382765#308ba43fb133f175d5d094519e2e90c43b382765" }
 dependencies = [
     { name = "cma" },
     { name = "dask" },
@@ -382,42 +382,6 @@ dependencies = [
     { name = "wandb" },
     { name = "widgetsnbextension" },
     { name = "zarr" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cma", specifier = ">=4.0.0" },
-    { name = "cuml-cu12", marker = "extra == 'cu129'", specifier = "==26.2.*" },
-    { name = "dask", specifier = ">=2025.11.0" },
-    { name = "h5py", specifier = ">=3.16.0" },
-    { name = "ipywidgets", specifier = ">=8.1.7" },
-    { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "matplotlib", specifier = ">=3.10.7" },
-    { name = "numpy", specifier = ">=2.0,<2.3" },
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "pydantic", specifier = ">=2.12.3" },
-    { name = "scikit-learn", specifier = ">=1.8.0" },
-    { name = "scipy", specifier = ">=1.16.3" },
-    { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "tabulate", specifier = ">=0.9.0" },
-    { name = "toml", specifier = ">=0.10.2" },
-    { name = "torch", marker = "extra == 'cpu'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "connectome-snns", extra = "cpu" } },
-    { name = "torch", marker = "extra == 'cu129'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cu129", conflict = { package = "connectome-snns", extra = "cu129" } },
-    { name = "torchnmf", specifier = ">=0.3.5" },
-    { name = "torchvision", marker = "extra == 'cpu'", specifier = ">=0.22.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "connectome-snns", extra = "cpu" } },
-    { name = "torchvision", marker = "extra == 'cu129'", specifier = ">=0.22.0", index = "https://download.pytorch.org/whl/cu129", conflict = { package = "connectome-snns", extra = "cu129" } },
-    { name = "tqdm", specifier = ">=4.67.1" },
-    { name = "triton", specifier = "==3.4.0" },
-    { name = "wandb", specifier = ">=0.22.3" },
-    { name = "widgetsnbextension", specifier = ">=4.0.14" },
-    { name = "zarr", specifier = ">=3.1.3" },
-]
-provides-extras = ["cpu", "cu129"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "ruff", specifier = ">=0.14.0" },
 ]
 
 [[package]]
@@ -2011,7 +1975,7 @@ version = "9.10.2.21"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nvidia-cublas-cu12", version = "12.8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (extra != 'extra-15-teacher-student-cpu' and extra != 'extra-15-teacher-student-cu129')" },
-    { name = "nvidia-cublas-cu12", version = "12.9.1.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
+    { name = "nvidia-cublas-cu12", version = "12.9.1.4", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'x86_64' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra == 'extra-15-teacher-student-cu129') or (platform_machine != 'x86_64' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (sys_platform == 'emscripten' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (sys_platform == 'win32' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/41/e79269ce215c857c935fd86bcfe91a451a584dfc27f1e068f568b9ad1ab7/nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:c9132cc3f8958447b4910a1720036d9eff5928cc3179b0a51fb6d167c6cc87d8", size = 705026878, upload-time = "2025-06-06T21:52:51.348Z" },
@@ -2057,7 +2021,7 @@ resolution-markers = [
     "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-15-teacher-student-cu129') or (extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/2b/76445b0af890da61b501fde30650a1a4bd910607261b209cccb5235d3daa/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:1a28c9b12260a1aa7a8fd12f5ebd82d027963d635ba82ff39a1acfa7c4c0fbcf", size = 200822453, upload-time = "2025-06-05T20:05:27.889Z" },
@@ -2171,9 +2135,9 @@ resolution-markers = [
     "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.9.1.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
-    { name = "nvidia-cusparse-cu12", version = "12.5.10.65", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
-    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
+    { name = "nvidia-cublas-cu12", version = "12.9.1.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-15-teacher-student-cu129') or (extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
+    { name = "nvidia-cusparse-cu12", version = "12.5.10.65", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-15-teacher-student-cu129') or (extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-15-teacher-student-cu129') or (extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/99/686ff9bf3a82a531c62b1a5c614476e8dfa24a9d89067aeedf3592ee4538/nvidia_cusolver_cu12-11.7.5.82-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:62efa83e4ace59a4c734d052bb72158e888aa7b770e1a5f601682f16fe5b4fd2", size = 337869834, upload-time = "2025-06-05T20:06:53.125Z" },
@@ -2219,7 +2183,7 @@ resolution-markers = [
     "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-15-teacher-student-cu129'" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-15-teacher-student-cu129') or (extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/6f/8710fbd17cdd1d0fc3fea7d36d5b65ce1933611c31e1861da330206b253a/nvidia_cusparse_cu12-12.5.10.65-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:221c73e7482dd93eda44e65ce567c031c07e2f93f6fa0ecd3ba876a195023e83", size = 366359408, upload-time = "2025-06-05T20:07:42.501Z" },
@@ -3322,13 +3286,13 @@ cpu = [
 cu129 = [
     { name = "cuml-cu12" },
     { name = "torch", version = "2.8.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" } },
-    { name = "torchvision", version = "0.23.0", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "(python_full_version < '3.15' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux' and extra == 'extra-15-teacher-student-cu129') or (python_full_version >= '3.15' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_machine != 'aarch64' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_python_implementation != 'CPython' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (sys_platform != 'linux' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
-    { name = "torchvision", version = "0.23.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "(python_full_version >= '3.15' and extra == 'extra-15-teacher-student-cu129') or (python_full_version < '3.15' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_machine != 'aarch64' and extra == 'extra-15-teacher-student-cu129') or (platform_python_implementation != 'CPython' and extra == 'extra-15-teacher-student-cu129') or (sys_platform != 'linux' and extra == 'extra-15-teacher-student-cu129')" },
+    { name = "torchvision", version = "0.23.0", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "(python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux' and extra == 'extra-15-teacher-student-cu129') or (python_full_version >= '3.14' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_machine != 'aarch64' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_python_implementation != 'CPython' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (sys_platform != 'linux' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129')" },
+    { name = "torchvision", version = "0.23.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "(python_full_version >= '3.14' and extra == 'extra-15-teacher-student-cu129') or (python_full_version < '3.14' and extra == 'extra-15-teacher-student-cpu' and extra == 'extra-15-teacher-student-cu129') or (platform_machine != 'aarch64' and extra == 'extra-15-teacher-student-cu129') or (platform_python_implementation != 'CPython' and extra == 'extra-15-teacher-student-cu129') or (sys_platform != 'linux' and extra == 'extra-15-teacher-student-cu129')" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "connectome-snns", editable = "../connectome-snns" },
+    { name = "connectome-snns", git = "https://github.com/rory-bedford/connectome-snns?rev=308ba43fb133f175d5d094519e2e90c43b382765" },
     { name = "cuml-cu12", marker = "extra == 'cu129'", specifier = "==26.2.*" },
     { name = "torch", marker = "extra == 'cpu'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "teacher-student", extra = "cpu" } },
     { name = "torch", marker = "extra == 'cu129'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cu129", conflict = { package = "teacher-student", extra = "cu129" } },
@@ -3568,13 +3532,12 @@ name = "torchvision"
 version = "0.23.0"
 source = { registry = "https://download.pytorch.org/whl/cu129" }
 resolution-markers = [
-    "python_full_version == '3.14.*' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
     "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version < '3.15' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
-    { name = "pillow", marker = "python_full_version < '3.15' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
-    { name = "torch", version = "2.8.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "python_full_version < '3.15' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
+    { name = "numpy", marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
+    { name = "pillow", marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
+    { name = "torch", version = "2.8.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cu129/torchvision-0.23.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:20f7e25a24f91d93d09398b80929dec805c4ee2f5527fad8eecd6e43dc5fd5d0", upload-time = "2025-08-05T20:11:53Z" },
@@ -3604,11 +3567,12 @@ resolution-markers = [
     "(python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
     "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version >= '3.15' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
-    { name = "pillow", marker = "python_full_version >= '3.15' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
-    { name = "torch", version = "2.8.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "python_full_version >= '3.15' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
+    { name = "numpy", marker = "python_full_version >= '3.14' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
+    { name = "pillow", marker = "python_full_version >= '3.14' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
+    { name = "torch", version = "2.8.0+cu129", source = { registry = "https://download.pytorch.org/whl/cu129" }, marker = "python_full_version >= '3.14' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cu129/torchvision-0.23.0%2Bcu129-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:04316e24ddd1cee3b301208811a9d7c4cfca5f566ea367f33bda059d8f0e012e", upload-time = "2025-08-05T20:11:53Z" },

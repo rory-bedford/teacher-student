@@ -1,6 +1,8 @@
 # teacher-student — synthetic teacher-student experiments on conductance-based
-# spiking networks. A *project* repo consuming the connectome-snns library as an
-# editable path dependency (pin it to a git rev for archival reproducibility).
+# spiking networks. A *project* repo consuming the connectome-snns library, installed
+# from GitHub at the commit these experiments were run with. To develop the library
+# alongside, replace its source below with
+#   connectome-snns = { path = "../connectome-snns", editable = true }
 #
 # Almost everything here trains spiking nets and needs torch. connectome-snns keeps
 # torch in optional extras only (base install pulls none), so this repo owns the
@@ -26,7 +28,7 @@ cu129 = ["torch>=2.7.0", "torchvision>=0.22.0", "cuml-cu12==26.2.*"]
 conflicts = [[{ extra = "cpu" }, { extra = "cu129" }]]
 
 [tool.uv.sources]
-connectome-snns = { path = "../connectome-snns", editable = true }
+connectome-snns = { git = "https://github.com/rory-bedford/connectome-snns", rev = "308ba43fb133f175d5d094519e2e90c43b382765" }
 torch = [
   { index = "pytorch-cpu", extra = "cpu" },
   { index = "pytorch-cu129", extra = "cu129" },
