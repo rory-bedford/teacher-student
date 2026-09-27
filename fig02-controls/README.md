@@ -66,7 +66,22 @@ The configuration model **replaces** the naive random within-block rewire; it is
 - **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted — the shuffled-identity floor was dropped on 2026-09-17.
 - **As built** (three seeds, held-out Fluctuation R², observed / unobserved): full
   connectome 0.97 / 0.97, unconstrained 0.73 / -0.30, shuffled weights -0.15 / -0.18,
-  shuffled topology -0.19 / -0.20.
+  shuffled topology -0.19 / -0.20. Current CSV (2026-09-27, unconstrained at 100 epochs):
+  full connectome 0.97 / 0.97, **fixed topology 0.92 / -0.46**, unconstrained 0.89 / -0.38;
+  perturbation ΔFluctuation R² (unobserved, pooled) full connectome 0.94, fixed topology
+  -0.58, unconstrained -0.24.
+
+### Fixed topology: the wiring diagram alone is not enough (2026-09-27)
+
+Given the true synapses and free weights, the student fits the observed neurons (0.92) and
+matches every population's mean rate (unobserved E 4.3 vs 4.0 Hz, I 18.0 vs 18.4 Hz), but its
+unobserved fluctuations are no better than the unconstrained model's (-0.46 vs -0.38) and
+its perturbation response is worse. Training loss ends lower than unconstrained (van Rossum
+46-52 vs 52) but ~3x Figure 1's 17, still falling ~2% per tenth of training. The learnt weights
+barely recover the teacher's: per-block correlation r = 0.05-0.29 (log r 0.03-0.12), with
+each block's total within ~0.9-1.5x. So the topology constrains *which* partners, but ~1.6 M
+free weights fitted to half the neurons' spikes find a different solution; it is the
+measured weights (through six scaling factors) that pin down the unobserved dynamics.
 
 ## Panels
 
