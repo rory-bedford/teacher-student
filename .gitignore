@@ -17,3 +17,6 @@ STATUS.md
 
 # Cluster submission tooling and its snapshots (local to whichever machine submits)
 slurm/
+
+# Instructions for the coding assistant, local to this machine.
+CLAUDE.md
