@@ -6,6 +6,10 @@
     fig05-b-curve                   Fluctuation R² vs weight noise, observed / unobserved
     fig05-c-delta-fluctuation       perturbation: ΔFluctuation R² vs weight noise
 
+Both performance panels carry, dashed, the mean of Figure 2's fixed-topology control
+(the true synapses, their weights learnt rather than given), read from
+fig02-controls/fig02_summary.csv.
+
 The contrast panel (weight noise beside Figure 4's neuron removal) was removed on
 2026-09-21: it duplicated Figure 4's own curve, and comparing the two error types is a
 job for the slide deck rather than a panel.
@@ -25,6 +29,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -39,6 +44,7 @@ from common.plotting import (
 )
 from common.style import (
     INK,
+    LEGEND_GREY,
     MODEL,
     OBSERVED,
     PAIR,
@@ -67,6 +73,13 @@ GROUPS = {
     "observed": ("Observed", OBSERVED),
     "unobserved": ("Unobserved", UNOBSERVED),
 }
+#: Figure 2's summary, for the fixed-topology control drawn on both performance panels
+#: (2026-09-27): the true synapses with learnt weights, the alternative to measuring them.
+CONTROL_SUMMARY = HERE.parent / "fig02-controls" / "fig02_summary.csv"
+CONTROL_VARIANT = "fixed_topology"
+#: Figure 2 plots the fixed-topology runs trained for 100 epochs (its LEARNT_EPOCHS).
+CONTROL_EPOCHS = 100
+CONTROL_LABEL = "Fixed Topology,\nLearnt Weights"
 
 
 #: The upper limit of the weight axes, as a percentile of the sampled synapses: the
@@ -160,8 +173,55 @@ def group_rows(summary, group, metric, cell_type="all"):
     return rows
 
 
-def limits(summary):
-    """One y range for all three panels, as in Figures 3 and 4."""
+def control_means(control):
+    """Mean over seeds of the fixed-topology control, per (evaluation, group).
+
+    Pooled over cell types for the perturbation exactly as the sweep's own points are,
+    so the line and the curve it is read against are the same quantity.
+    """
+    if control is None:
+        return {}
+    rows = control[control["variant"] == CONTROL_VARIANT]
+    if "total_epochs" in rows:
+        rows = rows[rows["total_epochs"] == CONTROL_EPOCHS]
+    means = {}
+    for group in GROUPS:
+        held = group_rows(held_out(rows), group, "fluctuation_r2")
+        if not held.empty:
+            means["held_out", group] = held["value"].mean()
+        delta = rows[
+            (rows["evaluation"] == "perturbation")
+            & (rows["metric"] == "delta_fluctuation_r2")
+            & (rows["group"] == group)
+        ]
+        if not delta.empty:
+            means["perturbation", group] = pool_populations(delta, ["seed"])[
+                "value"
+            ].mean()
+    return means
+
+
+def control_lines(ax, means, evaluation):
+    """Dashed horizontal line per population at the control's mean; legend handles."""
+    drawn = False
+    for group, (_, color) in GROUPS.items():
+        if (evaluation, group) in means:
+            ax.axhline(
+                means[evaluation, group],
+                color=color,
+                linestyle="--",
+                linewidth=1.2,
+                alpha=0.8,
+                zorder=1,
+            )
+            drawn = True
+    if not drawn:
+        return ()
+    return (Line2D([], [], color=LEGEND_GREY, linestyle="--", label=CONTROL_LABEL),)
+
+
+def limits(summary, means):
+    """One y range for all three panels, as in Figures 3 and 4, control lines included."""
     return performance_limits(
         [
             value
@@ -170,10 +230,11 @@ def limits(summary):
                 summary, group, ["weight_noise", "seed"]
             )
         ]
+        + list(means.values())
     )
 
 
-def curve(summary, clipped, ylim):
+def curve(summary, clipped, ylim, means):
     """(a) Fluctuation R² against weight noise, per population, with dotted ceilings."""
     rows = held_out(summary)
     fig, ax = sweep_panel()
@@ -199,6 +260,7 @@ def curve(summary, clipped, ylim):
         {label: color for label, color in GROUPS.values()},
         metrics=False,
         estimate=True,
+        extra=control_lines(ax, means, "held_out"),
         fontsize=TICK_SIZE - 2,
     )
     # The mean/SD-preserving perturbation clips a few weights at zero (1.5-4.5% across
@@ -209,7 +271,7 @@ def curve(summary, clipped, ylim):
     return fig
 
 
-def perturbation(summary, metric, ylim):
+def perturbation(summary, metric, ylim, means):
     """(b) The intervention's effect against weight noise, cell types pooled.
 
     The non-targeted unobserved E and I populations are pooled (see
@@ -252,6 +314,7 @@ def perturbation(summary, metric, ylim):
         },
         metrics=False,
         estimate=True,
+        extra=control_lines(ax, means, "perturbation"),
         fontsize=TICK_SIZE - 2,
     )
     ax.set_title(PERTURBATION_TITLE)
@@ -259,7 +322,7 @@ def perturbation(summary, metric, ylim):
     return fig
 
 
-def main(data_dir, out_dir, decorate=None, suffix=""):
+def main(data_dir, out_dir, decorate=None, suffix="", control=CONTROL_SUMMARY):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
     summary = pd.read_csv(data_dir / "fig05_summary.csv")
@@ -277,14 +340,15 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
             raster=True,
         )
 
-    ylim = limits(summary)
-    output(curve(summary, clipped, ylim), "b", "curve")
+    means = control_means(pd.read_csv(control) if Path(control).exists() else None)
+    ylim = limits(summary, means)
+    output(curve(summary, clipped, ylim, means), "b", "curve")
 
     # The perturbation panels are separate files, so dropping them from the talk is
     # dropping two SVGs.
     if (summary["metric"] == "delta_fluctuation_r2").any():
         output(
-            perturbation(summary, "delta_fluctuation_r2", ylim),
+            perturbation(summary, "delta_fluctuation_r2", ylim, means),
             "c",
             "delta-fluctuation",
         )
@@ -294,5 +358,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=HERE)
     parser.add_argument("--out-dir", type=Path, default=HERE)
+    parser.add_argument("--control", type=Path, default=CONTROL_SUMMARY)
     args = parser.parse_args()
-    main(args.data, args.out_dir)
+    main(args.data, args.out_dir, control=args.control)
