@@ -1,120 +1,92 @@
-# Figure 5 — Weight precision is not the binding constraint
+# Figure 5 — Weight noise
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
+The connectome gives the student its synaptic weights, but a real reconstruction measures
+them imprecisely. How much does that cost? Prediction degrades steadily rather than
+suddenly: at weight noise 0.3 the student still explains 0.78 of the unobserved neurons'
+fluctuations, but at 0.7, the precision we expect of a real reconstruction, it falls to
+0.38, about as much as losing 30% of the recurrent input in Figure 4.
 
-**Claim:** the model tolerates substantial error in synaptic weights. Compared against Figure 4, imprecise weights cost far less than missing connections — so the limiting factor is what you have reconstructed, not how accurately you have measured it.
+Shared methods (model, training, evaluation, noise ceiling): [`../METHODS.md`](../METHODS.md).
 
-This figure exists mainly to set up that contrast. On its own it is a robustness check; beside Figure 4 it is an argument about where effort should go.
+## Experiment
 
-## Configuration
+Everything is as in Figure 1 except that the student's weights are noisy copies of the
+teacher's. For each (source type, target type) block of the feedforward and recurrent
+weights (mitral→E, mitral→I, E→E, E→I, I→E, I→I), the noise:
 
-Identical to Figure 1 except for the swept degradation:
+1. multiplies each existing weight by an independent log-normal factor
+   exp(σ·N(0,1) − σ²/2), with mean 1, where σ is the weight noise;
+2. rescales the block's weights so that they keep their original mean and SD;
+3. clips at zero.
 
-| Parameter | Value |
+No synapses are created and none changes sign. Clipping can delete synapses, though, and
+how many depends strongly on the draw: the rescaling matches each block's SD, which is set
+by a few very large weights, so when those draw small multipliers the rescale stretches the
+rest below zero. Seed 44 loses 3–14% of its synapses across the sweep (at noise 0.3, half
+of its mitral→I synapses), while seeds 45 and 46 lose none. Seed 44's scores sit between the
+other two seeds at every level, so the curve is not driven by it. The fraction clipped is
+recorded per run as `noise_clipped_fraction` in `fig05_summary.csv`.
+
+The grey band at noise 0.7 is where the teacher's and student's recurrent weights
+correlate at r = 0.81, the correlation between synaptic weight and synapse volume measured
+by Holler et al., *Structure and function of a neocortical synapse*.
+
+| Setting | Value |
 |---|---|
-| feedforward connections | reconstructed |
-| recurrent reconstruction | 100% |
-| observed fraction | **50%** (matches Figures 1–4; 2026-09-18, was 10%) |
-| trained parameters | 6 scaling factors |
-| **weight noise** | **swept**, 0 → 0.8 |
-| seeds | 3 per point |
+| Weight noise σ | 0.1, 0.2, ..., 0.8; 0 is Figure 1's runs |
+| Noisy weights | feedforward and recurrent, per cell-type block |
+| Observed fraction | 50% |
+| Trained parameters | 6 scaling factors |
+| Epochs | 50 |
+| Seeds | 3 (44, 45, 46) |
 
-## What weight noise is
+## Results
 
-The noisy-weights implementation of the archived runs, unchanged. For each (source type,
-target type) block of the concatenated [mitral; recurrent] weight matrix — mitral→E,
-mitral→I, E→E, E→I, I→E, I→I:
+Fluctuation R², mean over three seeds (noise ceiling 1.00 held-out, 0.99 perturbation):
 
-1. multiply each non-zero weight by exp(σ·N(0,1) − σ²/2), σ = weight_noise (mean-1 log-normal);
-2. affinely rescale the non-zero weights back to the block's original mean and SD;
-3. clip at zero.
+| Weight noise | Observed | Unobserved | ΔFluct. R² perturbation, observed | ΔFluct. R² perturbation, unobserved |
+|---|---|---|---|---|
+| 0 (Figure 1) | 0.97 | 0.97 | 0.94 | 0.94 |
+| 0.1 | 0.95 | 0.93 | 0.89 | 0.88 |
+| 0.2 | 0.89 | 0.86 | 0.79 | 0.75 |
+| 0.3 | 0.82 | 0.78 | 0.66 | 0.60 |
+| 0.4 | 0.73 | 0.67 | 0.54 | 0.46 |
+| 0.5 | 0.63 | 0.57 | 0.44 | 0.35 |
+| 0.6 | 0.53 | 0.47 | 0.35 | 0.31 |
+| 0.7 | 0.45 | 0.38 | 0.28 | 0.26 |
+| 0.8 | 0.38 | 0.31 | 0.23 | 0.23 |
 
-So the noise is **multiplicative log-normal**, not additive Gaussian, the block's original
-**mean and SD are preserved**, and it reaches the **mitral weights** as well as the recurrent
-ones. No synapses are created or deleted — topology is untouched, only the values move,
-except that clipping sets a weight to exactly zero.
-
-Step 2 can push weights below zero; step 3 clips them, so **no synapse changes sign** and
-Dale's law holds. The fraction clipped is recorded per run as `noise_clipped_fraction` in
-`fig05_summary.csv`.
-
-**Measured clipping (2026-09-21, three seeds):** 3.3% at noise 0.1, 4.4% at noise 0.2, 4.5%
-at noise 0.3, 3.4% at noise 0.4, 1.5% at noise 0.5. These were printed under panel (a)'s
-title until they crowded it out; the panel now carries the title alone.
-
-Put the one-line version in the caption. It matters for interpretation: this is measurement
-error on weights, not a change in connectivity, which is what makes the contrast with
-Figure 4 meaningful.
-
-## Evaluation
-
-- Held-out test set of new stimuli.
-- **Fluctuation R²** primary, Activity R² secondary.
-- Evaluated on **unobserved** neurons — the discriminative group, comparable with Figures 1–4.
-- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted -- the shuffled-identity floor was dropped on 2026-09-17.
+The observed scores are nearly identical across seeds, while the unobserved ones spread as
+the noise grows (0.28–0.53 at 0.7).
 
 ## Panels
 
-As built (2026-09-21), one SVG each:
+- `fig05-a-weight-perturbation.svg` — single recurrent synapses, noisy weight against
+  teacher weight, at noise 0.1 and 0.8, identity dashed, with the correlation r over all
+  synapses (0.993 and 0.770). Axes stop at the 99th percentile of the weights.
+- `fig05-b-curve.svg` — Fluctuation R² on held-out stimuli against weight noise, observed
+  and unobserved, individual seeds, with the grey band marking the estimated real-dataset
+  level (noise about 0.7).
+- `fig05-c-delta-fluctuation.svg` — perturbation ΔFluctuation R² against weight noise,
+  observed and unobserved (E and I pooled, targeted cells excluded), with the same band.
 
-- **(a)** `fig05-a-weight-perturbation` — what the noise does to a synapse: the perturbed
-  weight against the teacher's, side by side at noise 0.1 and 0.8, with the identity
-  dashed. A recreation of the old repository's `weight_perturbation.svg`. The box carries r, the correlation
-  between the two weight sets — not R², which everywhere else means variance explained —
-  falling **0.993 → 0.770**. Noise **0.7** is the level to talk about: there the
-  teacher's and student's weights correlate at r = 0.81, the weight-against-synapse-volume
-  correlation measured in Holler et al., *Structure and function of a neocortical synapse*.
-  The panel shows **0.8** (r = 0.77), a shade past that precision; the sweep runs both. The population mean and SD are not shown (2026-09-23): the noise
-  preserves them exactly by construction — 0.0325 and 0.2085 at both levels — so they are
-  recorded in `fig05_weight_perturbation.csv` rather than on the panel.
-  Needs no trained run: `analysis.py` applies the same function training applies.
-- **(b)** `fig05-b-curve` — Fluctuation R² vs weight noise, observed and unobserved,
-  individual seeds, no error bars.
-- **(c)** `fig05-c-delta-fluctuation` — perturbation ΔFluctuation R², cell types pooled,
-  shared y range with (b).
-
-Panel (a)'s axes stop at the 99th percentile of the weights: a handful of synapses run two
-orders of magnitude further out (see the teacher's heavy-tailed weights in
-`../fig00-teacher-activity/README.md`), and plotting the full range puts every point in
-one corner. Its statistics are the whole non-zero population's, not the plotted sample's.
-
-The contrast panel (weight noise beside Figure 4's neuron removal) was removed: it
-duplicated Figure 4's own curve, and comparing the two error types is a job for the slide
-deck. The sentence the pair still earns: *at 50% weight noise the model still works; at
-50% of input missing it does not.*
-
-## Files
-
-```
-fig05-weight-noise/
-  analysis.py
-  figures.py
-  run_grid_search.py
-  train.py
-  experiment.toml
-  parameters.toml
-  README.md
-  fig05_rates.csv
-  fig05_summary.csv
-  fig05_weight_perturbation.csv
-  fig05-a-weight-perturbation.svg
-  fig05-b-curve.svg
-  fig05-c-delta-fluctuation.svg
-```
-
----
-
-## Implementation (recorded settings)
-
-*Added when the code was written.*
-
-### How to run
+## Running
 
 ```bash
-./run --grid fig05-weight-noise/experiment.toml   # 5 levels x 3 seeds = 15 runs
-uv run python fig05-weight-noise/analysis.py       # reads Figure 1's runs as weight noise 0
-uv run python fig05-weight-noise/figures.py        # panel SVGs, from this figure's CSVs
+./run --grid fig05-weight-noise/experiment.toml
+uv run python fig05-weight-noise/analysis.py
+uv run python fig05-weight-noise/figures.py
 ```
 
-Identical to Figure 1 except `[student].weight_noise` ∈ {0.1, 0.2, 0.3, 0.4, 0.5}
-(`NOISE_LEVELS` in `run_grid_search.py`); noise 0 is Figure 1.
+`analysis.py` reads Figure 1's runs as noise 0, and builds panel (a) directly from the
+teacher's weights with the function training uses. The grid is 24 runs (8 levels × 3
+seeds), each about 3.6 h on a Quadro RTX 5000, as in Figure 1.
+
+## Notes
+
+- Keeping each block's mean and SD is deliberate: the noise changes which synapses are
+  strong, not a pathway's overall strength, which the six scaling factors could absorb.
+- Clipping at zero keeps every synapse's sign, at the cost of the seed-dependent deletions
+  described above.
+- The noise panel (a) shows r, a correlation between weights, not R², which on every other
+  panel means variance explained.
