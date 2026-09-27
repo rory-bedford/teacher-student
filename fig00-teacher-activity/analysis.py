@@ -24,6 +24,9 @@ Steps, each skipped when its outputs exist unless ``--force`` is given:
     assemblies      fig00_assemblies.npz        the OU mixing coefficient of each odourant
                                                 and each assembly's excitatory population
                                                 rate, over the raster's trial
+    assembly-spikes fig00_assembly_spikes.npz   spikes of 10 random neurons (8 excitatory,
+                                                2 inhibitory) of each of the two leading
+                                                assemblies, on the rastermap's trial
     drive           fig00_drive.csv             feedforward vs recurrent excitatory
                                                 synaptic drive over the whole zarr
     dimensionality  fig00_pca_spectrum.csv      component, eigenvalue, variance_fraction,
@@ -727,12 +730,87 @@ def step_assembly_raster(teacher, out_dir, device):
     )
 
 
+#: Neurons drawn per assembly for the spike raster, by cell type in the network's own
+#: 4:1 mix -- a plain draw of ten gave 8 inhibitory rows in 20. Seeded, so the sample is
+#: the same on every rerun.
+ASSEMBLY_SPIKES_PER_TYPE = {"inhibitory": 2, "excitatory": 8}
+ASSEMBLY_SPIKES_SEED = 0
+#: Rates are heavy-tailed (excitatory median 0.2 Hz, 99th percentile 51 Hz), and one
+#: cell firing at 90 Hz draws as a solid bar that dominates the panel (2026-09-27). Cells
+#: above this percentile of their own cell type's rate on the trial, over the whole
+#: network, are left out of the draw.
+ASSEMBLY_SPIKES_MAX_PERCENTILE = 80
+#: Silent cells are left out too (2026-09-27): half the excitatory cells fire under
+#: 0.2 Hz, and a random draw fills the panel with empty rows. The same 1 Hz cut as the
+#: rastermap, so a row carries at least 15 spikes over the trial.
+ASSEMBLY_SPIKES_MIN_RATE_HZ = 1.0
+
+
+def step_assembly_spikes(teacher, out_dir, device):
+    """Spikes of a random sample of each leading assembly, excitatory and inhibitory.
+
+    Same trial, pair and window as the rastermap. Rows are grouped by assembly, the
+    first leader on top, and within an assembly inhibitory above excitatory, so the
+    colours come in blocks; inside a block the order is the random draw's.
+    """
+    data = teacher.zarr
+    steps = teacher.steps(ASSEMBLY_RASTER_SECONDS)
+    trial, leaders = choose_assembly_trial(data, steps)
+    spikes = np.asarray(data["output_spikes"][trial, :steps, :])
+    rng = np.random.default_rng(ASSEMBLY_SPIKES_SEED)
+    rates = spikes.mean(axis=0) * (1000.0 / teacher.dt)
+    ceiling = np.zeros_like(rates)
+    for index in np.unique(teacher.cell_type_indices):
+        of_type = teacher.cell_type_indices == index
+        ceiling[of_type] = np.percentile(rates[of_type], ASSEMBLY_SPIKES_MAX_PERCENTILE)
+    rows, assembly_of = [], []
+    for assembly in leaders:
+        sample = np.concatenate(
+            [
+                rng.choice(
+                    np.flatnonzero(
+                        (teacher.assembly_ids == assembly)
+                        & (
+                            teacher.cell_type_indices
+                            == teacher.cell_type_names.index(name)
+                        )
+                        & (rates <= ceiling)
+                        & (rates >= ASSEMBLY_SPIKES_MIN_RATE_HZ)
+                    ),
+                    count,
+                    replace=False,
+                )
+                for name, count in ASSEMBLY_SPIKES_PER_TYPE.items()
+            ]
+        )
+        rows.append(sample)
+        assembly_of.append(np.full(sample.size, assembly, dtype=np.int16))
+    neurons = np.concatenate(rows)
+    cell_type = np.array(teacher.cell_type_names)[teacher.cell_type_indices[neurons]]
+    np.savez_compressed(
+        out_dir / "fig00_assembly_spikes.npz",
+        spikes=spikes[:, neurons],
+        neuron_id=neurons.astype(np.int32),
+        assembly=np.concatenate(assembly_of),
+        cell_type=cell_type,
+        leaders=np.array(leaders, dtype=np.int32),
+        dt_ms=np.float32(teacher.dt),
+        trial=np.int32(trial),
+    )
+    print(
+        f"  assembly spikes: trial {trial}, assemblies {leaders}, "
+        f"{(cell_type == 'inhibitory').sum()} of {neurons.size} rows inhibitory, "
+        f"rates {rates[neurons].min():.1f}-{rates[neurons].max():.1f} Hz"
+    )
+
+
 #: step name -> (function, the files it writes).
 STEPS = {
     "conditions": (step_conditions, ["fig00_condition_rates.csv"]),
     "dynamics": (step_dynamics, ["fig00_raster.npz", "fig00_traces.npz"]),
     "assemblies": (step_assemblies, ["fig00_assemblies.npz"]),
     "assembly-raster": (step_assembly_raster, ["fig00_assembly_raster.npz"]),
+    "assembly-spikes": (step_assembly_spikes, ["fig00_assembly_spikes.npz"]),
     "drive": (step_drive, ["fig00_drive.csv"]),
     "dimensionality": (
         step_dimensionality,

@@ -53,8 +53,9 @@ R², with the first 2 s of each trial discarded.
 - `fig00-c-neuron-traces.svg` — one excitatory neuron's membrane potential, spikes, input currents and synaptic conductances over a 2 s window.
 - `fig00-d-synaptic-drive.svg` — feedforward against recurrent excitatory share of synaptic drive, mean and SD over trials.
 - `fig00-e-variance-spectrum.svg` — variance fraction of the first 100 principal components.
-- `fig00-f-assembly-rastermap.svg` — z-scored rates of the neurons in the trial's two leading assemblies, sorted by assembly and rate.
+- `fig00-f-assembly-rastermap.svg` — smoothed, z-scored rates of the excitatory neurons in the trial's two leading assemblies, sorted by assembly and rate.
 - `fig00-g-loss-kernel.svg` — the van Rossum loss kernel used in training, and the difference between two filtered spike trains that the loss squares.
+- `fig00-h-assembly-raster.svg` — spikes of 10 random neurons from each of the same two assemblies, coloured by cell type; cells under 1 Hz or above their type's 80th-percentile rate are left out.
 
 ## Running
 
@@ -75,7 +76,7 @@ minutes); steps whose outputs exist are skipped unless `--force` is given.
 - Assemblies differ in intrinsic rate by more than a stimulus moves them, so panel (b)
   plots each assembly's rate relative to its own mean across all trials; raw rates would
   show which assembly is fastest rather than which odourant is on.
-- The trial shown in (a), (b) and (f) is chosen for a clear switch between two
+- The trial shown in (a), (b), (f) and (h) is chosen for a clear switch between two
   odourants, and the traced neuron in (c) is a typical excitatory cell (rate close to its
   population mean, no unusually strong mitral synapse). Both are illustrations; the
   across-trial numbers are above.

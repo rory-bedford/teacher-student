@@ -9,6 +9,7 @@
     fig00-e-variance-spectrum   variance fraction per principal component
     fig00-f-assembly-rastermap  rates of the trial's two leading assemblies
     fig00-g-loss-kernel         the van Rossum loss kernel and the difference it squares
+    fig00-h-assembly-raster     spikes of random neurons of the same two assemblies
 
 Colour follows COLORSCHEME.txt. Synaptic pathways take the presynaptic population's
 colour, as the scaling-factor panels do -- red from excitatory, blue from inhibitory, grey
@@ -32,7 +33,11 @@ from scipy.ndimage import gaussian_filter1d
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from connectome_snns.visualization import FIGURE_ORANGE, FIGURE_TEAL
+from connectome_snns.visualization import (
+    FIGURE_ORANGE,
+    FIGURE_TEAL,
+    RASTER_BAND_COLOR,
+)
 
 from common.style import (
     EXCITATORY,
@@ -46,6 +51,7 @@ from common.style import (
     TICK_SIZE,
     apply_style,
     clear_panels,
+    group_brackets,
     save,
 )
 
@@ -559,7 +565,7 @@ def assembly_rastermap(data):
     )
     ax.xaxis.set_major_locator(MultipleLocator(RASTER_TICK_S))
     ax.set_xlabel("Time (s)")
-    ax.set_title("Assembly Firing Rate by Neuron")
+    ax.set_title("Excitatory Firing Rates, Smoothed and z-Scored per Neuron")
     # In the reserved right band, added by hand so the axes keeps its full width: a
     # colorbar taken out of the axes would make (f) narrower than (a).
     bar = fig.colorbar(
@@ -574,6 +580,76 @@ def assembly_rastermap(data):
         ),
     )
     bar.set_label("Rate (z per Neuron)", fontsize=TICK_SIZE)
+    panel_layout(fig)
+    return fig
+
+
+#: Cell types by colour, top to bottom as the rows are drawn inside each assembly.
+CELL_TYPE_COLORS = {"inhibitory": INHIBITORY, "excitatory": EXCITATORY}
+
+
+def assembly_spike_raster(data):
+    """(h) Spikes of random neurons of the two leading assemblies, coloured by cell type.
+
+    The style of the talk's other rasters (``spike_raster`` in ``common/style.py``, and
+    the old Fig 0c): a pale band behind every other row, no y ticks, a curly brace per
+    group and a legend of vertical strokes, since the marks are spikes. Same trial, pair,
+    order and axes box as (f), so the two stack: first leader on top.
+    """
+    spikes = data["spikes"]
+    assembly = data["assembly"]
+    cell_type = data["cell_type"].astype(str)
+    leaders = [int(k) for k in np.atleast_1d(data["leaders"])]
+    dt_s = float(data["dt_ms"]) * 1e-3
+    n = spikes.shape[1]
+
+    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, PANEL_HEIGHT))
+    # Row 0 of the file is the top row of the panel.
+    y = n - 1 - np.arange(n)
+    for row in range(0, n, 2):
+        ax.axhspan(y[row] - 0.5, y[row] + 0.5, color=RASTER_BAND_COLOR, zorder=0)
+    ax.eventplot(
+        [np.flatnonzero(spikes[:, row]) * dt_s for row in range(n)],
+        lineoffsets=y,
+        linelengths=0.7,
+        linewidths=1.2,
+        colors=[CELL_TYPE_COLORS[name] for name in cell_type],
+    )
+    # A gap-free divider between the assemblies, as on (f).
+    first = int(np.flatnonzero(assembly == leaders[1]).min())
+    ax.axhline(y[first] + 0.5, color=INK, linewidth=1.2)
+    group_brackets(
+        ax, [(y[row], f"Assembly {assembly[row]}", row) for row in range(n)][::-1]
+    )
+    ax.set_ylim(-0.5, n - 0.5)
+    ax.set_xlim(0, RASTER_SECONDS)
+    ax.xaxis.set_major_locator(MultipleLocator(RASTER_TICK_S))
+    ax.set_yticks([])
+    ax.grid(visible=False)
+    ax.set_xlabel("Time (s)")
+    ax.set_title("Spike Raster")
+    ax.legend(
+        handles=[
+            Line2D(
+                [],
+                [],
+                color=color,
+                marker="|",
+                linestyle="None",
+                markersize=14,
+                markeredgewidth=3,
+                label=name.capitalize(),
+            )
+            for name, color in CELL_TYPE_COLORS.items()
+        ],
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+        borderaxespad=0.0,
+        borderpad=0.35,
+        labelspacing=0.3,
+        handletextpad=0.4,
+        frameon=True,
+    )
     panel_layout(fig)
     return fig
 
@@ -766,6 +842,9 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     output(assembly_rastermap(raster), "f", "assembly-rastermap", raster=True)
 
     output(loss_kernel(), "g", "loss-kernel")
+
+    spikes = np.load(data_dir / "fig00_assembly_spikes.npz")
+    output(assembly_spike_raster(spikes), "h", "assembly-raster", raster=True)
 
 
 if __name__ == "__main__":
