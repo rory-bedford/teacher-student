@@ -63,9 +63,19 @@ CURRENT_FILE = "current.toml"
 TEACHER_CACHE_DIR_NAME = "_evaluation/perturbation-teachers"
 PERTURBATION_FILE = "perturbation.npz"
 #: Bump when the cached contents change; older caches are recomputed.
-PERTURBATION_VERSION = 2
-#: Scored populations: the intervention's non-targeted neighbours, and its targets.
-PERTURBATION_GROUPS = (("unobserved", "E"), ("unobserved", "I"), ("targeted", "I"))
+#: 3 (2026-09-27): the observed neurons are scored too.
+PERTURBATION_VERSION = 3
+#: Scored populations: the intervention's non-targeted neighbours, and its targets. The
+#: observed neurons are teacher-forced with the perturbed recording, so part of their
+#: response reaches them as given input: the easier test, beside the unobserved one, as
+#: in the held-out panels.
+PERTURBATION_GROUPS = (
+    ("observed", "E"),
+    ("observed", "I"),
+    ("unobserved", "E"),
+    ("unobserved", "I"),
+    ("targeted", "I"),
+)
 DELTA_METRICS = ("activity_r2", "fluctuation_r2")
 CELL_TYPE_INDICES = {"E": 0, "I": 1}
 CELL_TYPE_NAMES = {0: "excitatory", 1: "inhibitory"}
@@ -436,21 +446,24 @@ def evaluate_perturbation(run_dir, device="cuda", force=False):
             out[f"{key}_{field}"] = np.array(scores[field])
             out[f"{key}_{field}_ceiling"] = np.array(ceilings[field])
 
-    # Per-neuron delta rates of every unobserved neuron, for the scatter panel.
-    unobserved = sets["unobserved"]
+    # Per-neuron delta rates of every simulated neuron, for the scatter panels.
+    simulated = np.union1d(sets["observed"], sets["unobserved"])
     targeted = np.zeros(ct.size, dtype=bool)
     targeted[targets] = True
-    out["delta_ids"] = unobserved
-    out["delta_cell_types"] = ct[unobserved]
-    out["delta_targeted"] = targeted[unobserved]
+    observed = np.zeros(ct.size, dtype=bool)
+    observed[sets["observed"]] = True
+    out["delta_ids"] = simulated
+    out["delta_cell_types"] = ct[simulated]
+    out["delta_targeted"] = targeted[simulated]
+    out["delta_observed"] = observed[simulated]
     out["teacher_delta_rates"] = (
-        teacher["on"][1][unobserved] - teacher["off"][1][unobserved]
+        teacher["on"][1][simulated] - teacher["off"][1][simulated]
     )
     out["student_delta_rates"] = (
-        student["on"][1][unobserved] - student["off"][1][unobserved]
+        student["on"][1][simulated] - student["off"][1][simulated]
     )
     out["ceiling_delta_rates"] = (
-        ceiling["on"][1][unobserved] - ceiling["off"][1][unobserved]
+        ceiling["on"][1][simulated] - ceiling["off"][1][simulated]
     )
 
     np.savez_compressed(run_dir / PERTURBATION_FILE, **out)
@@ -487,7 +500,7 @@ def perturbation_summary_rows(perturbation, **labels):
 
 
 def perturbation_rate_rows(perturbation, **labels):
-    """One row per unobserved neuron: the intervention's effect on its rate."""
+    """One row per simulated neuron: the intervention's effect on its rate."""
     rows = []
     for i, neuron in enumerate(perturbation["delta_ids"]):
         rows.append(
@@ -497,6 +510,7 @@ def perturbation_rate_rows(perturbation, **labels):
                 "neuron_id": int(neuron),
                 "cell_type": CELL_TYPE_NAMES[int(perturbation["delta_cell_types"][i])],
                 "targeted": int(perturbation["delta_targeted"][i]),
+                "observed": int(perturbation["delta_observed"][i]),
                 "teacher_delta_rate_hz": float(perturbation["teacher_delta_rates"][i]),
                 "student_delta_rate_hz": float(perturbation["student_delta_rates"][i]),
                 "ceiling_delta_rate_hz": float(perturbation["ceiling_delta_rates"][i]),

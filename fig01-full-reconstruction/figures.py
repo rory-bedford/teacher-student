@@ -325,6 +325,10 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
     deltas = pd.read_csv(perturbation) if perturbation.exists() else None
     if deltas is not None:
         deltas = deltas[deltas["seed"] == seed]
+        # These panels are about the unobserved neurons; since 2026-09-27 the CSV also
+        # carries the observed ones.
+        if "observed" in deltas:
+            deltas = deltas[deltas["observed"] == 0]
         if deltas.empty:
             deltas = None
 

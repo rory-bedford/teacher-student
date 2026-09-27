@@ -10,8 +10,8 @@ Writes, next to this script:
     fig01_scaling_factors.csv   seed, observed{full,partial}, observed_fraction,
                                 scaling_factor, value, target
     fig01_spikes.csv    neuron_id, observed, seed, source, time_s   (raster, first seed)
-    fig01_perturbation.csv  seed, neuron_id, cell_type, targeted, teacher/student/ceiling
-                        delta_rate_hz   (one row per unobserved neuron)
+    fig01_perturbation.csv  seed, neuron_id, cell_type, targeted, observed,
+                        teacher/student/ceiling delta_rate_hz   (one row per simulated neuron)
 
 The perturbation rows and CSV need the teacher's calibrated current
 (``slurm/submit_perturbation.sh``); without it the held-out CSVs are still written.
