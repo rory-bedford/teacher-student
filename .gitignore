@@ -1,4 +1,4 @@
-# Data lives in ../bernstein, never in this repo.
+# Data lives outside this repo (see configure.py), never in it.
 .ruff_cache/
 
 # Python / uv / Jupyter cruft

@@ -1,6 +1,6 @@
 # Figure 0 — the teacher network
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
 
 **What it is:** the conductance-based spiking network that generates the activity every
 other figure is trained against, and the panels that characterise it. This is not a

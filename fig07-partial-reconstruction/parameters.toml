@@ -54,7 +54,7 @@ burn_in_ms = 2000.0
 fluctuation_tau_ms = 50.0
 
 # ==========================================================================
-# PHYSIOLOGY — copied verbatim from the teacher (bernstein/teacher-activity).
+# PHYSIOLOGY — copied verbatim from the teacher (fig00-teacher-activity/parameters.toml).
 # Do not edit independently: scaling factor 1.0 is only the true model if the
 # student's physiology is the teacher's.
 # ==========================================================================

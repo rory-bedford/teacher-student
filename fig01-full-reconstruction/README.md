@@ -1,6 +1,6 @@
 # Figure 1 — Full reconstruction recovers the teacher
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
 
 **Claim:** with the feedforward inputs recorded and reconstructed and the recurrent connectome reconstructed, the student reproduces the teacher's activity — including for neurons it never observed — on stimuli it was never trained on.
 

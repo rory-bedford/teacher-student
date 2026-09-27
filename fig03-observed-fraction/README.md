@@ -1,6 +1,6 @@
 # Figure 3 — How few neurons do you need to observe?
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
 
 **Claim:** with the connectome fully reconstructed, unobserved neurons are recovered even when the great majority of the network is never observed — and there is a threshold below which this fails.
 

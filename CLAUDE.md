@@ -17,7 +17,8 @@ environment; use `uvx ruff`.
 ## Repository Structure
 
 ```
-README.md  COLORSCHEME.txt            # how to run, shared methods, decisions, colours
+README.md  METHODS.md  COLORSCHEME.txt   # overview + how to run, shared methods, colours
+configure.py                          # rewrites every experiment.toml around a data directory
 fig00-teacher-activity/               # makes the teacher network + spike data (the inputs)
 common/                               # student, training, evaluation, plotting shared by all figures
 fig01-full-reconstruction/  fig02-controls/  fig03-observed-fraction/

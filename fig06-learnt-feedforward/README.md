@@ -1,6 +1,6 @@
 # Figure 6 — Learnt input fits the cells it sees and fails on the rest
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
 
 **Claim:** give the student the whole recurrent connectome but make it *learn* the
 feedforward input, and it still fits the neurons in its loss while losing the ability to

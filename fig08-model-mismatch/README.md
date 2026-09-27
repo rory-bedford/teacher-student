@@ -1,6 +1,6 @@
 # Figure 8 — Model mismatch: the student's thresholds are wrong
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../README.md`](../README.md).
+> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
 
 **Question:** the connectome student assumes the teacher's single-neuron physiology exactly.
 How much does it lose when that assumption is wrong? Every other figure degrades the
