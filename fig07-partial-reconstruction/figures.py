@@ -103,7 +103,7 @@ def scatters(sweep, rates, fraction, seed):
     fig, axes = plt.subplots(1, 2, figsize=PAIR)
     for ax, (group, (label, _)) in zip(axes, GROUPS.items()):
         rate_scatter(ax, level[level["group"] == group], label)
-    tighten_pair(fig, axes, SCATTER_TITLE)
+    tighten_pair(fig, axes, f"{SCATTER_TITLE} ({fraction * 100:.0f}% Reconstructed)")
     return fig
 
 
