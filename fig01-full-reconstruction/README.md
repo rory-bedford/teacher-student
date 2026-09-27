@@ -56,6 +56,8 @@ parameter identification: many nearby parameter sets reproduce the activity equa
 - `fig01-c-delta-scatter.svg` — the change in each neuron's rate caused by the perturbation, student against teacher, targeted cells marked.
 - `fig01-d-delta-means.svg` — mean rate change per population (targeted inhibitory, non-targeted inhibitory, excitatory), teacher beside student.
 - `fig01-e-scaling-factors.svg` — the six learnt scaling factors relative to the truth, for these runs and for fully observed runs.
+- `fig01-f-bars-held-out.svg` — Fluctuation R² on a held-out stimulus, observed and unobserved, each beside its noise ceiling; dots are seeds.
+- `fig01-g-bars-perturbation.svg` — ΔFluctuation R² under the perturbation, the same layout; E and I pooled, targeted cells excluded.
 
 ## Running
 

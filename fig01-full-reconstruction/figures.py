@@ -8,6 +8,10 @@
     fig01-d-delta-means     perturbation: mean Δrate per population, teacher vs student
     fig01-e-scaling-factors the six tied scaling factors, learnt / true, this figure's
                             runs beside the fully observed ones (recovery)
+    fig01-f-bars-held-out   Fluctuation R² on the held-out trial, observed beside
+                            unobserved, against the noise ceiling
+    fig01-g-bars-perturbation  ΔFluctuation R² under the perturbation, the same two bars,
+                            E and I pooled and the targeted cells left out
 
 The per-neuron Fluctuation R² histogram was dropped on 2026-09-18: the raster and the
 rate scatters already show how well individual neurons are matched.
@@ -30,22 +34,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.plotting import (
     DELTA_MARKER_SIZE,
+    HELD_OUT_TITLE,
+    METRIC_LABELS,
+    PERTURBATION_TITLE,
     SCATTER_TITLE,
     delta_rate_scatter,
+    pool_populations,
 )
 from common.style import (
     EXCITATORY,
     INHIBITORY,
     LEGEND_GREY,
+    OBSERVED,
     PAIR,
     REFERENCE_GREY,
     SINGLE,
     STUDENT,
     TEACHER,
     TICK_SIZE,
+    TITLE_PAD_IN,
+    TITLE_SIZE,
+    UNOBSERVED,
     WIDE,
     apply_style,
     clear_panels,
+    performance_axis,
+    performance_limits,
     rate_scatter,
     save,
     scatter_legend,
@@ -305,6 +319,78 @@ def delta_means(deltas):
     return fig
 
 
+#: Panels (f) and (g): one subpanel per population, the student's bar in the
+#: population's colour and the noise ceiling's in grey beside it.
+BAR_GROUPS = (
+    ("observed", "Observed", OBSERVED),
+    ("unobserved", "Unobserved", UNOBSERVED),
+)
+#: Figure 2's bar geometry (2026-09-27), so these tile with its panels: a 3 in square
+#: subpanel per population, bars 0.7 wide, the figure title over the subpanel titles.
+BAR_AXES = 3.0
+BAR_MARGIN_LEFT = 1.05
+BAR_MARGIN_RIGHT = 0.12
+BAR_MARGIN_TOP = 2 * (TITLE_SIZE / 72) + 3 * TITLE_PAD_IN
+BAR_MARGIN_BOTTOM = 0.45
+BAR_GAP = 0.3
+
+
+def performance_bars(rows, metric, ylim):
+    """(f), (g) The student beside the noise ceiling, observed | unobserved.
+
+    Bars are the mean over seeds and the dots the three seeds, as on Figures 2 and 6; no
+    error bars, since with three seeds the points are the distribution. The ceiling is a
+    bar here rather than those figures' dotted line (2026-09-27): at R² 0.997 the line
+    sat on the top of the axes and could not be seen.
+    """
+    n = len(BAR_GROUPS)
+    width = BAR_MARGIN_LEFT + n * BAR_AXES + (n - 1) * BAR_GAP + BAR_MARGIN_RIGHT
+    height = BAR_MARGIN_TOP + BAR_AXES + BAR_MARGIN_BOTTOM
+    fig, axes = plt.subplots(1, n, figsize=(width, height), sharey=True)
+    rows = rows[rows["metric"] == metric]
+    for ax, (group, title, color) in zip(axes, BAR_GROUPS, strict=True):
+        group_rows = rows[rows["group"] == group]
+        for position, (column, bar_color) in enumerate(
+            (("value", color), ("ceiling_value", REFERENCE_GREY))
+        ):
+            ax.bar(
+                position,
+                group_rows[column].mean(),
+                0.7,
+                color=bar_color,
+                edgecolor="white",
+                linewidth=0.5,
+            )
+            ax.scatter(
+                np.full(len(group_rows), position),
+                group_rows[column],
+                s=8,
+                color="k",
+                zorder=3,
+            )
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(["Student", "Ceiling"])
+        ax.set_xlim(-0.6, 1.6)
+        ax.set_title(title)
+        performance_axis(ax, ylim)
+    axes[0].set_ylabel(METRIC_LABELS[metric])
+    fig.subplots_adjust(
+        left=BAR_MARGIN_LEFT / width,
+        right=1 - BAR_MARGIN_RIGHT / width,
+        top=1 - BAR_MARGIN_TOP / height,
+        bottom=BAR_MARGIN_BOTTOM / height,
+        wspace=BAR_GAP / BAR_AXES,
+    )
+    # Centred over the axes, not the canvas, as on Figure 2.
+    fig.suptitle(
+        PERTURBATION_TITLE if metric.startswith("delta") else HELD_OUT_TITLE,
+        x=(BAR_MARGIN_LEFT + (width - BAR_MARGIN_LEFT - BAR_MARGIN_RIGHT) / 2) / width,
+        y=1 - TITLE_PAD_IN / height,
+        va="top",
+    )
+    return fig
+
+
 def main(data_dir, out_dir, decorate=None, suffix=""):
     apply_style()
     clear_panels(out_dir, FIGURE, suffix)
@@ -345,6 +431,22 @@ def main(data_dir, out_dir, decorate=None, suffix=""):
         output(delta_means(deltas), "d", "delta-means")
     if factors is not None:
         output(scaling_factors(factors), "e", "scaling-factors")
+
+    # E and I pooled, targeted cells left out, as on every other perturbation panel.
+    perturbation_rows = summary[
+        (summary["evaluation"] == "perturbation")
+        & summary["group"].isin([group for group, _, _ in BAR_GROUPS])
+    ]
+    pooled = pool_populations(perturbation_rows, ["seed", "metric", "group"])
+    bar_rows = [held_out, pooled]
+    ylim = performance_limits(pd.concat(bar_rows)["value"])
+    output(performance_bars(held_out, "fluctuation_r2", ylim), "f", "bars-held-out")
+    if not pooled.empty:
+        output(
+            performance_bars(pooled, "delta_fluctuation_r2", ylim),
+            "g",
+            "bars-perturbation",
+        )
 
 
 if __name__ == "__main__":
