@@ -93,7 +93,7 @@ true model is 1.0 for all six. What training recovers depends on the observation
 | Observed | Learnt / true | Note |
 |---|---|---|
 | 100% | 1.00 (7 d.p.) | no unobserved population, so the rate penalties vanish and the van Rossum term alone has its optimum at the truth |
-| 50% | 0.79–1.01 | typical error 6% |
+| 50% | 0.79–1.28 | mean error 9% |
 | 10% | 0.57–1.19 | |
 | ≤2% | 0.23–11.1 | unreliable: succeeds for some observed draws, collapses for others |
 

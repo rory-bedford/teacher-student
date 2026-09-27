@@ -1,233 +1,99 @@
-# Figure 2 — The connectome is what's doing the work
+# Figure 2 — Controls
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
+Is it the connectome that lets the student predict unobserved neurons, or just a flexible
+enough model? We compare the full connectome with students given only its topology, no
+connectome at all, or a scrambled one. Students with learnt weights fit the observed
+neurons, and their response to the perturbation, but fail on the unobserved ones; the
+scrambled connectomes fail on both. Only the full connectome does both, with six free
+parameters against 1.6 M or 25 M.
 
-**Claim:** the recovery in Figure 1 comes from the measured connectome, not from the flexibility of the model. Controls that discard or scramble connectivity fail, at the same training budget and on the same held-out stimuli.
+Shared methods (model, training, evaluation, noise ceiling): [`../METHODS.md`](../METHODS.md).
 
-**The headline contrast:** 6 parameters with the connectome beat 25 million parameters without it.
+## Experiment
 
-## Observed fraction: 50%, not 10% (2026-09-18)
+Everything is as in Figure 1 (50% of neurons observed, feedforward connectome and recorded
+inputs given, the same held-out stimuli and perturbation) except the recurrent
+connectivity the student is given, set by `[student].recurrent_model`:
 
-At 10% observed both wrong-connectome controls (shuffled weights, configuration model) lost their
-unobserved excitatory population entirely (0.36-0.38 Hz vs the teacher's 4.5) while still lowering
-the loss through inhibition alone; the configuration model did the same under the earlier VR-only
-recipe (0.02 Hz), so this is the regime rather than the recipe. With 90% of each neuron's recurrent
-input coming from the student's own spikes, a wrong connectome has nothing holding it near the
-teacher's operating point. The archived controls figure was *fully observed* and gave Full
-Connectome 0.91 / Learnt-Recurrence 0.61 / Shuffle-Connections 0.55 / Shuffle-Weights -0.26
-Fluctuation R².
-
-So the controls run at **50% observed**, which matches the reconstruction budget of the real
-dataset and is the healthiest point of Figure 3's sweep. The full-connectome baseline for the bars
-is Figure 1's seed-matched runs: every figure runs at 50% observed as of 2026-09-18. The 10% runs are
-kept in `bernstein/_superseded/fig02-controls-obs-0.1/` as the collapse observation.
-
-## Configuration
-
-Identical to Figure 1 in every respect except the connectivity given to the student:
-
-| Parameter | Value |
-|---|---|
-| feedforward connections | reconstructed |
-| recurrent reconstruction | 100% |
-| observed fraction | **50%** (2026-09-18; was 10%, see above) |
-| weight noise | **0** — for every variant |
-| seeds | **3 per variant** (44, 45, 46) |
-| training budget | identical across the plotted variants (50 epochs; see the epoch-budget note) |
-
-### Variants
-
-| Variant | What the student gets | Free parameters |
+| Variant | What the student is given | Free parameters |
 |---|---|---|
-| **Full connectome** | true topology and weights | **6** (FF→E, FF→I, E→E, E→I, I→E, I→I scalings) |
-| **Fixed topology** | true topology; every synapse's weight free | ~1.6 M (one per synapse) |
-| **Unconstrained** | no connectome; all recurrent weights free | ~5000² = **25 M** |
-| **Shuffled weights** | true topology, each neuron's input weights permuted among its own presynaptic partners, so its total input weight is preserved exactly | 6 |
-| **Shuffled topology** (configuration-model rewire) | rewired **within each block** (E→E, E→I, …) preserving in/out degree sequences and the within-block weight distribution | 6 |
+| Full connectome | true topology and weights (Figure 1's runs) | 6 |
+| Fixed topology | true synapses; one free weight per synapse | 1,582,452 |
+| Unconstrained | no recurrent connectome; every recurrent weight free, dense | 25,000,002 |
+| Shuffled weights | true topology; each neuron's input weights permuted among its presynaptic partners of the same cell type | 6 |
+| Shuffled topology | each cell-type block rewired by the configuration model, preserving in- and out-degrees and the weight distribution | 6 |
 
-**Why the configuration model rather than a random within-block rewire.** A fully random rewire destroys degree heterogeneity as well as specific wiring, so a failure is attributable to either. The configuration model preserves block statistics *and* degree and destroys only the specific wiring — the stringent null. If the full connectome still wins against it, that is the strong claim.
+Fixed topology and unconstrained (`recurrent_model = "learnt"`) learn log-weights for the
+recurrent blocks and keep the two feedforward scaling factors, so they know which inputs
+each neuron receives but not their scale. Unconstrained is initialised at each block's
+mean weight including absent synapses, and fixed topology at the mean non-zero weight, so
+both start with the teacher's total recurrent drive per block. The two shuffles keep the
+six scaling factors and change only which weights go where.
 
-**Why fixed topology (2026-09-26).** It is the other half of the weight shuffle: topology
-given, weight values not given at all but learnt freely, synapse by synapse. Between the full
-connectome (6 parameters) and unconstrained (25 M) it asks whether the wiring diagram alone,
-with a data-driven fit of every weight, is enough — i.e. how much of the win is topology.
-(Until 2026-09-26 "unconstrained" was called "learnt recurrence"; the runs on disk still
-record `recurrent_model = "learnt"`.)
+| Setting | Value |
+|---|---|
+| Observed fraction | 50% |
+| Seeds | 44, 45, 46 |
+| Epochs | 100 for fixed topology and unconstrained, 50 for the others |
+| Learnt-weight optimiser | Adam, learning rate 5e-3 → 5e-4 (cosine), gradient clip 100 |
 
-**Why the weight shuffle stays.** It tests whether the *weight values* carry information given correct topology — which in the real pipeline is exactly the question of whether synapse volumes are informative. It is the control closest to the assumption the Dp model rests on.
+## Results
 
-The configuration model **replaces** the naive random within-block rewire; it is not an extra bar. Five variants total (fixed topology added 2026-09-26).
+Mean over three seeds; the noise ceiling is 1.00 for held-out Fluctuation R² and 0.99 for
+the perturbation.
 
-## Evaluation
+| Variant | Fluctuation R², observed | Fluctuation R², unobserved | ΔFluctuation R², observed | ΔFluctuation R², unobserved |
+|---|---|---|---|---|
+| Full connectome | 0.97 | 0.97 | 0.94 | 0.94 |
+| Fixed topology | 0.92 | -0.46 | 0.65 | -0.58 |
+| Unconstrained | 0.89 | -0.38 | 0.67 | -0.24 |
+| Shuffled weights | -0.15 | -0.18 | -0.10 | -0.08 |
+| Shuffled topology | -0.19 | -0.20 | -0.09 | -0.14 |
 
-- Held-out test set of new stimuli.
-- **Fluctuation R²** primary (50 ms Gaussian smoothing of spikes; stand-in for the τ = 100 ms calcium filter we match against), Activity R² secondary.
-- Reported separately for **observed** and **unobserved** neurons. Unobserved is the discriminative group — every variant can fit what it is shown.
-- **Noise ceiling** (the perfectly specified student under the same forcing and flips); no floor is plotted — the shuffled-identity floor was dropped on 2026-09-17.
-- **As built** (three seeds, held-out Fluctuation R², observed / unobserved): full
-  connectome 0.97 / 0.97, unconstrained 0.73 / -0.30, shuffled weights -0.15 / -0.18,
-  shuffled topology -0.19 / -0.20. Current CSV (2026-09-27, unconstrained at 100 epochs):
-  full connectome 0.97 / 0.97, **fixed topology 0.92 / -0.46**, unconstrained 0.89 / -0.38;
-  perturbation ΔFluctuation R² (unobserved, pooled) full connectome 0.94, fixed topology
-  -0.58, unconstrained -0.24.
-
-### Fixed topology: the wiring diagram alone is not enough (2026-09-27)
-
-Given the true synapses and free weights, the student fits the observed neurons (0.92) and
-matches every population's mean rate (unobserved E 4.3 vs 4.0 Hz, I 18.0 vs 18.4 Hz), but its
-unobserved fluctuations are no better than the unconstrained model's (-0.46 vs -0.38) and
-its perturbation response is worse. Training loss ends lower than unconstrained (van Rossum
-46-52 vs 52) but ~3x Figure 1's 17, still falling ~2% per tenth of training. The learnt weights
-barely recover the teacher's: per-block correlation r = 0.05-0.29 (log r 0.03-0.12), with
-each block's total within ~0.9-1.5x. So the topology constrains *which* partners, but ~1.6 M
-free weights fitted to half the neurons' spikes find a different solution; it is the
-measured weights (through six scaling factors) that pin down the unobserved dynamics.
+With weights learnt from data, fixed topology and unconstrained fit the neurons they are
+shown and partly predict how those neurons respond to the perturbation, and they match
+every population's mean rate, but their Fluctuation R² on unobserved neurons is
+negative. With the wrong connectome, the six scaling factors cannot fit even the
+observed neurons: under both shuffles the excitatory population falls to about 1 Hz,
+against the teacher's 4 Hz. Only the measured connectome predicts the unobserved neurons.
 
 ## Panels
 
-One SVG each, subpanels the same size in both figures so they tile on one slide:
+- `fig02-a-bars-held-out.svg` — held-out Fluctuation R² per variant, observed and unobserved subpanels.
+- `fig02-b-bars-perturbation.svg` — perturbation ΔFluctuation R² per variant, observed and unobserved (non-targeted, E and I pooled) subpanels.
+- `fig02-c-legend.svg` — the shared legend.
 
-- **(a)** `fig02-a-bars-held-out` — held-out Fluctuation R², one subpanel for observed and one for unobserved, one bar per variant.
-- **(b)** `fig02-b-bars-perturbation` — perturbation ΔFluctuation R², one subpanel: the unobserved E and I cells pooled, with the targeted cells excluded — the same population every other figure's perturbation panel reports. The targeted cells and the separate cell types are still scored, in `fig02_summary.csv`.
-- **(c)** `fig02-c-legend` — the shared legend, stacked vertically, on its own.
+Bars are mean ± SD over seeds, with individual seeds as dots and the noise ceiling marked
+per bar.
 
-Bars are mean ± SD over seeds with the individual seeds as dots and the noise ceiling dotted
-per bar. Neither bar figure carries a legend, and both share one y range. The Activity R²
-panel of the original design was dropped (rates are reported by the scatter panels of
-Figures 1 and 3, and Activity R² stays in the CSVs), as was the connectivity schematic — it
-belongs on a slide of its own. The weight shuffle is trained and scored; whether it is
-plotted is `PLOTTED_VARIANTS` in `figures.py`.
+## Running
 
-## Files
-
+```bash
+./run --grid fig02-controls/experiment.toml
+uv run python fig02-controls/analysis.py
+uv run python fig02-controls/figures.py
 ```
-fig02-controls/
-  analysis.py
-  figures.py
-  run_grid_search.py
-  train.py
-  experiment.toml
-  parameters.toml
-  README.md
-  fig02_rates.csv
-  fig02_summary.csv
-  fig02-a-bars-held-out.svg
-  fig02-b-bars-perturbation.svg
-  fig02-c-legend.svg
-```
+
+The full-connectome bars are Figure 1's runs, read by `analysis.py` and not retrained, so
+Figure 1 must be trained first. The grid is 15 runs: the four controls and a fully
+observed full-connectome run for each seed. A six-parameter run takes about 3.6 hours on
+a Quadro RTX 5000; the learnt-weight variants train for twice as many epochs.
 
 ## Notes
 
-- Activity R² barely separates the variants on the **observed** neurons (full connectome
-  0.99, unconstrained 0.96): mean rates of neurons the student is shown are easy to
-  match. It is the unobserved population, and the fluctuations, on which the connectome
-  earns its place — unconstrained goes from 0.96 observed to -0.46 unobserved on the
-  same metric.
-- Unconstrained is the control people will ask about — it is the standard
-  data-constrained RNN. Put its parameter count beside the constrained model's 6 on the
-  slide.
-- **There is no graded version of the wrong-connectome controls, and that is a property of
-  shuffling, not an omission.** Untrained damage scans: at equal per-neuron weight
-  correlation (0.99), weight noise costs 0.22 Fluctuation R² while a shuffle costs 0.78.
-  Only shuffling 1–2% of synapses lands anywhere in between, and dynamically that is the
-  same manipulation as mild weight noise — which is Figure 5's sweep. So the controls here
-  are all-or-nothing by construction, and the graded axis is Figure 5's.
-
-## Implementation (recorded settings)
-
-### How to run
-
-```bash
-./run --grid fig02-controls/experiment.toml   # 4 controls x 3 seeds, plus the fully observed check -> bernstein/fig02-controls/
-uv run python fig02-controls/analysis.py       # reads Figure 1's runs too; fig02_summary.csv, fig02_rates.csv
-uv run python fig02-controls/figures.py        # fig02-a … fig02-c SVGs
-```
-
-**Full connectome is not retrained**: it is Figure 1's three seeds, read by `analysis.py`.
-Everything else — student, observed split per seed, perturbation, recipe, evaluation — is
-Figure 1's (see its README); only `[student].recurrent_model` changes. Runs are ordered seed
-by seed, so all controls get one seed before any gets a second. Cost ≈ 3.6 h per run as
-Figure 1 for the two six-parameter controls (unconstrained: see below).
-
-The grid also trains one **fully observed** full-connectome run per seed
-(`connectome-fully-observed__seed-*`). It is no bar in this figure: with every neuron
-teacher-forced there is no unobserved population, so the rate penalties do not exist as
-loss terms and the six scaling factors are recovered exactly. It is the identifiability
-check, read by Figure 1's `analysis.py` for its scaling-factor panel.
-
-### Variants as implemented (`common/structure.py`, `common/model.py`)
-
-| Variant | Implementation | Free parameters |
-|---|---|---|
-| Full connectome | Figure 1 | 6 |
-| Unconstrained | every recurrent block replaced by a dense, full-rank matrix of free log-weights, shared across the two layers; true feedforward pattern and its 2 scaling factors kept (see below) | **25,000,002** (5000² + 2) |
-| Fixed topology | every recurrent block a free log-weight per true synapse (`exp(W) * topology`, the same shared matrices as unconstrained, masked to the teacher's non-zero pattern; absent synapses get no gradient); feedforward pattern and its 2 scaling factors as for every variant (`recurrent_model = "fixed_topology"`) | **1,582,452** (1,582,450 synapses + 2) |
-| Shuffled weights | each neuron's non-zero input weights permuted among its own presynaptic partners, within cell type; topology and total input untouched (`recurrent_model = "shuffle_inputs"`) | 6 |
-| Shuffled topology | within each block, in-stubs randomly re-paired with out-stubs; self-connections and duplicate synapses repaired by swapping targets with random distinct edges; the block's weights then randomly reassigned | 6 |
-
-Verified on the full 5000-neuron matrix (seed 44): the configuration model preserves every
-in- and out-degree and the weight multiset in all four blocks, has no self-connections, and
-shares 6–7% of the teacher's synapses (= the connection density, i.e. chance). The weight
-shuffle keeps the topology identical.
-
-A superseded whole-connectome weight shuffle (weights permuted within type-pair blocks
-across the whole matrix, one seed) is kept under the distinct name `shuffle_weights_global`
-in the CSVs so the two can never be confused; the per-neuron shuffle is the weight control
-(2026-09-21).
-
-### What the unconstrained control is — state this on the slide
-
-It isolates the **recurrent** connectome and nothing else. Exactly like every other variant
-(and Figure 1), the student is given:
-
-- the **true feedforward weight pattern** (mitral -> E/I), which is perturbed by an unknown
-  per-pathway factor and rescaled by **2 learnt feedforward scaling factors** (mitral->E,
-  mitral->I). So it knows *which* inputs each neuron receives, not their absolute scale;
-- the true recorded activity of the feedforward units and of the observed neurons
-  (teacher forcing), identical held-out evaluation, identical training budget.
-
-What it does **not** get is the recurrent connectome: every recurrent block (E->E, E->I, I->E,
-I->I) is a **dense, fully connected, full-rank matrix of free weights** — 5000² = 25,000,000
-parameters, shared between the simulated unobserved population and the observed neurons — with no
-scaling factors on top. Total free parameters: **25,000,002** (vs 6 with the connectome). Suggested
-slide wording: *"unconstrained: all 25M recurrent weights free; feedforward pattern and
-recordings as for the connectome model"*.
-
-Because it is handed the feedforward pattern, this control is **conservative** — it starts with
-more of the true circuit than a generic data-constrained RNN would. A version that also learns the
-feedforward weights was considered and not included.
-
-### Unconstrained — settings
-
-| Setting | Value | Why |
-|---|---|---|
-| parametrisation | log-weights, `exp(W)`, all pairs, per E/I block | archived no-connectome control |
-| initialisation | each block at its **mean weight including absent synapses** × perturbation | density-matched: every neuron starts with the teacher's total recurrent drive per block |
-| learning rate | Adam, **5e-3 → 5e-4** cosine over the epoch budget | weights move ~lr per update in log space |
-| gradient clip | 100 | archived |
-| feedforward scaling factors | lr 8e-3 → 5e-4, clip 5 | as Figure 1 |
-
-The first version of this control used the archived initialisation (fully connected at the
-mean *non-zero* weight, ≈16× the teacher's drive at ~6% density) and lr 1e-3 → 5e-4. In 50
-epochs it did not fit even the observed neurons: van Rossum loss 433 -> 269 (Figure 1:
-337 -> 88), observed E rate 2.8 vs 4.5 Hz, mitral->E scaling factor compensating to 4.7×,
-held-out unobserved Fluctuation R² 0.04 — which could not be separated from bad
-initialisation, so the initialisation and learning rate were changed as above before the
-grid was run. That run is kept at
-`bernstein/_superseded/lr8e-3-vr-only/fig02-controls__learnt-meannonzero-init__seed-44/`.
-
-### Fixed topology — settings
-
-Same optimiser, learning rates, clip and budget (100 epochs, `fixed_topology-100ep__seed-*`)
-as unconstrained. Each block's synapses start at the block's **mean non-zero weight** ×
-perturbation: the topology is given and its weights are not, and every neuron starts with its
-true in-degree times the mean synapse, so the block's total drive is the teacher's exactly
-(verified, seed 44). The four recurrent scaling factors are dropped; the two feedforward ones
-stay.
-
-**Epoch budget.** The six-parameter controls run 50 epochs, where they have long since
-converged. Unconstrained fits 25M weights and was still descending at 50 epochs (van
-Rossum 145 -> 141 over the final tenth), so `run_grid_search.py` also submits it at 100
-epochs — the budget every other learnt-weights model in this project gets — into its own
-`learnt-100ep__seed-*` directories. The plotted bars are the 50-epoch runs; `LEARNT_EPOCHS`
-in `figures.py` switches the figure over once the longer runs finish.
+- The fully observed full-connectome runs are not a bar here. They are the
+  identifiability check shown in Figure 1's scaling-factor panel.
+- Fixed topology fails on unobserved neurons because its learnt weights settle on a
+  different solution: per block they correlate with the teacher's at only r = 0.05–0.29,
+  although each block's total weight stays within about 0.9–1.5× of the teacher's. With
+  1.6 M free weights fitted to half the neurons, the topology alone does not pin them down.
+- Shuffled topology uses the configuration model rather than a random rewire, so that
+  block statistics, degree sequences and the weight distribution are all preserved and
+  only the specific wiring is destroyed.
+- Shuffled weights asks whether the weight values carry information once the topology is
+  right, which in real data is the question of whether synapse sizes are informative.
+- Unconstrained is given the true feedforward pattern, so it starts with more of the
+  circuit than a generic data-constrained RNN would; the comparison is conservative.
+- The learnt-weight variants train for 100 epochs because unconstrained was still
+  improving at 50. `fig02_summary.csv` also holds 50-epoch unconstrained runs and a
+  single-seed whole-connectome weight shuffle, which are not plotted.

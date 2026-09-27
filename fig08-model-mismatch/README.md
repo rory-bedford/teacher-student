@@ -1,102 +1,77 @@
-# Figure 8 — Model mismatch: the student's thresholds are wrong
+# Figure 8 — Model mismatch
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
+Every other figure degrades the connectome; this one degrades the neuron model. How much does
+the student lose when its spike thresholds are not the teacher's? Degradation is graceful:
+1 mV of threshold heterogeneity costs 0.02–0.03 in Fluctuation R², and even at 4 mV the
+student explains two thirds of the unobserved neurons' fluctuations, although its prediction
+of the perturbation response falls faster and varies more between seeds.
 
-**Question:** the connectome student assumes the teacher's single-neuron physiology exactly.
-How much does it lose when that assumption is wrong? Every other figure degrades the
-*connectome*; this one degrades the *neuron model*, with the connectome perfect.
+Shared methods (model, training, evaluation, noise ceiling): [`../METHODS.md`](../METHODS.md).
 
-The manipulation is **heterogeneity in the spike threshold θ**: each student neuron's
-threshold is offset from the teacher's by an independent Gaussian draw, centred within each
-cell type so every population's mean threshold stays exactly the teacher's. It is
-per-neuron error, which six *shared* scaling factors cannot absorb.
+## Experiment
 
-A homogeneous shift (every threshold moved by the same amount) was considered and dropped
-(2026-09-26): mean zero only, so the manipulation is purely heterogeneity.
+Each student neuron's spike threshold is offset from the teacher's by an independent Gaussian
+draw, with the same absolute SD for excitatory and inhibitory neurons, then centred within
+each cell type so every population's mean threshold is exactly the teacher's. The mismatch is
+therefore pure per-neuron heterogeneity, which six shared scaling factors cannot absorb. The
+offset applies to every simulated neuron, observed and unobserved; every other parameter,
+including the weights, is the teacher's. Everything else is as in Figure 1: full connectome,
+50% of neurons observed.
 
-## Configuration
+The teacher's thresholds are −38 mV (E) and −45 mV (I), with rest and reset at −60 mV, so an
+SD of 4 mV is 18% (E) and 27% (I) of the gap between rest and threshold.
 
-Identical to Figure 1 except for the swept mismatch:
-
-| Parameter | Value |
+| Setting | Value |
 |---|---|
-| feedforward connections | reconstructed |
-| recurrent reconstruction | 100%, teacher weights, no noise |
-| observed fraction | 50% |
-| trained parameters | 6 scaling factors |
-| **threshold heterogeneity** | **swept**, SD 1, 2, 4 mV |
-| seeds | 3 per point (44, 45, 46) |
+| Threshold heterogeneity (SD) | 1, 2, 4 mV; 0 is Figure 1's runs |
+| Observed fraction | 50% |
+| Trained parameters | 6 scaling factors |
+| Epochs | 50 |
+| Seeds | 3 (44, 45, 46) |
 
-Heterogeneity 0 is Figure 1's runs, read by `analysis.py`. The teacher's thresholds are
-−38 mV (E) and −45 mV (I), with rest and reset at −60 mV, so the threshold sits 22 mV (E) /
-15 mV (I) above rest: an SD of 4 mV is 18% / 27% of that gap.
+## Results
 
-## Implementation
+Fluctuation R², mean over three seeds (noise ceiling 1.00 held-out, 0.99 perturbation):
 
-`[student].threshold_heterogeneity` (SD, mV) is drawn into a per-neuron `theta_offset` in
-`student_structure.npz` (`common/structure.py`, its own random stream, so the draw per seed
-is independent of every other manipulation), then centred within each cell type.
-`common/model.py` adds it to each simulated neuron's threshold — the unobserved neurons of
-layer 1 and the observed neurons of layer 2, whose spikes the loss compares with the
-teacher's. The physiology block in `parameters.toml` stays the teacher's.
+| SD (mV) | Observed | Unobserved | ΔFluct. R² perturbation, observed | ΔFluct. R² perturbation, unobserved |
+|---|---|---|---|---|
+| 0 (Figure 1) | 0.97 | 0.97 | 0.94 | 0.94 |
+| 1 | 0.95 | 0.94 | 0.91 | 0.90 |
+| 2 | 0.88 | 0.84 | 0.81 | 0.74 |
+| 4 | 0.70 | 0.66 | 0.57 | 0.52 |
 
-The **noise ceiling** is the perfectly specified student, and that has the teacher's
-thresholds: `perfect_structure` zeroes the offset. So the ceiling does not depend on the
-mismatch, equals Figure 1's per seed, and is drawn as **one constant line** from Figure 1's
-runs.
-
-Structures saved before 2026-09-26 have no `theta_offset`; the model treats that as no
-mismatch, so every earlier run and cached evaluation is unchanged.
-
-## Results (2026-09-27, three seeds per level)
-
-| SD (mV) | Fluct. R² observed | Fluct. R² unobserved | ΔFluct. R² perturbation (unobserved, pooled) |
-|---|---|---|---|
-| 0 (Figure 1) | 0.97 | 0.97 | 0.94 |
-| 1 | 0.95 | 0.94 | 0.90 |
-| 2 | 0.88 | 0.84 | 0.74 |
-| 4 | 0.70 | 0.66 | 0.52 |
-
-Ceiling 0.997 for both populations. Degradation is graceful: 1 mV of threshold heterogeneity
-costs ~0.03, and even at 4 mV the unobserved population keeps two thirds of its explained
-fluctuation variance. The perturbation response degrades faster and spreads more across
-seeds (SD 0.16-0.20 at 2-4 mV). The scaling factors barely move until 4 mV, where they drift
-down 10-27% (I→I most), i.e. the student weakens its inputs slightly rather than
-compensating per neuron, which six shared parameters cannot do.
-
-Two of the 4 mV runs (seeds 44, 45) first crashed out of memory: the library grid runner
-(`connectome_snns.utils.experiment_runners`, `cuda_devices[i % n]`) pre-assigns each task
-a GPU by index while the worker pool hands tasks out dynamically, so a worker that
-finished early started a task on the GPU the other worker was still using. The crashed
-folders are in `bernstein/_superseded/fig08-grid-gpu-double-booking-oom/`; the reruns
-completed normally.
+The perturbation response on unobserved neurons spreads widely across seeds at 2–4 mV
+(SD 0.16–0.20). The learnt scaling factors move little up to 2 mV (0.90–0.99 of the truth, against
+0.94–1.07 in Figure 1); at 4 mV they fall to 0.73–0.90 (I→I lowest), so the student weakens
+its inputs slightly rather than compensating neuron by neuron, which six shared parameters
+cannot do.
 
 ## Panels
 
-- **(a)** `fig08-a-curve` — held-out Fluctuation R² vs threshold heterogeneity, observed /
-  unobserved.
-- **(b)** `fig08-b-delta-fluctuation` — perturbation ΔFluctuation R², unobserved E and I
-  pooled, targeted cells excluded.
-- **(c)** `fig08-c-scaling-factors` — learnt / true scaling factor vs threshold
-  heterogeneity: what the six parameters do under the mismatch. With the teacher's
-  weights, 1.0 is the true model at every level.
+- `fig08-a-curve.svg` — Fluctuation R² on held-out stimuli against threshold heterogeneity,
+  observed and unobserved.
+- `fig08-b-delta-fluctuation.svg` — perturbation ΔFluctuation R² against threshold
+  heterogeneity, observed and unobserved (E and I pooled, targeted cells excluded).
+- `fig08-c-scaling-factors.svg` — learnt / true scaling factor against threshold
+  heterogeneity; 1.0 is the true model at every level.
 
-## How to run
+## Running
 
 ```bash
-./run --grid fig08-model-mismatch/experiment.toml   # 3 levels x 3 seeds = 9 runs -> bernstein/fig08-model-mismatch/
-uv run python fig08-model-mismatch/analysis.py       # reads Figure 1's runs too
-uv run python fig08-model-mismatch/figures.py        # fig08-a … fig08-c SVGs
+./run --grid fig08-model-mismatch/experiment.toml
+uv run python fig08-model-mismatch/analysis.py
+uv run python fig08-model-mismatch/figures.py
 ```
 
-Cost as Figure 1, ≈ 3.6 h per run on a Quadro RTX 5000 (50 epochs).
+`analysis.py` reads Figure 1's runs as the zero-heterogeneity point. The grid is 9 runs
+(3 levels × 3 seeds), each about 3.6 h on a Quadro RTX 5000, as in Figure 1.
 
-## Files
+## Notes
 
-```
-fig08-model-mismatch/
-  analysis.py  figures.py  run_grid_search.py  train.py
-  experiment.toml  parameters.toml  README.md
-  fig08_summary.csv  fig08_rates.csv  fig08_scaling_factors.csv
-  fig08-a … fig08-c SVGs
-```
+- The offsets are set by `[student].threshold_heterogeneity` and drawn in
+  `common/structure.py` from their own random stream, so they are independent of every
+  other random draw for the seed. The physiology block in `parameters.toml` stays the
+  teacher's.
+- The noise ceiling is the perfectly specified student, which has the teacher's thresholds,
+  so it does not depend on the mismatch: it is Figure 1's, drawn as one constant line.
+- Only heterogeneity is tested; a uniform shift of every threshold is not.

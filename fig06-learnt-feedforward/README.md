@@ -1,102 +1,79 @@
-# Figure 6 — Learnt input fits the cells it sees and fails on the rest
+# Figure 6 — Learnt feedforward input
 
-> Shared methods — model, teacher forcing, metrics, the noise ceiling, naming: see [`../METHODS.md`](../METHODS.md).
+Is the recurrent connectome enough if the input to the circuit is not reconstructed? We give
+the student the whole recurrent connectome and every neuron, but make it learn every
+feedforward (mitral→E/I) weight. It still fits the neurons it observes, but its prediction of
+the unobserved neurons falls well below that of the student given the input: fitting and
+predicting come apart even though no recurrent connectivity is missing.
 
-**Claim:** give the student the whole recurrent connectome but make it *learn* the
-feedforward input, and it still fits the neurons in its loss while losing the ability to
-predict the ones that are not. Fitting and predicting come apart, with no connectivity
-missing from the recurrent network at all.
+Shared methods (model, training, evaluation, noise ceiling): [`../METHODS.md`](../METHODS.md).
 
-This is the cleanest form of the project's unifying idea — **an unreconstructed unit is
-indistinguishable from external drive** — because only one thing is unknown. Figure 7
-makes feedforward and recurrent units unknown together and sweeps how many; this isolates
-the feedforward half at full strength.
+## Experiment
 
-## Configuration
+The student is Figure 1's in every respect except the feedforward weights. The 1500 mitral
+units keep their recorded activity, but their weights onto the excitatory and inhibitory
+neurons are not given: each block (mitral→E, mitral→I) is learnt as `exp(U V)` at full rank,
+so a failure to predict cannot be put down to limited capacity. The recurrent weights are the
+teacher's with the four recurrent scaling factors (E→E, E→I, I→E, I→I) learnt as in Figure 1,
+and 50% of neurons are observed.
 
-Identical to Figure 1 except that the feedforward weights are learnt instead of given:
+This isolates one half of Figure 7's manipulation: an unreconstructed unit is
+indistinguishable from external drive, and here the only unreconstructed units are the
+inputs. The comparison condition is Figure 1's seed-matched runs, where the same student at
+the same observation level is given the feedforward weights.
 
-| Parameter | Value |
+| Setting | Value |
 |---|---|
-| recurrent connectome | **given**, with 4 learnt scaling factors (see below) |
-| feedforward connectome | **learnt**, every weight |
-| observed fraction | 50% of modelled neurons, as every other figure |
-| weight noise | 0 |
-| seeds | 3 (44, 45, 46) |
+| Feedforward weights | learnt, full rank (`low_rank = 1500`), 12,000,000 weights |
+| Recurrent connectome | given, 4 learnt scaling factors |
+| Observed fraction | 50% |
+| Learning rate (learnt weights) | 8e-3 → 5e-4, cosine schedule |
+| L1 penalty on learnt weights | 5000 × mean(`exp(U V)`) per block |
+| Epochs | 200 |
+| Seeds | 3 (44, 45, 46) |
 
-### What is learnt
+## Results
 
-| | |
-|---|---|
-| feedforward weights | **12,000,000** — `exp(U V)` at **full rank** for each of the two blocks: mitral→E (U 1500×1500, V 1500×4000) and mitral→I (U 1500×1500, V 1500×1000) |
-| scaling factors | **4 live** — E→E, E→I, I→E, I→I |
-| | **2 dead** — mitral→E and mitral→I exist in the parameter dictionary but scale the *known* mitral rows, of which there are none. They receive exactly zero gradient and never move from their initialisation (verified over a full epoch, 2026-09-23). `n_free_params` in the CSVs therefore over-reports by two, and Figure 1's scaling-factor panel must never be drawn for this figure — those two values would look like a recovery failure for a pathway that has no scaling factor at all. |
+Fluctuation R², mean over three seeds (noise ceiling 1.00 for every entry, 0.99 for the
+perturbation):
 
-**Full rank is free.** `MixedProjection.forward` builds the weight matrix once per chunk,
-not per timestep, so rank costs no time: measured 1.41 chunk/s at rank 1500 against 1.37
-at rank 20. Running at full rank removes "you did not give it enough capacity" as an
-objection to the result.
+| Condition | Observed | Unobserved | ΔFluct. R² perturbation, observed | ΔFluct. R² perturbation, unobserved |
+|---|---|---|---|---|
+| Input given (Figure 1) | 0.97 | 0.97 | 0.94 | 0.94 |
+| Input learnt | 0.89 | 0.73 | 0.80 | 0.74 |
 
-### Why 200 epochs
-
-Twice the budget that trained Figure 2's 25-million-parameter learnt recurrence to 0.887
-on observed neurons, and twice Figure 7's. The archived rank-20 run's cosine similarity to
-the teacher's feedforward matrix only starts climbing past ~150 epochs (0.02 at 100, 0.11
-at 200, 0.30 at 300, 0.38 at 432) — but that measures **recovery of the true input**,
-which this figure does not need and is not helped by: a model that recovered the input
-would predict well everywhere and there would be no result. What the figure needs is a
-good fit on observed cells, and every comparable run here reaches that within 100 epochs.
-
-`lr_weights = 8e-3` is the one learning rate ever observed to learn the input here; every
-rank-1 run at 1e-3, archived and ours, left the feedforward matrix at chance (cosine ~0.01).
-
-## Evaluation
-
-- Held-out test set of new stimuli, and the perturbation, both as everywhere else.
-- **Fluctuation R²** primary, reported separately for observed and unobserved neurons.
-- The control is **Figure 1's seed-matched runs**, not retrained here: the same student at
-  the same 50% observed with the feedforward input given. Both conditions must sit at the
-  same observation level or the comparison is not like for like.
+With the input learnt, the observed neurons are still fitted well (0.89, consistent across
+seeds), while the unobserved neurons drop to 0.73 and vary more between seeds (0.66–0.79).
+The response to the perturbation degrades in the same way.
 
 ## Panels
 
-- **(a)** `fig06-a-bars-held-out` — Fluctuation R², Observed | Unobserved, input given
-  beside input learnt, per-seed dots, dotted noise ceiling.
-- **(b)** `fig06-b-bars-perturbation` — ΔFluctuation R² on the unobserved population, cell
-  types pooled, sharing (a)'s y range.
-- **(c)** `fig06-c-legend` — the shared legend, its own file.
-- **(d)** `fig06-d-scatter` — teacher vs student firing rate, Observed | Unobserved, learnt
-  condition, data embedded as a 400 dpi raster.
+- `fig06-a-bars-held-out.svg` — Fluctuation R² on held-out stimuli, observed | unobserved,
+  input given beside input learnt, per-seed dots and the noise ceiling.
+- `fig06-b-bars-perturbation.svg` — perturbation ΔFluctuation R², observed and unobserved
+  (E and I pooled), same two conditions.
+- `fig06-c-legend.svg` — the shared legend, as its own file.
+- `fig06-d-scatter.svg` — teacher vs student firing rate, observed | unobserved, input-learnt
+  condition.
 
-The claim is the gap between the two bars *within* the unobserved panel of (a), against
-Figure 1 where both populations sit near the ceiling.
-
-## Files
-
-```
-fig06-learnt-feedforward/
-  train.py  run_grid_search.py  analysis.py  figures.py
-  experiment.toml  parameters.toml  README.md
-  fig06_summary.csv  fig06_rates.csv
-  fig06-a-bars-held-out.svg  fig06-b-bars-perturbation.svg
-  fig06-c-legend.svg  fig06-d-scatter.svg
-```
-
-## How to run
+## Running
 
 ```bash
-./run --grid fig06-learnt-feedforward/experiment.toml   # 3 seeds, ~5 h each on an A40
-uv run python fig06-learnt-feedforward/analysis.py       # reads Figure 1's runs as the control
-uv run python fig06-learnt-feedforward/figures.py        # panels, from this figure's CSVs
+./run --grid fig06-learnt-feedforward/experiment.toml
+uv run python fig06-learnt-feedforward/analysis.py
+uv run python fig06-learnt-feedforward/figures.py
 ```
 
-Runs write to `bernstein/fig06-learnt-input/`. Note that Figure 7's data directory is
-still `bernstein/fig06-learnt-feedforward/` — it was Figure 6 until 2026-09-23 and its 31
-finished runs record that path in their provenance, so the directory keeps the old name.
+`analysis.py` reads Figure 1's runs as the input-given condition, so Figure 1 must be trained
+first. A run is 30,000 chunks (200 epochs); at the measured 1.4 chunks/s that is about 6 h.
 
-## Status
+## Notes
 
-**Running (2026-09-23).** Seeds 44 and 45 on A40s (`bernstein/slurm/20260923-133124`),
-seed 46 locally. Measured rates: 2.10, 1.22 and 0.64 chunk/s, so ~4 h, ~7 h and ~13 h for
-the 30,000 chunks. `figures.py` was exercised end to end against a synthetic CSV of the
-same schema before the runs finished.
+- Full rank costs no extra time: `exp(U V)` is built once per chunk, not per timestep.
+- The learning rate of 8e-3 for the learnt weights is deliberate; at 1e-3 the learnt
+  feedforward matrix stays at chance similarity to the teacher's.
+- 200 epochs is enough for the fit on observed neurons, which is what the figure needs.
+  Recovering the true feedforward matrix would take far longer and is not the question.
+- The mitral→E and mitral→I scaling factors remain in the parameter set but act on no given
+  weights, so they receive no gradient. `n_free_params` in the CSVs (12,000,006) counts
+  them; they are not a recovery failure, and no scaling-factor panel is drawn for this figure.
