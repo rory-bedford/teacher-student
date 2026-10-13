@@ -30,10 +30,6 @@ import torch
 import zarr
 from connectome_snns.analysis import r_squared
 from connectome_snns.analysis.test_inputs import _resolve_teacher_dir
-from connectome_snns.configs.conductance_based import (
-    FeedforwardLayerConfig,
-    RecurrentLayerConfig,
-)
 from connectome_snns.network_simulators.conductance_based.simulator import (
     ConductanceLIFNetwork,
 )
@@ -48,6 +44,7 @@ from common.evaluation import (
     smooth_mean,
 )
 from common.model import neuron_sets
+from common.parameters import load_teacher_parameters
 from common.structure import load_structure
 
 TARGET_FRACTION = 0.25
@@ -83,9 +80,9 @@ CELL_TYPE_NAMES = {0: "excitatory", 1: "inhibitory"}
 
 def teacher_model(teacher_dir, device):
     """The teacher network exactly as ``connectome_snns.analysis.test_inputs`` builds it."""
-    params = toml.load(teacher_dir / "parameters.toml")
-    rec_cfg = RecurrentLayerConfig(**params["recurrent"])
-    ff_cfg = FeedforwardLayerConfig(**params["feedforward"])
+    params = load_teacher_parameters(teacher_dir / "parameters.toml")
+    rec_cfg = params.recurrent
+    ff_cfg = params.feedforward
     ns = np.load(teacher_dir / "results" / "network_structure.npz")
     rec_projections, ff_projections = make_frozen_projections(
         rec_weights=ns["recurrent_weights"],
@@ -96,7 +93,7 @@ def teacher_model(teacher_dir, device):
         ff_cell_type_names=list(ff_cfg.cell_types.names),
     )
     model = ConductanceLIFNetwork(
-        dt=params["simulation"]["dt"],
+        dt=params.simulation.dt,
         rec_projections=rec_projections,
         ff_projections=ff_projections,
         cell_type_indices=ns["cell_type_indices"],
@@ -112,7 +109,7 @@ def teacher_model(teacher_dir, device):
     )
     model.to(device)
     model.eval()
-    return model, int(params["simulation"]["chunk_size"])
+    return model, int(params.simulation.chunk_size)
 
 
 def simulate_teacher(run_dir, device, target_ids=None, shift_mv=0.0):
@@ -355,8 +352,8 @@ def evaluate_perturbation(run_dir, device="cuda", force=False):
     structure = load_structure(run_dir)
     sets = neuron_sets(structure)
     ct = structure["cell_type_indices"]
-    evaluation_cfg = params["evaluation"]
-    tau_ms = evaluation_cfg["fluctuation_tau_ms"]
+    evaluation_cfg = params.evaluation
+    tau_ms = evaluation_cfg.fluctuation_tau_ms
     targets = choose_targets(structure, sets["unobserved"])
     shift_mv = calibrated_shift(run_dir)
     flip_ids = np.random.default_rng(PERTURBATION_SEED).choice(
@@ -381,7 +378,7 @@ def evaluate_perturbation(run_dir, device="cuda", force=False):
             dt = result["dt"]
             n_free_params = result["n_free_params"]
             window = slice(
-                int(evaluation_cfg["burn_in_ms"] / dt), result["student_all"].shape[1]
+                int(evaluation_cfg.burn_in_ms / dt), result["student_all"].shape[1]
             )
         trials = result["student_all"][:, window]
         duration_s = trials.shape[1] * dt / 1000.0
@@ -408,7 +405,7 @@ def evaluate_perturbation(run_dir, device="cuda", force=False):
 
     out = {
         "version": np.array(PERTURBATION_VERSION),
-        "seed": np.array(params["simulation"]["seed"]),
+        "seed": np.array(params.simulation.seed),
         # The same identity fields ``evaluate_run`` stores, so a figure's labeller
         # works with either cache (Figure 3 reads n_observed, Figure 5 the clipping).
         "n_free_params": np.array(n_free_params),
@@ -418,7 +415,7 @@ def evaluate_perturbation(run_dir, device="cuda", force=False):
         "kappa": structure["kappa"],
         "noise_clipped_fraction": structure["noise_clipped_fraction"],
         "dt": np.array(dt),
-        "burn_in_ms": np.array(evaluation_cfg["burn_in_ms"]),
+        "burn_in_ms": np.array(evaluation_cfg.burn_in_ms),
         "scored_steps": np.array([window.start, window.stop]),
         "shift_mv": np.array(shift_mv),
         "targets": targets,

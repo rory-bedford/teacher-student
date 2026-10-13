@@ -32,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import toml
 import torch
 from connectome_snns.analysis import ensure_test_inputs, r_squared
 from connectome_snns.dataloaders.supervised import CyclicSampler, ExactFFDataset
@@ -45,6 +44,7 @@ from common.model import (
     count_free_parameters,
     neuron_sets,
 )
+from common.parameters import load_student_parameters
 from common.structure import load_structure, load_teacher
 from common.training import FINAL_STATE
 
@@ -74,7 +74,7 @@ def completed_runs(grid_dir):
 
 
 def run_parameters(run_dir):
-    return toml.load(Path(run_dir) / "parameters.toml")
+    return load_student_parameters(Path(run_dir) / "parameters.toml")
 
 
 # =====================================================================
@@ -220,7 +220,7 @@ def run_student(
 
     dataset = ExactFFDataset(
         spike_data_path=held_out_trial(run_dir, device),
-        chunk_size=params["simulation"]["chunk_size"],
+        chunk_size=params.simulation.chunk_size,
         device=device,
     )
     n_trials = 1 if flip_ids is None else len(flip_ids)
@@ -229,8 +229,8 @@ def run_student(
         params,
         batch_size=n_trials,
         dt=dataset.dt,
-        surrgrad_scale=params["optimiser"]["surrgrad_scale"],
-        low_rank=params["optimiser"].get("low_rank", 1),
+        surrgrad_scale=params.optimiser.surrgrad_scale,
+        low_rank=params.optimiser.low_rank,
     )
     if not perfect:
         parameters.load_state_dict(
@@ -332,12 +332,12 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
         flip_ids = np.random.default_rng(PERTURBATION_SEED).choice(
             sets["unobserved"], size=N_PERTURBATIONS, replace=False
         )
-    evaluation_cfg = params["evaluation"]
-    tau_ms = evaluation_cfg["fluctuation_tau_ms"]
+    evaluation_cfg = params.evaluation
+    tau_ms = evaluation_cfg.fluctuation_tau_ms
 
     result = run_student(run_dir, device, flip_ids=flip_ids)
     dt = result["dt"]
-    burn_in = int(evaluation_cfg["burn_in_ms"] / dt)
+    burn_in = int(evaluation_cfg.burn_in_ms / dt)
     ct = result["structure"]["cell_type_indices"]
     out = {
         "version": np.array(EVALUATION_VERSION),
@@ -347,11 +347,11 @@ def evaluate_run(run_dir, device="cuda", force=False, progress=None):
         "n_unreconstructed": np.array(sets["unreconstructed"].size),
         "n_perturbations": np.array(0 if flip_ids is None else flip_ids.size),
         "dt": np.array(dt),
-        "seed": np.array(params["simulation"]["seed"]),
+        "seed": np.array(params.simulation.seed),
         "kappa": result["structure"]["kappa"],
         "noise_clipped_fraction": result["structure"]["noise_clipped_fraction"],
         "raster_steps": np.array(int(RASTER_SECONDS * 1000.0 / dt)),
-        "burn_in_ms": np.array(evaluation_cfg["burn_in_ms"]),
+        "burn_in_ms": np.array(evaluation_cfg.burn_in_ms),
     }
     raster_steps = int(out["raster_steps"])
 

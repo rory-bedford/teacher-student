@@ -1,7 +1,7 @@
 """Training entry point shared by every figure's ``train.py``.
 
-Settings are read explicitly from ``parameters.toml``; a missing key is an error rather
-than a silent default. (The archived scripts read ``eps`` and ``grad_norm_clip_ff``
+Settings come from ``parameters.toml`` through ``common.parameters``: a missing or
+unknown key is an error rather than a silent default. (The archived scripts read ``eps`` and ``grad_norm_clip_ff``
 through a config class that dropped them, so neither ever took effect — the values
 here are the ones that actually ran.)
 """
@@ -10,7 +10,6 @@ import math
 from pathlib import Path
 
 import numpy as np
-import toml
 import torch
 import wandb
 from connectome_snns.configs import DATALOADER_KWARGS
@@ -32,6 +31,7 @@ from common.model import (
     physiology,
     scaling_factors_relative_to_target,
 )
+from common.parameters import load_student_parameters
 from common.structure import (
     build_student_structure,
     load_structure,
@@ -150,14 +150,14 @@ def train_student(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    params = toml.load(params_file)
-    simulation = params["simulation"]
-    training = params["training"]
-    optimiser_cfg = params["optimiser"]
-    loss_cfg = params["loss"]
+    params = load_student_parameters(params_file)
+    simulation = params.simulation
+    training = params.training
+    optimiser_cfg = params.optimiser
+    loss_cfg = params.loss
 
-    seed = simulation["seed"]
-    chunk_size = simulation["chunk_size"]
+    seed = simulation.seed
+    chunk_size = simulation.chunk_size
     np.random.seed(seed)
     torch.manual_seed(seed)
 
@@ -166,7 +166,7 @@ def train_student(
     # ------------------------------------------------------------------
     teacher = load_teacher(input_dir)
     structure = build_student_structure(
-        teacher, params["student"], seed, training["weight_perturbation_variance"]
+        teacher, params.student, seed, training.weight_perturbation_variance
     )
     if resume_from is None:
         save_structure(structure, output_dir)
@@ -201,8 +201,8 @@ def train_student(
         params,
         batch_size=batch_size,
         dt=dt,
-        surrgrad_scale=optimiser_cfg["surrgrad_scale"],
-        low_rank=optimiser_cfg.get("low_rank", 1),
+        surrgrad_scale=optimiser_cfg.surrgrad_scale,
+        low_rank=optimiser_cfg.low_rank,
     )
     model.to(device)
     n_free = count_free_parameters(parameters)
@@ -213,20 +213,18 @@ def train_student(
     # ------------------------------------------------------------------
     losses = {
         "van_rossum": VanRossumLoss(
-            tau_rise=loss_cfg["van_rossum_tau_rise"],
-            tau_decay=loss_cfg["van_rossum_tau_decay"],
+            tau_rise=loss_cfg.van_rossum_tau_rise,
+            tau_decay=loss_cfg.van_rossum_tau_decay,
             dt=dt,
             window_size=chunk_size,
             device=device,
         )
     }
-    loss_weights = {"van_rossum": loss_cfg["van_rossum"]}
+    loss_weights = {"van_rossum": loss_cfg.van_rossum}
 
     ct = structure["cell_type_indices"]
     rec_names = physiology(params)["rec_names"]
-    rate_penalties = loss_cfg.get("hidden_rate_mean", 0.0) > 0 or (
-        loss_cfg.get("hidden_rate_std", 0.0) > 0
-    )
+    rate_penalties = loss_cfg.hidden_rate_mean > 0 or (loss_cfg.hidden_rate_std > 0)
     if rate_penalties and sets["unobserved"].size > 0:
         # Which neurons define the target rates. "observed" (default) uses only the
         # recorded cells, so no unobserved activity enters training; with few observed
@@ -235,7 +233,7 @@ def train_student(
         # population towards silence. "population" uses every neuron's rate instead: the
         # same target for every condition, at the cost of assuming the region's mean rate
         # is known.
-        target_from = loss_cfg.get("rate_target", "observed")
+        target_from = loss_cfg.rate_target
         if target_from == "population":
             target_ids = np.arange(ct.size)
         elif target_from == "observed":
@@ -259,64 +257,64 @@ def train_student(
             )
         )
         hidden_types = torch.from_numpy(ct[sets["unobserved"]]).long()
-        if loss_cfg["hidden_rate_mean"] > 0:
+        if loss_cfg.hidden_rate_mean > 0:
             losses["hidden_rate_mean"] = HiddenRateMeanPenalty(
                 hidden_types, torch.from_numpy(target_mean).float(), dt
             ).to(device)
-            loss_weights["hidden_rate_mean"] = loss_cfg["hidden_rate_mean"]
-        if loss_cfg["hidden_rate_std"] > 0:
+            loss_weights["hidden_rate_mean"] = loss_cfg.hidden_rate_mean
+        if loss_cfg.hidden_rate_std > 0:
             losses["hidden_rate_std"] = HiddenRateStdPenalty(
                 hidden_types, torch.from_numpy(target_std).float(), dt
             ).to(device)
-            loss_weights["hidden_rate_std"] = loss_cfg["hidden_rate_std"]
+            loss_weights["hidden_rate_std"] = loss_cfg.hidden_rate_std
 
-    if loss_cfg.get("learnt_weight_l1", 0.0) > 0:
+    if loss_cfg.learnt_weight_l1 > 0:
         for key in parameters.U:
             # The trainer abbreviates loss names at underscores, so no "__".
             name = f"l1_{key.replace('__', '_to_')}"
             losses[name] = LearntWeightL1Penalty(parameters.U[key], parameters.V[key])
-            loss_weights[name] = loss_cfg["learnt_weight_l1"]
+            loss_weights[name] = loss_cfg.learnt_weight_l1
 
     # ------------------------------------------------------------------
     # Optimiser: scaling factors and learnt weights as separate groups.
     # ------------------------------------------------------------------
-    total_epochs = training["total_epochs"]
+    total_epochs = training.total_epochs
     groups, schedules, clips = [], [], []
     if parameters.scaling_factor_parameters():
         groups.append(
             {
                 "params": parameters.scaling_factor_parameters(),
-                "lr": optimiser_cfg["lr_scaling"],
+                "lr": optimiser_cfg.lr_scaling,
             }
         )
         schedules.append(
             cosine_lambda(
-                optimiser_cfg["lr_scaling"],
-                optimiser_cfg["lr_min_scaling"],
+                optimiser_cfg.lr_scaling,
+                optimiser_cfg.lr_min_scaling,
                 total_epochs,
             )
         )
-        clips.append(optimiser_cfg["grad_clip_scaling"])
+        clips.append(optimiser_cfg.grad_clip_scaling)
     if parameters.weight_parameters():
         groups.append(
             {
                 "params": parameters.weight_parameters(),
-                "lr": optimiser_cfg["lr_weights"],
+                "lr": optimiser_cfg.lr_weights,
             }
         )
         schedules.append(
             cosine_lambda(
-                optimiser_cfg["lr_weights"],
-                optimiser_cfg["lr_min_weights"],
+                optimiser_cfg.lr_weights,
+                optimiser_cfg.lr_min_weights,
                 total_epochs,
             )
         )
-        clips.append(optimiser_cfg["grad_clip_weights"])
+        clips.append(optimiser_cfg.grad_clip_weights)
 
     optimiser = torch.optim.Adam(
         groups,
-        betas=(optimiser_cfg["beta1"], optimiser_cfg["beta2"]),
-        eps=optimiser_cfg["eps"],
+        betas=(optimiser_cfg.beta1, optimiser_cfg.beta2),
+        eps=optimiser_cfg.eps,
     )
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimiser, schedules)
 
@@ -326,9 +324,7 @@ def train_student(
             if with_grad:
                 torch.nn.utils.clip_grad_norm_(with_grad, max_norm=clip)
 
-    scaler = GradScaler(
-        "cuda", enabled=training["mixed_precision"] and device == "cuda"
-    )
+    scaler = GradScaler("cuda", enabled=training.mixed_precision and device == "cuda")
 
     # ------------------------------------------------------------------
     # Logging
@@ -376,7 +372,7 @@ def train_student(
             name=run_name,
             dir=str(output_dir),
             config={
-                "student": params["student"],
+                "student": params.student.model_dump(exclude_unset=True),
                 "seed": seed,
                 "n_observed": int(sets["observed"].size),
                 "n_unobserved": int(sets["unobserved"].size),
@@ -411,16 +407,16 @@ def train_student(
         loss_weights=loss_weights,
         device=device,
         num_epochs=total_chunks,
-        chunks_per_update=training["chunks_per_update"],
-        log_interval=training["log_interval"],
-        checkpoint_interval=training["checkpoint_interval"],
-        plot_size=training["plot_size"],
-        mixed_precision=training["mixed_precision"],
+        chunks_per_update=training.chunks_per_update,
+        log_interval=training.log_interval,
+        checkpoint_interval=training.checkpoint_interval,
+        plot_size=training.plot_size,
+        mixed_precision=training.mixed_precision,
         grad_clip_fn=grad_clip_fn,
         progress_bar=tqdm(range(total_chunks), desc="Training", unit="chunk"),
         stats_computer=stats_computer,
         chunks_per_data_epoch=num_chunks,
-        burn_in_chunks=training["burn_in_chunks"],
+        burn_in_chunks=training.burn_in_chunks,
         scheduler=scheduler,
     )
     trainer.metrics_logger = AsyncLogger(log_dir=output_dir, max_queue_size=10)

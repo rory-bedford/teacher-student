@@ -41,11 +41,7 @@ BASELINE = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
 
 
 def mismatch(params):
-    return {
-        "threshold_heterogeneity": float(
-            params["student"].get("threshold_heterogeneity", 0.0)
-        )
-    }
+    return {"threshold_heterogeneity": float(params.student.threshold_heterogeneity)}
 
 
 def label(params, evaluation):
@@ -64,7 +60,7 @@ def main(runs_dir, baseline_dir, out_dir):
     for run in runs:
         params = run_parameters(run)
         factors += scaling_factor_rows(
-            run, seed=int(params["simulation"]["seed"]), **mismatch(params)
+            run, seed=int(params.simulation.seed), **mismatch(params)
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -22,10 +22,6 @@ A block from source type ``a`` to target type ``b`` is parametrised as
 
 import numpy as np
 import torch
-from connectome_snns.configs.conductance_based import (
-    FeedforwardLayerConfig,
-    RecurrentLayerConfig,
-)
 from connectome_snns.dataloaders.supervised import SpikeData
 from connectome_snns.network_simulators.conductance_based.simulator import (
     ConductanceLIFNetwork,
@@ -49,8 +45,8 @@ from torch import nn
 
 def physiology(params):
     """Cell/synapse parameter lists in the namespaces the simulators expect."""
-    recurrent = RecurrentLayerConfig(**params["recurrent"])
-    feedforward = FeedforwardLayerConfig(**params["feedforward"])
+    recurrent = params.recurrent
+    feedforward = params.feedforward
     rec_cells = recurrent.get_cell_params()
     ff_cells = feedforward.get_cell_params()
     rec_synapses = recurrent.get_synapse_params()

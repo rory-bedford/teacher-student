@@ -56,16 +56,16 @@ def main(runs_dir, out_dir):
 
     summary, rates, spikes = [], [], []
     rastered_levels = set()
-    for run in sorted(runs, key=lambda r: run_parameters(r)["simulation"]["seed"]):
+    for run in sorted(runs, key=lambda r: run_parameters(r).simulation.seed):
         print(f"Evaluating {run}")
         evaluation = evaluate_run(run, device)
-        student = run_parameters(run)["student"]
+        student = run_parameters(run).student
         modelled = np.concatenate(
             [evaluation["observed_ids"], evaluation["unobserved_ids"]]
         )
         labels = {
-            "reconstructed_fraction": float(student["reconstructed_fraction"]),
-            "recorded_pool_fraction": float(student["recorded_pool_fraction"]),
+            "reconstructed_fraction": float(student.reconstructed_fraction),
+            "recorded_pool_fraction": float(student.recorded_pool_fraction),
         }
         for row in summary_rows(
             evaluation,

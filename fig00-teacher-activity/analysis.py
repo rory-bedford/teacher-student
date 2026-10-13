@@ -49,15 +49,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import toml
 import torch
 import zarr
-from connectome_snns.configs import SimulationConfig
-from connectome_snns.configs.conductance_based import (
-    FeedforwardLayerConfig,
-    RecurrentLayerConfig,
-)
-from connectome_snns.configs.odours import OdourInputConfig
 from connectome_snns.dataloaders.odourants import (
     generate_baseline_firing_rates,
     generate_odour_firing_rates,
@@ -73,6 +66,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
 from common.evaluation import smooth
+from common.parameters import load_student_parameters, load_teacher_parameters
 
 EVALUATION_PARAMETERS = HERE.parent / "fig01-full-reconstruction" / "parameters.toml"
 VARIANCE_THRESHOLDS = (0.5, 0.8, 0.9, 0.95)
@@ -156,16 +150,11 @@ class Teacher:
     def __init__(self, teacher_dir):
         self.dir = Path(teacher_dir)
         self.results = self.dir / "results"
-        parameters = toml.load(self.dir / "parameters.toml")
-        self.simulation = SimulationConfig(**parameters["simulation"])
-        self.recurrent = RecurrentLayerConfig(**parameters["recurrent"])
-        self.feedforward = FeedforwardLayerConfig(**parameters["feedforward"])
-        odours = parameters["odours"].copy()
-        for key in ("tau", "temperature", "sigma"):
-            odours.pop(key)
-        self.odours = {
-            name: OdourInputConfig(**config) for name, config in odours.items()
-        }
+        parameters = load_teacher_parameters(self.dir / "parameters.toml")
+        self.simulation = parameters.simulation
+        self.recurrent = parameters.recurrent
+        self.feedforward = parameters.feedforward
+        self.odours = parameters.odours.inputs
         structure = np.load(self.results / "network_structure.npz")
         self.weights = structure["recurrent_weights"]
         self.feedforward_weights = structure["feedforward_weights"]
@@ -628,9 +617,9 @@ def step_drive(teacher, out_dir, device):
 
 def step_dimensionality(teacher, out_dir, device):
     """Participation ratio and PCA spectrum of the teacher's smoothed activity."""
-    evaluation = toml.load(EVALUATION_PARAMETERS)["evaluation"]
-    sigma_ms = float(evaluation["fluctuation_tau_ms"])
-    burn_in_ms = float(evaluation["burn_in_ms"])
+    evaluation = load_student_parameters(EVALUATION_PARAMETERS).evaluation
+    sigma_ms = float(evaluation.fluctuation_tau_ms)
+    burn_in_ms = float(evaluation.burn_in_ms)
     data = teacher.zarr
     spikes = data["output_spikes"]
     dt = float(data.attrs["dt"])

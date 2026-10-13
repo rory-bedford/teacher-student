@@ -50,11 +50,11 @@ ERROR_MODELS = {
 
 def conditions(params):
     """(error_model, level) pairs a run belongs to; the baseline belongs to both models."""
-    student = params["student"]
+    student = params.student
     active = [
-        (model, float(student[key]))
+        (model, float(getattr(student, key)))
         for model, key in ERROR_MODELS.items()
-        if student.get(key, 0.0) > 0
+        if getattr(student, key) > 0
     ]
     if len(active) > 1:
         raise ValueError("a run may apply only one error model")

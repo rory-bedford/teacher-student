@@ -6,17 +6,13 @@ teacher spike train patterns using odour-modulated inputs.
 These patterns serve as targets for student network training.
 """
 
+import sys
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-import toml
 import torch
 import zarr
-from connectome_snns.configs import SimulationConfig
-from connectome_snns.configs.conductance_based import (
-    FeedforwardLayerConfig,
-    RecurrentLayerConfig,
-)
-from connectome_snns.configs.odours import OdourInputConfig
 from connectome_snns.dataloaders.odourants import (
     generate_odour_firing_rates,
 )
@@ -40,6 +36,10 @@ from connectome_snns.visualization.dashboards import (
     create_connectivity_dashboard,
 )
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from common.parameters import load_teacher_parameters
+
 
 def main(input_dir, output_dir, params_file):
     """Main execution function for Dp network simulation.
@@ -59,20 +59,16 @@ def main(input_dir, output_dir, params_file):
     print(f"Using device: {device}")
 
     # Load network parameters from TOML file
-    with open(params_file, "r") as f:
-        data = toml.load(f)
+    params = load_teacher_parameters(params_file)
+    simulation = params.simulation
+    recurrent = params.recurrent
+    feedforward = params.feedforward
 
-    # Load configuration sections
-    simulation = SimulationConfig(**data["simulation"])
-    recurrent = RecurrentLayerConfig(**data["recurrent"])
-    feedforward = FeedforwardLayerConfig(**data["feedforward"])
-
-    # Parse odour configs
-    odours_data = data["odours"]
-    tau = odours_data.pop("tau")
-    temperature = odours_data.pop("temperature")
-    sigma = odours_data.pop("sigma")
-    odours = {name: OdourInputConfig(**config) for name, config in odours_data.items()}
+    # Odour configs
+    tau = params.odours.tau
+    temperature = params.odours.temperature
+    sigma = params.odours.sigma
+    odours = params.odours.inputs
 
     # Extract parameters into plain Python variables
     dt = simulation.dt

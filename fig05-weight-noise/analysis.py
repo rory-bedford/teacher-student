@@ -39,7 +39,7 @@ TEACHER = HERE.parent / "fig00-teacher-activity" / "experiment.toml"
 
 def label(params, evaluation):
     return {
-        "weight_noise": float(params["student"].get("weight_noise", 0.0)),
+        "weight_noise": float(params.student.weight_noise),
         "noise_clipped_fraction": float(evaluation["noise_clipped_fraction"]),
     }
 

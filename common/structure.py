@@ -218,15 +218,15 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
     n_ff_types = int(ff_ct.max()) + 1
     n_rec_types = int(ct.max()) + 1
 
-    recurrent_model = student_cfg.get("recurrent_model", "connectome")
+    recurrent_model = student_cfg.recurrent_model
     if recurrent_model not in RECURRENT_MODELS:
         raise ValueError(f"recurrent_model must be one of {RECURRENT_MODELS}")
-    removal = float(student_cfg.get("neuron_removal_fraction", 0.0))
-    dropout = float(student_cfg.get("synapse_dropout_fraction", 0.0))
-    noise = float(student_cfg.get("weight_noise", 0.0))
-    reconstructed = student_cfg.get("reconstructed_fraction")
-    threshold_heterogeneity = float(student_cfg.get("threshold_heterogeneity", 0.0))
-    learnt_feedforward = bool(student_cfg.get("learnt_feedforward", False))
+    removal = float(student_cfg.neuron_removal_fraction)
+    dropout = float(student_cfg.synapse_dropout_fraction)
+    noise = float(student_cfg.weight_noise)
+    reconstructed = student_cfg.reconstructed_fraction
+    threshold_heterogeneity = float(student_cfg.threshold_heterogeneity)
+    learnt_feedforward = bool(student_cfg.learnt_feedforward)
     if learnt_feedforward and reconstructed is not None:
         raise ValueError(
             "learnt_feedforward and reconstructed_fraction are alternatives: the first "
@@ -255,7 +255,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
         # unknown together; this isolates the feedforward half of that manipulation.
         known_ff = np.zeros(n_ff, dtype=bool)
         modelled_ids = np.flatnonzero(modelled)
-        n_observed = round(float(student_cfg["observed_fraction"]) * modelled_ids.size)
+        n_observed = round(float(student_cfg.observed_fraction) * modelled_ids.size)
         observed = np.zeros(n_rec, dtype=bool)
         observed[
             _rng(seed, _STREAM_OBSERVED).permutation(modelled_ids)[:n_observed]
@@ -274,7 +274,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
         known_ff = in_segment[:n_ff]
         modelled = in_segment[n_ff:]
 
-        pool_fraction = float(student_cfg["recorded_pool_fraction"])
+        pool_fraction = float(student_cfg.recorded_pool_fraction)
         recorded_pool = np.zeros(n_rec, dtype=bool)
         n_pool = round(pool_fraction * n_rec)
         recorded_pool[_rng(seed, _STREAM_POOL).permutation(n_rec)[:n_pool]] = True
@@ -290,7 +290,7 @@ def build_student_structure(teacher, student_cfg, seed, perturbation_variance):
             modelled[removed] = False
 
         modelled_ids = np.flatnonzero(modelled)
-        n_observed = round(float(student_cfg["observed_fraction"]) * modelled_ids.size)
+        n_observed = round(float(student_cfg.observed_fraction) * modelled_ids.size)
         observed = np.zeros(n_rec, dtype=bool)
         observed[
             _rng(seed, _STREAM_OBSERVED).permutation(modelled_ids)[:n_observed]

@@ -49,12 +49,10 @@ VARIANT_NAMES = {
 
 def label(params, evaluation):
     return {
-        "total_epochs": int(params["training"]["total_epochs"]),
-        "variant": VARIANT_NAMES[
-            params["student"].get("recurrent_model", "connectome")
-        ],
+        "total_epochs": int(params.training.total_epochs),
+        "variant": VARIANT_NAMES[params.student.recurrent_model],
         "n_free_params": int(evaluation["n_free_params"]),
-        "observed_fraction": float(params["student"]["observed_fraction"]),
+        "observed_fraction": float(params.student.observed_fraction),
     }
 
 

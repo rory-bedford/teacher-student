@@ -75,19 +75,15 @@ def main(runs_dir, out_dir, fully_observed_dir=None):
             run,
             seed=int(evaluation["seed"]),
             observed="partial",
-            observed_fraction=float(
-                run_parameters(run)["student"]["observed_fraction"]
-            ),
+            observed_fraction=float(run_parameters(run).student.observed_fraction),
         )
     for run in fully_observed_runs(fully_observed_dir) if fully_observed_dir else []:
         print(f"Scaling factors of fully observed {run.name}")
         factors += scaling_factor_rows(
             run,
-            seed=int(run_parameters(run)["simulation"]["seed"]),
+            seed=int(run_parameters(run).simulation.seed),
             observed="full",
-            observed_fraction=float(
-                run_parameters(run)["student"]["observed_fraction"]
-            ),
+            observed_fraction=float(run_parameters(run).student.observed_fraction),
         )
 
     delta_summary, delta_rates = collect_perturbation(

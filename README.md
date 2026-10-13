@@ -109,7 +109,9 @@ uv run python fig05-weight-noise/figures.py         # CSVs -> one SVG per panel
 `analysis.py` scores every finished run on held-out stimuli and on the perturbation, caches
 the scores inside each run's folder, and writes the CSVs its figure needs next to itself.
 `figures.py` reads only those CSVs, so panels can be rebuilt without a GPU. What a figure
-varies, and at which levels, is set in its `parameters.toml` and `run_grid_search.py`.
+varies, and at which levels, is set in its `parameters.toml` and `run_grid_search.py`;
+every table and its defaults are declared in [`common/parameters.py`](common/parameters.py),
+so a misspelt key is an error.
 
 ### Provenance: always launch runs with `./run`
 

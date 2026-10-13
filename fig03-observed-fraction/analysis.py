@@ -42,13 +42,13 @@ REPORTED_FRACTIONS = (0.01, 0.02, 0.05, 0.1, 0.25, 0.5)  # 0.5 comes from Figure
 
 
 def reported(run_dir):
-    fraction = float(run_parameters(run_dir)["student"]["observed_fraction"])
+    fraction = float(run_parameters(run_dir).student.observed_fraction)
     return any(abs(fraction - f) < 1e-9 for f in REPORTED_FRACTIONS)
 
 
 def label(params, evaluation):
     return {
-        "obs_fraction": float(params["student"]["observed_fraction"]),
+        "obs_fraction": float(params.student.observed_fraction),
         "n_observed": int(evaluation["n_observed"]),
     }
 

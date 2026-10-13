@@ -43,11 +43,9 @@ CONTROL = HERE.parent / "fig01-full-reconstruction" / "experiment.toml"
 def label(params, evaluation):
     return {
         "variant": (
-            "learnt_feedforward"
-            if params["student"].get("learnt_feedforward", False)
-            else "known_input"
+            "learnt_feedforward" if params.student.learnt_feedforward else "known_input"
         ),
-        "total_epochs": int(params["training"]["total_epochs"]),
+        "total_epochs": int(params.training.total_epochs),
         "n_free_params": int(evaluation["n_free_params"]),
     }
 
