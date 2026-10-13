@@ -28,7 +28,7 @@ cu129 = ["torch>=2.7.0", "torchvision>=0.22.0", "cuml-cu12==26.2.*"]
 conflicts = [[{ extra = "cpu" }, { extra = "cu129" }]]
 
 [tool.uv.sources]
-connectome-snns = { git = "https://github.com/rory-bedford/connectome-snns", rev = "039270bda27aeb4e51991c24e8d8b9ded958af89" }
+connectome-snns = { git = "https://github.com/rory-bedford/connectome-snns", rev = "d8e68faf68076c17d6f8b6a06fd6f7541917e71d" }
 torch = [
   { index = "pytorch-cpu", extra = "cpu" },
   { index = "pytorch-cu129", extra = "cu129" },
