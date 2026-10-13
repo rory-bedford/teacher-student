@@ -16,7 +16,6 @@ from connectome_snns.configs import DATALOADER_KWARGS
 from connectome_snns.dataloaders.supervised import CyclicSampler, ExactFFDataset
 from connectome_snns.snn_runners import SNNTrainer
 from connectome_snns.training_utils import AsyncLogger
-from connectome_snns.training_utils.checkpointing import load_checkpoint
 from connectome_snns.training_utils.losses import VanRossumLoss
 from torch import nn
 from torch.amp import GradScaler
@@ -424,15 +423,15 @@ def train_student(
         trainer.wandb_logger = wandb_logger
 
     if resume_from is not None:
-        # The library's checkpoints carry the model, optimiser, GradScaler, simulation
-        # state, both RNG states and (since 2026-09-21) the LR scheduler, so a resumed
-        # run continues its schedule rather than restarting it. AsyncLogger appends to an
-        # existing training_metrics.csv, so the history is kept.
-        epoch, best = load_checkpoint(
-            Path(resume_from), model, optimiser, scaler, device, scheduler=scheduler
+        # Restores the model, optimiser, GradScaler, LR scheduler, simulation state, RNG
+        # states and the van Rossum filters' carried state, and skips the batches
+        # already trained on, so the run continues exactly where the checkpoint left
+        # off. AsyncLogger appends to an existing training_metrics.csv, so the history
+        # is kept.
+        epoch = trainer.resume(Path(resume_from))
+        print(
+            f"Resuming at chunk {epoch}/{total_chunks}, best loss {trainer.best_loss:.6f}"
         )
-        trainer.set_checkpoint_state(epoch, best)
-        print(f"Resuming at chunk {epoch}/{total_chunks}, best loss {best:.6f}")
 
     best_loss = trainer.train(output_dir=output_dir)
 

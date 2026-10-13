@@ -360,7 +360,7 @@ wheels = [
 [[package]]
 name = "connectome-snns"
 version = "0.1.0"
-source = { git = "https://github.com/rory-bedford/connectome-snns?rev=308ba43fb133f175d5d094519e2e90c43b382765#308ba43fb133f175d5d094519e2e90c43b382765" }
+source = { git = "https://github.com/rory-bedford/connectome-snns?rev=039270bda27aeb4e51991c24e8d8b9ded958af89#039270bda27aeb4e51991c24e8d8b9ded958af89" }
 dependencies = [
     { name = "cma" },
     { name = "dask" },
@@ -3292,7 +3292,7 @@ cu129 = [
 
 [package.metadata]
 requires-dist = [
-    { name = "connectome-snns", git = "https://github.com/rory-bedford/connectome-snns?rev=308ba43fb133f175d5d094519e2e90c43b382765" },
+    { name = "connectome-snns", git = "https://github.com/rory-bedford/connectome-snns?rev=039270bda27aeb4e51991c24e8d8b9ded958af89" },
     { name = "cuml-cu12", marker = "extra == 'cu129'", specifier = "==26.2.*" },
     { name = "torch", marker = "extra == 'cpu'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "teacher-student", extra = "cpu" } },
     { name = "torch", marker = "extra == 'cu129'", specifier = ">=2.7.0", index = "https://download.pytorch.org/whl/cu129", conflict = { package = "teacher-student", extra = "cu129" } },
